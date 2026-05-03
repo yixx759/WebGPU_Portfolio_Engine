@@ -1,0 +1,264 @@
+// Data type size
+// refrence: https://www.w3schools.com/js/js_datatypes.asp
+
+export const BYTES_OF_FLOAT_16 = 16 / 8;
+export const BYTES_OF_FLOAT_32 = 32 / 8;
+export const BYTES_OF_FLOAT_64 = 64 / 8;
+
+export const BYTES_OF_INT_8 = 8 / 8;
+export const BYTES_OF_INT_16 = 16 / 8;
+export const BYTES_OF_INT_32 = 32 / 8;
+
+export const BYTES_OF_VECTOR3 = BYTES_OF_FLOAT_32 * 3;
+
+const OFFSET_TRANSFROM_POSITION = 0;
+const OFFSET_TRANSFROM_SCALE = 3;
+const OFFSET_TRANSFROM_ROTATION = 4;
+
+const OFFSET_INTO_TRANSFROM_HALF = OFFSET_TRANSFROM_ROTATION + 3;
+
+export const VERTEX_INDEX_CUBE = 0;
+export const VERTEX_INDEX_BUNNY = 1;
+
+export const BYTES_OF_RENDER_INFO = BYTES_OF_INT_8 * 2;
+export const BYTES_OF_TRANSFORM = BYTES_OF_VECTOR3 + BYTES_OF_FLOAT_32 + BYTES_OF_VECTOR3;
+export const BYTES_OF_COLLIDER = BYTES_OF_VECTOR3;
+
+const ALIGNMENT_BYTES_OF_RENDER_INFO = BYTES_OF_RENDER_INFO + (BYTES_OF_FLOAT_32 - BYTES_OF_RENDER_INFO);
+
+// aligned = (used + block_size - 1) & ~(block_size - 1)
+// Since it uses same data type it will be allighned
+const ALIGNMENT_BYTES_OF_TRANSFORM = BYTES_OF_TRANSFORM;
+
+export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + BYTES_OF_COLLIDER;
+
+const ALLIGHNMENT_NUMBER = 64
+const REMAINING_BYTES_FOR_OBJECT = ALLIGHNMENT_NUMBER - BYTES_OF_OBJECT
+export const ALIGNMENT_BYTES_OF_OBJECT = BYTES_OF_OBJECT + REMAINING_BYTES_FOR_OBJECT;
+
+/* Object structure
+
+* Render Info *
+  int8    vertexIndex
+  int8    textureIndex
+
+  * Transform *
+  vector3 position
+  float32    scale
+  vector3 rotation 
+
+  * Collision *
+  vector3 half
+*/
+
+// TO DO: Optimize me can make this more contigous like in c++
+export class gameObject
+{
+  ID;
+  byteIndex;
+  transformIndex;
+  collisionIndex;
+ 
+  // Takes input of what number object this is and initialses a new object 
+  // With input informaiton.
+  constructor(objectArray, objectID, vertexIndex, textureIndex, position, scale, rotation, half)
+  {
+    // NOTE: Pos rot should be float32array
+    // NOTE: Keep alighnment in mind
+
+    // TO DO: Is adding to byte array done in parraleel for diff parts check
+    
+    let index = objectID * ALIGNMENT_BYTES_OF_OBJECT
+  
+    this.byteIndex = index;
+    this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
+    this.collisionIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
+    this.ID = objectID;
+
+    const renderInfoView = new Uint8Array(objectArray, index);
+    
+    // Set vertexIndex
+    renderInfoView[0] = vertexIndex;
+    // Set textureIndex
+    renderInfoView[1] = textureIndex;
+
+    // Offset into Transform
+    index += ALIGNMENT_BYTES_OF_RENDER_INFO;
+
+    const setTransfromView = new Float32Array(objectArray, index);
+
+    // Set position
+    index += this.setVector3(setTransfromView, OFFSET_TRANSFROM_POSITION, position);
+    // Set scale
+    setTransfromView[OFFSET_TRANSFROM_SCALE] = scale;
+    index += BYTES_OF_FLOAT_32;
+    // Set rotation
+    index += this.setVector3(setTransfromView, OFFSET_TRANSFROM_ROTATION, rotation);
+
+    // Set half
+    index += this.setVector3(setTransfromView, OFFSET_INTO_TRANSFROM_HALF, half);
+  }
+
+    // NOTE: Have a view for int8 to pass in.
+    getModelIndex(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Int8Array)) {
+        console.log("ERROR: Get model index wasnt given int8array");
+        return -1;
+      }
+
+      return objectArrayView[this.byteIndex];
+    }
+
+    // NOTE: Have a view for int8 to pass in.
+    getTextureIndex(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Int8Array)) {
+        console.log("ERROR: Get texture index wasnt given int8array");
+        return -1;
+      }
+
+      return objectArrayView[this.byteIndex + 1];
+    }
+
+    // NOTE: Have a view for int8 to pass in.
+    setModelIndex(objectArrayView, data)
+    {
+      if (!(objectArrayView instanceof Int8Array)) {
+        console.log("ERROR: Set model index wasnt given int8array");
+        return -1;
+      }
+
+      objectArrayView[this.byteIndex] = data
+    }
+
+    // NOTE: Have a view for int8 to pass in.
+    setTextureIndex(objectArrayView, data)
+    {
+      if (!(objectArrayView instanceof Int8Array)) {
+        console.log("ERROR: Set texture index wasnt given int8array");
+        return -1;
+      }
+
+      objectArrayView[this.byteIndex + 1] = data;
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getPosition(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Get position wasnt given float32array");
+        return -1;
+      }
+
+      const x = objectArrayView[this.transformIndex]
+      const y = objectArrayView[this.transformIndex + 1]
+      const z = objectArrayView[this.transformIndex + 2]
+
+      return new Float32Array([x, y, z]);
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    setPosition(objectArrayView, data)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Set position wasnt given float32array");
+        return -1;
+      }
+
+      return this.setVector3(objectArrayView, this.transformIndex, data)
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getScale(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Get scale wasnt given float32array");
+        return -1;
+      }
+
+      return objectArrayView[this.transformIndex + OFFSET_TRANSFROM_SCALE];
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    setScale(objectArrayView, data)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Set scale wasnt given float32array");
+        return -1;
+      }
+
+      objectArrayView[this.transformIndex + OFFSET_TRANSFROM_SCALE] = data;
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getRotation(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Get rotation wasnt given float32array");
+        return -1;
+      }
+
+      const x = objectArrayView[this.transformIndex + OFFSET_TRANSFROM_ROTATION]
+      const y = objectArrayView[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 1]
+      const z = objectArrayView[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 2]
+
+      return new Float32Array([x, y, z]);
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    setRotation(objectArrayView, data)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Set rotation wasnt given float32array");
+        return -1;
+      }
+
+      return this.setVector3(objectArrayView, this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getHalf(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Get half wasnt given float32array");
+        return -1;
+      }
+
+      const x = objectArrayView[this.collisionIndex]
+      const y = objectArrayView[this.collisionIndex + 1]
+      const z = objectArrayView[this.collisionIndex + 2]
+
+      return new Float32Array([x, y, z]);
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    setHalf(objectArrayView, data)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Set half wasnt given float32array");
+        return -1;
+      }
+
+      return this.setVector3(objectArrayView, this.collisionIndex, data)
+    }
+
+    setVector3(objectArray, offset, data)
+    {
+      if (!(objectArray instanceof Float32Array)) {
+        console.log("ERROR: Set vector3 wasnt given float32array");
+        return -1;
+      }
+
+      if (!(data instanceof Float32Array)) {
+        console.log("ERROR: Set vector3 wasnt given data float32array");
+        return -1;
+      }
+
+      objectArray[offset] = data[0];
+      objectArray[offset + 1] = data[1];
+      objectArray[offset + 2] = data[2];
+
+      return BYTES_OF_VECTOR3;
+    }
+}
