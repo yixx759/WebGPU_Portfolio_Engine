@@ -243,6 +243,32 @@ export class gameObject
       return this.setVector3(objectArrayView, this.collisionIndex, data)
     }
 
+    get_min(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Get min wasnt given float32array");
+        return -1;
+      }
+
+      const halfs = this.getHalf(objectArrayView);
+      const pos = this.getPosition(objectArrayView);
+
+      return new Float32Array([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
+    }
+
+    get_max(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Float32Array)) {
+        console.log("ERROR: Get min wasnt given float32array");
+        return -1;
+      }
+
+      const halfs = this.getHalf(objectArrayView);
+      const pos = this.getPosition(objectArrayView);
+
+      return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
+    }
+
     setVector3(objectArray, offset, data)
     {
       if (!(objectArray instanceof Float32Array)) {

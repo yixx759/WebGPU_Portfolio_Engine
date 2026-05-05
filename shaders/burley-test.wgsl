@@ -98,8 +98,5 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
   let baseCol = textureSample(ourTexture, ourSampler, texcoord) / PI;
   let fd = mix(1.0, F90, FL) * mix(1.0, F90, FV);
 
-  //return mats.camPos;
-  //return vec4f(normalize(fragData.norm).xyz ,1);
   return vec4f((fd * baseCol).xyz ,1);
-  return textureSample(ourTexture, ourSampler, texcoord);
 }

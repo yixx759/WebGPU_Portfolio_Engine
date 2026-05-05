@@ -1,3 +1,5 @@
+export const DIR_FORWARD = new Float32Array([0,0,-1]);
+
 export function multiplyFloat32Matrices(A, B) {
   
   const numRows = 4;
@@ -128,6 +130,10 @@ export function negateVertex(inpVec)
 
 export function vectorAdd(A, B){
   return new Float32Array([A[0]+B[0], A[1]+B[1],A[2]+B[2], 0]);
+}
+
+export function vector_mult(A, mag_vector){
+  return new Float32Array([A[0]*mag_vector[0], A[1]*mag_vector[1],A[2]*mag_vector[2], 0]);
 }
 
 export function vectorAdd_Cam(A, X, Z){

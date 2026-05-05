@@ -1,13 +1,14 @@
 import { parceObjFile } from './objParser.js';
-import { makeColliderFromVerts, AABB } from './colliderFuncs.js'
+import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './colliderFuncs.js'
 import * as helper from './helperFuncs.js'
 import * as objectInfo from './objectInfoStruct.js'
 import * as testFuncs from './testFuncs.js'
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
-const DEBUG = false;
+const DEBUG = true;
 const TEST = false;
 
+// TO DO: debug func script
 // TO DO: dont cretae new memory everytime get positons
 // TO DO: Do that roation system casey did a article on research turns and normalized lerp
 // TO DO: Validaiton with max amount of moidels and texture so cant create object
@@ -20,6 +21,18 @@ function print(string)
 
 function debugLog(...args) {
   if (DEBUG) console.log(...args);
+}
+
+function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
+{
+  const debugLineVertex = new Float32Array([
+    pos1[0], pos1[1], pos1[2],
+    (colour_red_enabled ? 1 : 0), 0, 0,
+    pos2[0], pos2[1], pos2[2],
+    (colour_red_enabled ? 1 : 0), 0, 0
+  ]);
+
+  device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
 }
 
 const ZEROS = new Float32Array([0, 0, 0]);
@@ -75,7 +88,11 @@ let gameObjectArray = [playerObject, otherObject];
 if (TEST) testFuncs.objectTestPrints(playerObject, otherObject, indexArray, transformArray)
 
 // Vertex and fragment shaders
-const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");;
+const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");
+
+let shaderDebugCode;
+
+if (DEBUG)  shaderDebugCode = await helper.loadShader("./shaders/debug_render.wgsl");
 
 function errorCheck(whatever)
 {
@@ -105,6 +122,16 @@ async function init() {
   });
 
   errorCheck(shaderModule);
+
+  let shaderDebugModule;
+
+  if (DEBUG){
+  shaderDebugModule = device.createShaderModule({
+  code: shaderDebugCode
+  });
+
+  errorCheck(shaderDebugCode);
+  }
 
   const canvas = document.querySelector('#gpuCanvas');
   const context = canvas.getContext('webgpu');
@@ -140,7 +167,7 @@ async function init() {
   const vertexBuffer = device.createBuffer({
         size: objectArray[1].byteLength * AMOUNT_OF_OBJECTS, // Should pre calculate max
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        });
+      });
 
   let VERTEX_OFFSET = objectArray[1].byteLength
 
@@ -174,6 +201,44 @@ async function init() {
     arrayStride: 32,
     stepMode: 'vertex'
   }];
+
+  const vertexDebugBuffer = device.createBuffer({
+    size: 32*3*2*2, // size of 2 positions which are 3 float32 3s and 2 colors
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+
+  let debugLineVertex;
+  if (DEBUG){
+     debugLineVertex = new Float32Array([
+      0, 0, 0, 
+      0, 0, 0, // Color
+      5, 0, 0,
+      1, 0, 0,// Color
+    ]);
+
+  device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
+  }
+
+  let vertexDebugBuffers;
+
+  if (DEBUG){
+    vertexDebugBuffers = [{
+      attributes: [
+      {
+        shaderLocation: 0, // position
+        offset: 0,
+        format: 'float32x3'
+      },
+      {
+      shaderLocation: 1, // color
+      offset: 12,
+      format: 'float32x3'
+    }
+    ],
+      arrayStride: 24,
+      stepMode: 'vertex'
+    }];
+}
 
   const group0Layout = device.createBindGroupLayout({
     entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } 
@@ -219,9 +284,48 @@ async function init() {
     })
   };
 
+let pipelineDebugDescriptor;
+
+if (DEBUG){
+ pipelineDebugDescriptor = {
+    vertex: {
+      module: shaderDebugModule,
+      entryPoint: 'vertex_main',
+      buffers: vertexDebugBuffers
+    },
+    fragment: {
+      module: shaderDebugModule,
+      entryPoint: 'fragment_main',
+      targets: [{
+        format: navigator.gpu.getPreferredCanvasFormat()
+      }]
+    },
+    primitive: {
+      topology: 'line-list'
+    },
+    depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus",
+    },
+    layout: device.createPipelineLayout({
+    bindGroupLayouts: [
+      group0Layout, // for mats
+    ]
+    })
+  };
+}
+
   var Time = Date.now();
 
   const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
+
+  let renderDebugPipeline;
+
+  if (DEBUG)
+  {
+     renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
+  }
 
   const IDENTITY = new Float32Array([
     1.0, 0.0, 0.0, 0.0,
@@ -277,6 +381,21 @@ async function init() {
     ],
     });
     bindGroupArray.push(bindGroup);
+  }
+
+  let bindDebugGroup;
+
+  if (DEBUG)
+  {
+    bindDebugGroup = device.createBindGroup({
+        layout: renderDebugPipeline.getBindGroupLayout(0),
+        entries: [
+            {binding: 0, resource: {
+              buffer: Mats,
+              offset: 0
+            }},
+        ],
+        });
   }
 
 const url = 'resources/images/Bunny Texture.png';
@@ -347,8 +466,8 @@ var keyYDown = 0;
 var keyZ = 0;
 var keyZDown = 0;
 
+// TO DO: CAPS LOCK FIX
 document.addEventListener('keydown', function(evt) {
-
   if (evt.key === 'w') {
     debugLog("Up");
     keyZDown = -0.1;
@@ -394,7 +513,32 @@ document.addEventListener('keyup', function(evt) {
 
 }, false);
 
-// key dwon enables a bool and key up disables it makes input smooth
+// TO DO: Manage me and scratch better
+let tmpCamPos = new Float32Array(4);
+
+if (DEBUG)
+{
+  document.addEventListener('click', function(evt) {
+    print("clicked")
+    // TO DO: Set magnitude somewhere
+    let dir = helper.vector_mult(helper.DIR_FORWARD, new Float32Array([1,1,10]));
+    let ray_from_player_forward = new ray(camPos[0], camPos[1], camPos[2], dir[0], dir[1], dir[2]);
+
+    let did_hit = false;
+
+    for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+    {
+      if (ray_AABB_intersection(ray_from_player_forward, gameObjectArray[i].get_min(transformArray), gameObjectArray[i].get_max(transformArray)))
+      {
+        did_hit = true;
+      }
+    }
+
+    newRayPos(camPos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertexDebugBuffer)
+  }, false);
+}
+
+// key down enables a bool and key up disables it makes input smooth
 const depthTexture = device.createTexture({
   size: [canvas.clientWidth, canvas.clientHeight , 1],
   format: "depth24plus",
@@ -476,6 +620,14 @@ function render() {
     passEncoder.draw(objectArray[vert_index].length / 8);
   }
 
+  if (DEBUG)
+  {
+    passEncoder.setPipeline(renderDebugPipeline);
+    passEncoder.setBindGroup(0, bindDebugGroup);
+    passEncoder.setVertexBuffer(0, vertexDebugBuffer, 0, debugLineVertex.byteLength);
+    passEncoder.draw(2);
+  }
+  
   passEncoder.end();
   
   device.queue.submit([commandEncoder.finish()]);
