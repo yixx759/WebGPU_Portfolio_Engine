@@ -14,12 +14,12 @@ const TEST = false;
 // TO DO: Validaiton with max amount of moidels and texture so cant create object
 // with any more than that
 
-function print(string)
+export function print(string)
 {
   console.log(string);
 }
 
-function debugLog(...args) {
+export function debugLog(...args) {
   if (DEBUG) console.log(...args);
 }
 
@@ -466,6 +466,14 @@ var keyYDown = 0;
 var keyZ = 0;
 var keyZDown = 0;
 
+const MOUSE_SPEED_X = 0.005;
+const MOUSE_SPEED_Y = 0.005;
+
+const Y_ANGLE_CAM_CLAMP = 50 * Math.PI / 180;
+
+var mouse_X = 0;
+var mouse_Y = 0;
+
 // TO DO: CAPS LOCK FIX
 document.addEventListener('keydown', function(evt) {
   if (evt.key === 'w') {
@@ -478,18 +486,18 @@ document.addEventListener('keydown', function(evt) {
 
   if (evt.key === 'd') {
     debugLog("Right");
-    keyXDown = 0.1;
+    keyXDown = -0.1;
   } else if (evt.key === 'a') {
     debugLog("Left");
-    keyXDown = -0.1;
+    keyXDown = 0.1;
   }
 
   if (evt.key === 'e') {
     debugLog("forward");
-    keyYDown = -0.1;
+    keyYDown = 0.1;
   } else if (evt.key === 'q') {
     debugLog("down");
-    keyYDown = 0.1;
+    keyYDown = -0.1;
   }
 
 }, false);
@@ -513,16 +521,22 @@ document.addEventListener('keyup', function(evt) {
 
 }, false);
 
+// TO DO:  If rotates over 90 degrees up will distort
+document.addEventListener('mousemove', function(evt) {
+    mouse_X = mouse_X + evt.movementX * MOUSE_SPEED_X;
+    mouse_Y = Math.max(Math.min(mouse_Y - evt.movementY * MOUSE_SPEED_Y, Y_ANGLE_CAM_CLAMP), -Y_ANGLE_CAM_CLAMP);
+})
+
 // TO DO: Manage me and scratch better
 let tmpCamPos = new Float32Array(4);
 
 if (DEBUG)
 {
   document.addEventListener('click', function(evt) {
-    print("clicked")
+    debugLog("clicked")
     // TO DO: Set magnitude somewhere
-    let dir = helper.vector_mult(helper.DIR_FORWARD, new Float32Array([1,1,10]));
-    let ray_from_player_forward = new ray(camPos[0], camPos[1], camPos[2], dir[0], dir[1], dir[2]);
+    let dir = helper.vector_mult(look_vector, new Float32Array([10,10,10]));
+    let ray_from_player_forward = new ray(camPos[0], camPos[1], camPos[2], -dir[0], -dir[1], -dir[2]);
 
     let did_hit = false;
 
@@ -538,6 +552,12 @@ if (DEBUG)
   }, false);
 }
 
+canvas.addEventListener("click", async () => {
+   if (document.pointerLockElement != canvas) {
+      await canvas.requestPointerLock();
+   }
+});
+
 // key down enables a bool and key up disables it makes input smooth
 const depthTexture = device.createTexture({
   size: [canvas.clientWidth, canvas.clientHeight , 1],
@@ -546,29 +566,45 @@ const depthTexture = device.createTexture({
 });
 
 // Put up here to avoid re allocation
-let camPos = new Float32Array([keyX,0,keyY+10, 1]);
-let camPosPrev = new Float32Array([keyX,0,keyY+10, 1]);
+var camPos = new Float32Array([keyX,0,keyY+10, 1]);
+var camPosPrev = new Float32Array([keyX,0,keyY+10, 1]);
+var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
+var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), Math.sin(mouse_Y), forward_vector_mat[2] * Math.cos(mouse_Y)])
 
 function render() {
 
   // TO DO: Magic numbers
   Time = Date.now() / 100;
 
-  helper.vectorAdd_Cam(camPos, keyXDown, keyZDown)
+  debugLog("mouse x: " + mouse_X);
+  debugLog("mouse y: " + mouse_Y);
+
+  // TO DO : dont recreate me
+   forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
   
+  // TO DO: NORMALIZE?
+  helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3])
+  print(forward_vector_mat)
+
+  // TO DO: This could be better
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
   {
     if (AABB(gameObjectArray[i].getPosition(transformArray), gameObjectArray[i].getHalf(transformArray), camPos, playerCollider))
     {
-      helper.vectorAdd_Cam(camPos, keyXDown, keyZDown)
-      helper.vectorAss_Cam(camPos, camPosPrev);
+      helper.vector_assign_cam(camPos, camPosPrev);
     }
   }
 
-  helper.vectorAss_Cam(camPosPrev, camPos);
+  helper.vector_assign_cam(camPosPrev, camPos);
 
-  var viewMatix = helper.getViewMatrix(targetPos, up, camPos);
-  var perMatrix = helper.getPerspectiveMatrix(90, 1,1000);
+  //TO Do : make new target pos forward vec and use new const.
+  // First xz vector = cos(mouseX) , 0  ,sin(mouseX)
+  // First (xz)y vector = cos(mouseX) * cos(mouseY), sin(mouseY)  ,sin(mouseX) * cos(mouseY)
+  print(forward_vector_mat)
+  look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), Math.sin(mouse_Y), forward_vector_mat[2] * Math.cos(mouse_Y)])
+ 
+  var viewMatix = helper.getViewMatrix(look_vector, helper.WORLD_UP_VECTOR, camPos);
+  var perMatrix = helper.getPerspectiveMatrix(70, 1,1000);
 
   // TO DO: Only need to change world
   for(let i = 0; i < AMOUNT_OF_OBJECTS; i++ )

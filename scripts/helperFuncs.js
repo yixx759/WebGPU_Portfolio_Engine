@@ -1,4 +1,7 @@
+import { debugLog } from './Render.js'
+
 export const DIR_FORWARD = new Float32Array([0,0,-1]);
+export const WORLD_UP_VECTOR= new Float32Array([0,1,0]);
 
 export function multiplyFloat32Matrices(A, B) {
   
@@ -136,12 +139,12 @@ export function vector_mult(A, mag_vector){
   return new Float32Array([A[0]*mag_vector[0], A[1]*mag_vector[1],A[2]*mag_vector[2], 0]);
 }
 
-export function vectorAdd_Cam(A, X, Z){
+export function vector_add_cam(A, X, Z){
   A[0]+=X;
   A[2]+=Z;
 }
 
-export function vectorAss_Cam(A,B){
+export function vector_assign_cam(A,B){
   A[0]=B[0];
   A[1]=B[1];
   A[2]=B[2];
@@ -181,20 +184,20 @@ export function vectorNorm(A){
 
 export function applyWorldToCollider(vec, matrix)
 {
-  return [ vec[0]+matrix[12],vec[0]+matrix[13],vec[0]+matrix[14], 0]; 
+  return [vec[0]+matrix[12],vec[0]+matrix[13],vec[0]+matrix[14], 0]; 
 }
 
-export function getViewMatrix(Target, up, camPos){
-    //const camToTarget = vectorNorm(vectorSubtract(camPos, Target));
-    const camToTarget = new Float32Array([0,0,1]);
-    const right = vectorCross(up,camToTarget);
-    const nuUp = vectorCross(right, camToTarget);
+export function getViewMatrix(forward, up, camPos){
+    const right = vectorCross(up,forward);
+    const nuUp = vectorCross(right, forward);
+
+    // debugLog("Forward vec:" + forward)
 
     const view =  new Float32Array([
-    right[0] , nuUp[0], camToTarget[0], 0,
-    right[1] , nuUp[1], camToTarget[1], 0,
-    right[2] , nuUp[2], camToTarget[2], 0,
-    -vectorDot(right, camPos) , -vectorDot(nuUp, camPos), -vectorDot(camToTarget, camPos), 1,
+    right[0] , nuUp[0], forward[0], 0,
+    right[1] , nuUp[1], forward[1], 0,
+    right[2] , nuUp[2], forward[2], 0,
+    -vectorDot(right, camPos) , -vectorDot(nuUp, camPos), -vectorDot(forward, camPos), 1,
     ])
 
   return view;
