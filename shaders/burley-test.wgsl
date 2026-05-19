@@ -9,7 +9,8 @@ struct VertexOut {
   @builtin(position) position : vec4f,
   @location(0) texcoord: vec2f,
   @location(1) norm: vec3f,
-  @location(2) wpos: vec3f,
+  @location(2) tangent: vec3f,
+  @location(3) wpos: vec3f,
 }
 
 @group(0) @binding(0) var<uniform> mats: MATS;
@@ -30,10 +31,16 @@ fn inverse3x3(m: mat3x3<f32>) -> mat3x3<f32> {
     );
 }
 
+fn GTR_2_ANISO(alpha_x: f32, alpha_y: f32, h_x: f32, h_y: f32, h_n:f32 ) -> f32
+{
+  return ONE_OVER_PI * (1 / (alpha_x * alpha_y)) * (1 / pow(((h_x * h_x) / (alpha_x * alpha_x) + (h_y * h_y) / (alpha_y * alpha_y) + (h_n * h_n)) , 2));
+}
+
 @vertex
 fn vertex_main(@location(0) position: vec3f,
                @location(1) texcoord: vec2f,
-               @location(2) normal: vec3f) -> VertexOut
+               @location(2) normal: vec3f,
+               @location(3) tangent: vec3f) -> VertexOut
 {
   let texPos = texcoord;
   var output : VertexOut;
@@ -51,10 +58,17 @@ fn vertex_main(@location(0) position: vec3f,
 
   output.texcoord = texPos;
   output.norm = worldToNormal * normal;
+  output.tangent = worldToNormal * tangent;
   return output;
 }
 
 const PI: f32 = 3.141592653589793;
+const ONE_OVER_PI: f32 = 0.31830988618;
+
+const PARAM_ROUGHNESS: f32 = 0.1;
+const PARAM_ROUGHNESS_SQUARED: f32 = PARAM_ROUGHNESS * PARAM_ROUGHNESS;
+const PARAM_SUBSURFACE: f32 = 0.1;
+const PARAM_ANISOTROPIC: f32 = 0.1;
 
 @group(1) @binding(0) var ourSampler: sampler;
 @group(1) @binding(1) var ourTexture: texture_2d<f32>;
@@ -62,7 +76,7 @@ const PI: f32 = 3.141592653589793;
 fn SchlickFresnel(x : f32) -> f32 {
     var xtmp = saturate(1.0f - x);
     var x2 = xtmp * xtmp;
-
+    // acerola
     return x2 * x2 * xtmp; // While this is equivalent to pow(1 - x, 5) it is two less mult instructions
 }
 
@@ -75,15 +89,21 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 
   // from point to light not light to point
   // Right
-  let lightDir = normalize(-vec3f(-1, 0,0));
+  let lightDir = normalize(vec3f(0, 0, 1));
 
   let lightAmount = max(dot(lightDir, normalize(fragData.norm)) , 0);
   
   let res = vec4f(textureSample(ourTexture, ourSampler, texcoord) * lightAmount) ;
 
-  let roughness = 0.2f;
-
   let h = normalize(lightDir + view);
+  
+  let norm = normalize(fragData.norm);
+  let tangent = normalize(fragData.tangent);
+  let bitangent = cross(norm, tangent);
+
+  let h_n = dot(h, norm);
+  let h_x = dot(h, tangent);
+  let h_y = dot(h, bitangent);
 
   let thetad = max(0,dot(h, lightDir));
   let thetaL = max(0,dot(normalize(fragData.norm), lightDir));
@@ -92,11 +112,22 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 
   let FL = SchlickFresnel(thetaL);
   let FV = SchlickFresnel(ndotv);
+  
+  let F90 = (PARAM_ROUGHNESS * thetad * thetad);
+  let FD90 = 0.5f + 2 * F90;
 
-  let F90 = 0.5 + 2 * (roughness * thetad * thetad);
+  let baseCol = textureSample(ourTexture, ourSampler, texcoord) * ONE_OVER_PI;
+  let fd = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
 
-  let baseCol = textureSample(ourTexture, ourSampler, texcoord) / PI;
-  let fd = mix(1.0, F90, FL) * mix(1.0, F90, FV);
+  let fss_mid = mix(1.0, F90, FL) * mix(1.0, F90, FV);
+  let fss = (1 / (thetaL * ndotv) - 0.5f) * fss_mid + 0.5;
 
-  return vec4f((fd * baseCol).xyz ,1);
+  let aspect = sqrt(1 - 0.9f * PARAM_ANISOTROPIC);
+  let aniso_x = PARAM_ROUGHNESS_SQUARED / aspect;
+  let aniso_y = PARAM_ROUGHNESS_SQUARED * aspect;
+
+  let main_spec = GTR_2_ANISO(aniso_x, aniso_y, h_x, h_y, h_n);
+
+  return vec4(main_spec,main_spec,main_spec,1);
+  return vec4f((mix(fd, fss, PARAM_SUBSURFACE) * baseCol).xyz ,1);
 }

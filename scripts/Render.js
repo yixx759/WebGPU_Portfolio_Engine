@@ -5,7 +5,7 @@ import * as objectInfo from './objectInfoStruct.js'
 import * as testFuncs from './testFuncs.js'
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
-const DEBUG = true;
+const DEBUG = false;
 const TEST = false;
 
 // TO DO: debug func script
@@ -78,7 +78,7 @@ const OTHER_START_ROTATION = new Float32Array([180,180,0]);
 
 const OTHER_ID = 1;
 const OTHER_MODEL_INDEX = 0;
-const OTHER_TEXTURE_INDEX = 1;
+const OTHER_TEXTURE_INDEX = 0;
 
 let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, ZEROS);
 
@@ -584,7 +584,7 @@ function render() {
   
   // TO DO: NORMALIZE?
   helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3])
-  print(forward_vector_mat)
+ 
 
   // TO DO: This could be better
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
@@ -600,7 +600,6 @@ function render() {
   //TO Do : make new target pos forward vec and use new const.
   // First xz vector = cos(mouseX) , 0  ,sin(mouseX)
   // First (xz)y vector = cos(mouseX) * cos(mouseY), sin(mouseY)  ,sin(mouseX) * cos(mouseY)
-  print(forward_vector_mat)
   look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), Math.sin(mouse_Y), forward_vector_mat[2] * Math.cos(mouse_Y)])
  
   var viewMatix = helper.getViewMatrix(look_vector, helper.WORLD_UP_VECTOR, camPos);
