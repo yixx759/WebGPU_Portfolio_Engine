@@ -5,6 +5,20 @@ struct MATS {
   camPos : vec4f,
 }
 
+struct PARAM {
+ROUGHNESS: f32,
+ROUGHNESS_SQUARED: f32, // ROUGHNESS * ROUGHNESS
+SUBSURFACE: f32 ,
+ANISOTROPIC: f32 ,
+CLEARCOAT: f32 , // 0 - 0.25
+CLEARCOAT_GLOSS: f32 ,
+SPECULAR: f32, // 0 - 0.08 dont change coeffucent mult 0 - 1 by 0.08f
+SPECULAR_TINT: f32 ,
+METALLIC: f32 ,
+SHEEN: f32 ,
+SHEEN_TINT: f32 ,
+}
+
 struct VertexOut {
   @builtin(position) position : vec4f,
   @location(0) texcoord: vec2f,
@@ -13,6 +27,7 @@ struct VertexOut {
 }
 
 @group(0) @binding(0) var<uniform> mats: MATS;
+@group(0) @binding(1) var<uniform> params: PARAM;
 
 fn inverse3x3(m: mat3x3<f32>) -> mat3x3<f32> {
     let a = m[0][0]; let b = m[1][0]; let c = m[2][0];
@@ -77,15 +92,6 @@ fn vertex_main(@location(0) position: vec3f,
 const PI: f32 = 3.141592653589793;
 const ONE_OVER_PI: f32 = 0.31830988618;
 
-const PARAM_ROUGHNESS: f32 = 0.3f;
-const PARAM_ROUGHNESS_SQUARED: f32 = PARAM_ROUGHNESS * PARAM_ROUGHNESS;
-const PARAM_SUBSURFACE: f32 = 0f;
-const PARAM_ANISOTROPIC: f32 = 0f;
-const PARAM_CLEARCOAT: f32 = 0.10f; // 0 - 0.25
-const PARAM_SPECULAR: f32 = 1f * 0.08; // 0 - 0.08 dont change coeffucent
-const PARAM_SPECULAR_TINT: f32 = 1.0f;
-const PARAM_METALLIC: f32 = 0.5f;
-
 @group(1) @binding(0) var ourSampler: sampler;
 @group(1) @binding(1) var ourTexture: texture_2d<f32>;
 
@@ -115,6 +121,77 @@ fn get_tangent(position: vec4f, texcoord: vec2f, normal: vec3f) -> vec3f
   return T;
 }
 
+
+struct Light_Info {
+ base_col: vec4f, 
+ light_dir: vec3f, 
+ ndotv: f32, 
+ view: vec3f, 
+ norm: vec3f, 
+ T: vec3f,
+ bitangent: vec3f,
+}
+
+fn burley_brdf_dir(light_info :Light_Info) -> vec4f
+{
+
+  let h = normalize(light_info.light_dir + light_info.view);
+
+  let h_n = dot(h, light_info.norm);
+  let h_x = dot(h, light_info.T);
+  let h_y = dot(h, light_info.bitangent);
+
+  let thetad = max(0,dot(h, light_info.light_dir));
+  let thetaL = max(0,dot(normalize(light_info.norm), light_info.light_dir));
+
+  let FV = SchlickFresnel(light_info.ndotv);
+
+  let FL = SchlickFresnel(thetaL);
+
+  let F90 = (params.ROUGHNESS * thetad * thetad);
+  let FD90 = 0.5f + 2 * F90;
+
+  let specular_col = mix(params.SPECULAR * mix(vec4f(1.0f), light_info.base_col, params.SPECULAR_TINT), light_info.base_col, params.METALLIC);
+
+  let fd = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
+
+  let fss_mid = mix(1.0, F90, FL) * mix(1.0, F90, FV);
+  let fss = (1 / (thetaL * light_info.ndotv) - 0.5f) * fss_mid + 0.5;
+
+  let aspect = sqrt(1 - 0.9f * params.ANISOTROPIC);
+  let aniso_x = params.ROUGHNESS_SQUARED / aspect;
+  let aniso_y = params.ROUGHNESS_SQUARED * aspect;
+ 
+  let main_spec = GTR_2_ANISO(aniso_x, aniso_y, h_x, h_y, h_n);
+ 
+  let clear_coat_spec = GTR_1_ISO(params.ROUGHNESS_SQUARED, h_n);
+
+  let D_Specular = main_spec;
+  let d_clear = GTR_1_ISO(mix(0.1f, 0.001f, params.CLEARCOAT_GLOSS), h_n);
+
+  let SCHLICK_THETAD = SchlickFresnel(thetad);
+
+  let schlick = mix(specular_col, vec4f(1.0f), SCHLICK_THETAD);
+  let schlickClear = mix(0.04, 1.0f, SCHLICK_THETAD);
+
+  let g_spec = G_GGX(params.ROUGHNESS, light_info.ndotv) * G_GGX(params.ROUGHNESS, thetaL);
+  let g_clear = G_GGX(0.25f, light_info.ndotv) * G_GGX(0.25f, thetaL);
+
+  let sheen_colour = mix(vec4f(1.0f), light_info.base_col, params.SHEEN_TINT);
+  let sheen = SCHLICK_THETAD * params.SHEEN * sheen_colour;
+
+  // TO DO: Should only have one devide 
+  let overall_spec = ((D_Specular * schlick * g_spec) / (4 * (thetaL) * (light_info.ndotv))) ;
+  let overall_clear = ((schlickClear * g_clear * d_clear) * params.CLEARCOAT) / (4 * (thetaL) * (light_info.ndotv));
+
+  let tmp_res = overall_clear; // D_Specular / (4 * (thetaL) * (ndotv));
+  // return vec4f(sheen.xyz, 1);
+  // return vec4f(tmp_res,tmp_res,tmp_res,1f);
+  return vec4f(((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz, 1);
+
+
+}
+
 @fragment
 fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 {
@@ -127,57 +204,14 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 
   // from point to light not light to point
   // Right
-  let lightDir = normalize(vec3f(0, 0, 1));
+  let light_dir = normalize(vec3f(0, 0, 1));
 
-  let lightAmount = max(dot(lightDir, normalize(fragData.norm)) , 0);
-  
-  let res = vec4f(textureSample(ourTexture, ourSampler, texcoord) * lightAmount) ;
+  let base_col = textureSample(ourTexture, ourSampler, texcoord) * ONE_OVER_PI;
 
-  let h = normalize(lightDir + view);
-
-  let h_n = dot(h, fragData.norm);
-  let h_x = dot(h, T);
-  let h_y = dot(h, bitangent);
-
-  let thetad = max(0,dot(h, lightDir));
-  let thetaL = max(0,dot(normalize(fragData.norm), lightDir));
   let ndotv = max(0,dot(normalize(fragData.norm), view));
 
-  let FL = SchlickFresnel(thetaL);
-  let FV = SchlickFresnel(ndotv);
-          
-  let F90 = (PARAM_ROUGHNESS * thetad * thetad);
-  let FD90 = 0.5f + 2 * F90;
+  let light_info:Light_Info = Light_Info(base_col, light_dir, ndotv, view, fragData.norm, T, bitangent);
 
-  let baseCol = textureSample(ourTexture, ourSampler, texcoord) * ONE_OVER_PI;
+  return burley_brdf_dir(light_info);
 
-  let specular_col = mix(PARAM_SPECULAR * mix(vec4f(1.0f), baseCol, PARAM_SPECULAR_TINT), baseCol, PARAM_METALLIC);
-
-  let fd = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
-
-  let fss_mid = mix(1.0, F90, FL) * mix(1.0, F90, FV);
-  let fss = (1 / (thetaL * ndotv) - 0.5f) * fss_mid + 0.5;
-
-  let aspect = sqrt(1 - 0.9f * PARAM_ANISOTROPIC);
-  let aniso_x = PARAM_ROUGHNESS_SQUARED / aspect;
-  let aniso_y = PARAM_ROUGHNESS_SQUARED * aspect;
- 
-  let main_spec = GTR_2_ANISO(aniso_x, aniso_y, h_x, h_y, h_n);
- 
-  let clear_coat_spec = GTR_1_ISO(PARAM_ROUGHNESS_SQUARED, h_n);
-
-  let D_Specular = main_spec;
-
-  let schlick = mix(specular_col, vec4f(1.0f), SchlickFresnel(thetad));
-  let schlickClear = mix(0.04, 1.0f, SchlickFresnel(thetad));
-
-  let g_spec = G_GGX(PARAM_ROUGHNESS, ndotv) * G_GGX(PARAM_ROUGHNESS, thetaL);
-  let g_clear = G_GGX(0.25f, ndotv) * G_GGX(0.25f, thetaL);
-
-  let overall_spec = ((D_Specular * schlick * g_spec) / (4 * (thetaL) * (ndotv))) ;
-  let overall_clear = ((clear_coat_spec * schlickClear * g_clear) / (4 * (thetaL) * (ndotv))) * PARAM_CLEARCOAT;
-
-  let tmp_res = overall_spec; // D_Specular / (4 * (thetaL) * (ndotv));
-  // return vec4f(tmp_res,tmp_res,tmp_res,1f);
-  return vec4f(((mix(fd, fss, PARAM_SUBSURFACE) * baseCol).xyz * (1 - PARAM_METALLIC)) + vec3f(overall_clear), 1) + overall_spec;
-}
+  }

@@ -54,6 +54,8 @@ const ZEROS = new Float32Array([0, 0, 0]);
 
 const AMOUNT_OF_OBJECTS = 2;
 
+const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
+
 console.log(objectInfo.ALIGNMENT_BYTES_OF_OBJECT)
 // TO DO: Hide this inside of object info struct dont have to send as param
 const objectArray = new ArrayBuffer(objectInfo.ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
@@ -241,8 +243,10 @@ async function init() {
 }
 
   const group0Layout = device.createBindGroupLayout({
-    entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } 
-  }],
+    entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }},
+        { binding: 1, visibility:  GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ],
   label: "bind group 0",
   });
 
@@ -365,6 +369,11 @@ if (DEBUG){
   });
 
   device.queue.writeBuffer(Mats, 0, worldMatrix, 0, worldMatrix.length);
+
+  const BRDF_PARAMS = device.createBuffer({
+    size: SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
   
   let bindGroupArray = [];
 
@@ -377,6 +386,10 @@ if (DEBUG){
         {binding: 0, resource: {
           buffer: Mats,
           offset: sizet*i
+        }},
+        {binding: 1, resource: {
+          buffer: BRDF_PARAMS,
+          offset: SIZE_OF_BRDF_PARAMS_BYTES*i
         }},
     ],
     });
@@ -393,6 +406,10 @@ if (DEBUG){
             {binding: 0, resource: {
               buffer: Mats,
               offset: 0
+            }},
+            {binding: 1, resource: {
+              buffer: BRDF_PARAMS,
+              offset: SIZE_OF_BRDF_PARAMS_BYTES*i
             }},
         ],
         });
