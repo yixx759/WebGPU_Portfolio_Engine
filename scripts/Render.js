@@ -3,6 +3,7 @@ import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './collid
 import * as helper from './helperFuncs.js'
 import * as objectInfo from './objectInfoStruct.js'
 import * as testFuncs from './testFuncs.js'
+import * as BRDF_configs from './BRDF_configs.js';
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 const DEBUG = false;
@@ -50,13 +51,17 @@ const ZEROS = new Float32Array([0, 0, 0]);
 
   * Collision *
   vector3 half
+
+  // TO DO : STORE EAHC ONE HERE??
+  * BRDF Parameters *
+  int8    BRDF param index       
+
 */
 
 const AMOUNT_OF_OBJECTS = 2;
 
 const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
 
-console.log(objectInfo.ALIGNMENT_BYTES_OF_OBJECT)
 // TO DO: Hide this inside of object info struct dont have to send as param
 const objectArray = new ArrayBuffer(objectInfo.ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
 const transformArray = new Float32Array(objectArray);
@@ -72,7 +77,7 @@ const PLAYER_ID = 0;
 const PLAYER_MODEL_INDEX = 1;
 const PLAYER_TEXTURE_INDEX = 1;
 
-let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, PLAYER_MODEL_INDEX, PLAYER_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, PLAYER_START_ROTATION, ZEROS);
+let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, PLAYER_MODEL_INDEX, PLAYER_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, PLAYER_START_ROTATION, ZEROS, BRDF_configs.SHINY_INDEX);
 
 const OTHER_START_POSITION = new Float32Array([5, 0, 0]);
 const OTHER_START_SCALE = 1;
@@ -82,7 +87,7 @@ const OTHER_ID = 1;
 const OTHER_MODEL_INDEX = 0;
 const OTHER_TEXTURE_INDEX = 0;
 
-let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, ZEROS);
+let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, ZEROS, BRDF_configs.SHINY_INDEX);
 
 let gameObjectArray = [playerObject, otherObject];
 
@@ -320,38 +325,38 @@ if (DEBUG){
   };
 }
 
-  var Time = Date.now();
+var Time = Date.now();
 
-  const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
+const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
 
-  let renderDebugPipeline;
+let renderDebugPipeline;
 
-  if (DEBUG)
-  {
-     renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
-  }
+if (DEBUG)
+{
+    renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
+}
 
-  const IDENTITY = new Float32Array([
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1 , 0, 0.0,
-    0.0, 0 , 1, 0.0,
-    0 ,0.0, 0.0, 1.0,
-    ]);
-
-  const testMAT = new Float32Array([
+const IDENTITY = new Float32Array([
   1.0, 0.0, 0.0, 0.0,
-  0.0, 1, 0, 0.0,
-  0.0, 0, 10/9, (10/9),
-  0.0, 0.0, -1, 0
+  0.0, 1 , 0, 0.0,
+  0.0, 0 , 1, 0.0,
+  0 ,0.0, 0.0, 1.0,
   ]);
 
+const testMAT = new Float32Array([
+1.0, 0.0, 0.0, 0.0,
+0.0, 1, 0, 0.0,
+0.0, 0, 10/9, (10/9),
+0.0, 0.0, -1, 0
+]);
 
-  var worldMatrix = new Float32Array([
-    1.0, 0.0, 0.0, 0.0,
-    0.0, Math.cos(Time), -Math.sin(Time), 0.0,
-    0.0, Math.sin(Time), Math.cos(Time), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
+
+var worldMatrix = new Float32Array([
+  1.0, 0.0, 0.0, 0.0,
+  0.0, Math.cos(Time), -Math.sin(Time), 0.0,
+  0.0, Math.sin(Time), Math.cos(Time), 0.0,
+  0.0, 0.0, 0.0, 1.0,
+  ]);
 
   worldMatrix = testMAT;
 
@@ -374,7 +379,16 @@ if (DEBUG){
     size: SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-  
+
+  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+  {
+    let BRDF_index = gameObjectArray[i].getBRDFIndex(indexArray);
+    print(BRDF_index)
+    const params = BRDF_configs.BRDF_config[BRDF_index];
+    const size = params.length;
+    device.queue.writeBuffer(BRDF_PARAMS, i * SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
+  }
+
   let bindGroupArray = [];
 
   // TO DO: This should be ordred by ID not i do me later

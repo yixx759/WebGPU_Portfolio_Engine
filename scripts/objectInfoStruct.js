@@ -11,11 +11,15 @@ export const BYTES_OF_INT_32 = 32 / 8;
 
 export const BYTES_OF_VECTOR3 = BYTES_OF_FLOAT_32 * 3;
 
+const NUMBER_OF_BRDF_PARAMETERS = 11;
+
 const OFFSET_TRANSFROM_POSITION = 0;
 const OFFSET_TRANSFROM_SCALE = 3;
 const OFFSET_TRANSFROM_ROTATION = 4;
 
 const OFFSET_INTO_TRANSFROM_HALF = OFFSET_TRANSFROM_ROTATION + 3;
+
+const OFFSET_INTO_TRANSFROM_BRDF = OFFSET_INTO_TRANSFROM_HALF + 3;
 
 export const VERTEX_INDEX_CUBE = 0;
 export const VERTEX_INDEX_BUNNY = 1;
@@ -23,6 +27,7 @@ export const VERTEX_INDEX_BUNNY = 1;
 export const BYTES_OF_RENDER_INFO = BYTES_OF_INT_8 * 2;
 export const BYTES_OF_TRANSFORM = BYTES_OF_VECTOR3 + BYTES_OF_FLOAT_32 + BYTES_OF_VECTOR3;
 export const BYTES_OF_COLLIDER = BYTES_OF_VECTOR3;
+export const BYTES_OF_BRDF = BYTES_OF_INT_8;
 
 const ALIGNMENT_BYTES_OF_RENDER_INFO = BYTES_OF_RENDER_INFO + (BYTES_OF_FLOAT_32 - BYTES_OF_RENDER_INFO);
 
@@ -30,11 +35,12 @@ const ALIGNMENT_BYTES_OF_RENDER_INFO = BYTES_OF_RENDER_INFO + (BYTES_OF_FLOAT_32
 // Since it uses same data type it will be allighned
 const ALIGNMENT_BYTES_OF_TRANSFORM = BYTES_OF_TRANSFORM;
 
-export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + BYTES_OF_COLLIDER;
+const ALIGNMENT_BYTES_OF_COLLIDER = BYTES_OF_COLLIDER;
+
+export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + BYTES_OF_BRDF;
 
 const ALLIGHNMENT_NUMBER = 64
-const REMAINING_BYTES_FOR_OBJECT = ALLIGHNMENT_NUMBER - BYTES_OF_OBJECT
-export const ALIGNMENT_BYTES_OF_OBJECT = BYTES_OF_OBJECT + REMAINING_BYTES_FOR_OBJECT;
+export const ALIGNMENT_BYTES_OF_OBJECT = (BYTES_OF_OBJECT + ALLIGHNMENT_NUMBER - 1) & ~(ALLIGHNMENT_NUMBER - 1);
 
 /* Object structure
 
@@ -49,6 +55,9 @@ export const ALIGNMENT_BYTES_OF_OBJECT = BYTES_OF_OBJECT + REMAINING_BYTES_FOR_O
 
   * Collision *
   vector3 half
+
+  * BRDF Parameters *
+  int8    BRDF param index   
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -58,21 +67,23 @@ export class gameObject
   byteIndex;
   transformIndex;
   collisionIndex;
+  BRDF_Index;
  
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(objectArray, objectID, vertexIndex, textureIndex, position, scale, rotation, half)
+  constructor(objectArray, objectID, vertexIndex, textureIndex, position, scale, rotation, half, param_array_index)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
 
     // TO DO: Is adding to byte array done in parraleel for diff parts check
-    
+  
     let index = objectID * ALIGNMENT_BYTES_OF_OBJECT
   
     this.byteIndex = index;
     this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
     this.collisionIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
+    this.BRDF_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER);
     this.ID = objectID;
 
     const renderInfoView = new Uint8Array(objectArray, index);
@@ -88,15 +99,22 @@ export class gameObject
     const setTransfromView = new Float32Array(objectArray, index);
 
     // Set position
+    
     index += this.setVector3(setTransfromView, OFFSET_TRANSFROM_POSITION, position);
     // Set scale
+    
     setTransfromView[OFFSET_TRANSFROM_SCALE] = scale;
     index += BYTES_OF_FLOAT_32;
     // Set rotation
+    
     index += this.setVector3(setTransfromView, OFFSET_TRANSFROM_ROTATION, rotation);
 
     // Set half
     index += this.setVector3(setTransfromView, OFFSET_INTO_TRANSFROM_HALF, half);
+
+    // Set BRDF TO DO: Fix this
+    renderInfoView[index - this.byteIndex] = param_array_index;
+    ++index;
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -287,4 +305,85 @@ export class gameObject
 
       return BYTES_OF_VECTOR3;
     }
+
+    setFloat32(objectArray, offset, data)
+    {
+      if (!(objectArray instanceof Float32Array)) {
+        console.log("ERROR: Set Float32 wasnt given float32array");
+        return -1;
+      }
+
+      objectArray[offset] = data;
+
+      return BYTES_OF_FLOAT_32;
+    }
+
+    set_BRDF_Params(objectArray, offset, data)
+    {
+      if (!(objectArray instanceof Float32Array)) {
+        console.log("ERROR: Set BRDF Params wasnt given float32array");
+        return -1;
+      }
+
+      if (!(data instanceof Float32Array)) {
+        console.log("ERROR: Set  BRDF Params  wasnt given data float32array");
+        return -1;
+      }
+
+      let index = 0;
+
+      // Set BRDF Params
+      let base_index = 0;
+
+     // ROUGHNESS
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // ROUGHNESS_SQUARED
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // SUBSURFACE
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // ANISOTROPIC
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // CLEARCOAT
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // CLEARCOAT_GLOSS
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // SPECULAR
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // SPECULAR_TINT
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // METALLIC
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // SHEEN
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+      // SHEEN_TINT
+      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      ++base_index;
+
+      return index;
+    }
+
+
+    // NOTE: Have a view for int8 to pass in.
+    getBRDFIndex(objectArrayView)
+    {
+      if (!(objectArrayView instanceof Int8Array)) {
+        console.log("ERROR: Get BRDF index wasnt given int8array");
+        return -1;
+      }
+
+     console.log(this.BRDF_Index);
+
+      return objectArrayView[this.BRDF_Index];
+    }
+    
 }

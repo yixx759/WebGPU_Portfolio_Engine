@@ -134,7 +134,6 @@ struct Light_Info {
 
 fn burley_brdf_dir(light_info :Light_Info) -> vec4f
 {
-
   let h = normalize(light_info.light_dir + light_info.view);
 
   let h_n = dot(h, light_info.norm);
