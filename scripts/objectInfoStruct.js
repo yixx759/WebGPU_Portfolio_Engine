@@ -381,8 +381,6 @@ export class gameObject
         return -1;
       }
 
-     console.log(this.BRDF_Index);
-
       return objectArrayView[this.BRDF_Index];
     }
     

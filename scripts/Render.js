@@ -4,6 +4,7 @@ import * as helper from './helperFuncs.js'
 import * as objectInfo from './objectInfoStruct.js'
 import * as testFuncs from './testFuncs.js'
 import * as BRDF_configs from './BRDF_configs.js';
+import * as Light_Manager from './Light_Manager.js';
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 const DEBUG = false;
@@ -264,6 +265,15 @@ async function init() {
     label: "bind group 1",
   });
 
+    const group2Layout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }},
+      { binding: 1, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }}
+    ],
+
+    label: "bind group 2",
+  });
+
   const pipelineDescriptor = {
     vertex: {
       module: shaderModule,
@@ -288,7 +298,8 @@ async function init() {
     layout: device.createPipelineLayout({
     bindGroupLayouts: [
       group0Layout, // for mats
-      group1Layout  // for sampler + texture
+      group1Layout,  // for sampler + texture
+      group2Layout  // for Lights
     ]
     })
   };
@@ -336,6 +347,56 @@ if (DEBUG)
     renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
 }
 
+// Lights
+// struct DIR_LIGHT {
+//   dir : vec3f,
+//   intensity : f32
+// }
+
+const light_intensity = 0;
+const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
+
+// TO DO: SHould this be constant?
+const Directional_Lights = device.createBuffer({
+  size:  objectInfo.BYTES_OF_VECTOR3 + objectInfo.BYTES_OF_FLOAT_32, // dir (vec3) + intensity (f32)
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, dir_light_dir_and_intensity.length);
+
+// struct POINT_LIGHT {
+//   position : vec3f,
+//   intensity : f32,
+//   attenuation : f32
+// }
+
+// Light 1
+Light_Manager.add_new_light(-8, 0,0, 2, 4);
+
+// Light 2 
+Light_Manager.add_new_light(0, 0, 0, 1, 0);
+
+const Point_Lights = device.createBuffer({
+  size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+device.queue.writeBuffer(Point_Lights, 0, Light_Manager.POINT_LIGHT_ARRAY, 0, Light_Manager.POINT_LIGHT_ARRAY.length);
+
+const lightBindGroup = device.createBindGroup({
+    layout: renderPipeline.getBindGroupLayout(2),
+    entries: [
+        {binding: 0, resource: {
+          buffer: Directional_Lights
+        }},
+        {binding: 1, resource: {
+          buffer: Point_Lights
+        }},
+    ],
+    });
+
+// Matrixs
+
 const IDENTITY = new Float32Array([
   1.0, 0.0, 0.0, 0.0,
   0.0, 1 , 0, 0.0,
@@ -349,7 +410,6 @@ const testMAT = new Float32Array([
 0.0, 0, 10/9, (10/9),
 0.0, 0.0, -1, 0
 ]);
-
 
 var worldMatrix = new Float32Array([
   1.0, 0.0, 0.0, 0.0,
@@ -383,7 +443,6 @@ var worldMatrix = new Float32Array([
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
   {
     let BRDF_index = gameObjectArray[i].getBRDFIndex(indexArray);
-    print(BRDF_index)
     const params = BRDF_configs.BRDF_config[BRDF_index];
     const size = params.length;
     device.queue.writeBuffer(BRDF_PARAMS, i * SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
@@ -611,12 +670,11 @@ function render() {
   debugLog("mouse y: " + mouse_Y);
 
   // TO DO : dont recreate me
-   forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
+  forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
   
   // TO DO: NORMALIZE?
   helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3])
  
-
   // TO DO: This could be better
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
   {
@@ -672,6 +730,8 @@ function render() {
   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
   passEncoder.setPipeline(renderPipeline);
+  
+  passEncoder.setBindGroup(2, lightBindGroup);
   
   // This should be based on object indexs
   // TO DO: Make these names better

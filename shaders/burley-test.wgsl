@@ -6,17 +6,17 @@ struct MATS {
 }
 
 struct PARAM {
-ROUGHNESS: f32,
-ROUGHNESS_SQUARED: f32, // ROUGHNESS * ROUGHNESS
-SUBSURFACE: f32 ,
-ANISOTROPIC: f32 ,
-CLEARCOAT: f32 , // 0 - 0.25
-CLEARCOAT_GLOSS: f32 ,
-SPECULAR: f32, // 0 - 0.08 dont change coeffucent mult 0 - 1 by 0.08f
-SPECULAR_TINT: f32 ,
-METALLIC: f32 ,
-SHEEN: f32 ,
-SHEEN_TINT: f32 ,
+  ROUGHNESS: f32,
+  ROUGHNESS_SQUARED: f32, // ROUGHNESS * ROUGHNESS
+  SUBSURFACE: f32 ,
+  ANISOTROPIC: f32 ,
+  CLEARCOAT: f32 , // 0 - 0.25
+  CLEARCOAT_GLOSS: f32 ,
+  SPECULAR: f32, // 0 - 0.08 dont change coeffucent mult 0 - 1 by 0.08f
+  SPECULAR_TINT: f32 ,
+  METALLIC: f32 ,
+  SHEEN: f32 ,
+  SHEEN_TINT: f32 ,
 }
 
 struct VertexOut {
@@ -95,6 +95,31 @@ const ONE_OVER_PI: f32 = 0.31830988618;
 @group(1) @binding(0) var ourSampler: sampler;
 @group(1) @binding(1) var ourTexture: texture_2d<f32>;
 
+
+// TO DO: Try to get f16 back
+
+// Light Stuff
+struct DIR_LIGHT {
+  dir : vec3f,
+  intensity : f32
+}
+
+struct POINT_LIGHT {
+  pos : vec3f,
+  intensity : f32,
+  attenuation : f32
+}
+
+const TOTAL_POINT_LIGHT_NUMBER = 2;
+const INVERSE_DENOM_CONST = 0.001;
+
+// TO DO: Maybe Switch to linear fall off after r_max * 0.8
+// TO DO: Add as param
+const R_MAX = 300;
+
+@group(2) @binding(0) var<uniform> dir_light_info: DIR_LIGHT;
+@group(2) @binding(1) var<uniform> point_light_info: array<POINT_LIGHT, TOTAL_POINT_LIGHT_NUMBER>;
+
 fn SchlickFresnel(x : f32) -> f32 {
     var xtmp = saturate(1.0f - x);
     var x2 = xtmp * xtmp;
@@ -121,10 +146,8 @@ fn get_tangent(position: vec4f, texcoord: vec2f, normal: vec3f) -> vec3f
   return T;
 }
 
-
 struct Light_Info {
  base_col: vec4f, 
- light_dir: vec3f, 
  ndotv: f32, 
  view: vec3f, 
  norm: vec3f, 
@@ -132,16 +155,16 @@ struct Light_Info {
  bitangent: vec3f,
 }
 
-fn burley_brdf_dir(light_info :Light_Info) -> vec4f
+fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
 {
-  let h = normalize(light_info.light_dir + light_info.view);
+  let h = normalize(light_dir + light_info.view);
 
   let h_n = dot(h, light_info.norm);
   let h_x = dot(h, light_info.T);
   let h_y = dot(h, light_info.bitangent);
 
-  let thetad = max(0,dot(h, light_info.light_dir));
-  let thetaL = max(0,dot(normalize(light_info.norm), light_info.light_dir));
+  let thetad = max(0,dot(h, light_dir));
+  let thetaL = max(0,dot(normalize(light_info.norm), light_dir));
 
   let FV = SchlickFresnel(light_info.ndotv);
 
@@ -187,8 +210,6 @@ fn burley_brdf_dir(light_info :Light_Info) -> vec4f
   // return vec4f(sheen.xyz, 1);
   // return vec4f(tmp_res,tmp_res,tmp_res,1f);
   return vec4f(((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz, 1);
-
-
 }
 
 @fragment
@@ -203,14 +224,31 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 
   // from point to light not light to point
   // Right
-  let light_dir = normalize(vec3f(0, 0, 1));
+  var light_dir = normalize(dir_light_info.dir);
 
   let base_col = textureSample(ourTexture, ourSampler, texcoord) * ONE_OVER_PI;
 
   let ndotv = max(0,dot(normalize(fragData.norm), view));
 
-  let light_info:Light_Info = Light_Info(base_col, light_dir, ndotv, view, fragData.norm, T, bitangent);
+  let light_info:Light_Info = Light_Info(base_col, ndotv, view, fragData.norm, T, bitangent);
 
-  return burley_brdf_dir(light_info);
+  var final_colour = burley_brdf_dir(light_info, light_dir) * dir_light_info.intensity; // Direction
 
+  for (var i = 0; i < TOTAL_POINT_LIGHT_NUMBER; i++) {
+
+    let light_ray = point_light_info[i].pos - fragData.wpos;
+    light_dir = normalize(light_ray);
+    let distance = length(light_ray);
+
+    // TO DO: This could be square auto
+    let inverse_square = (point_light_info[i].attenuation * point_light_info[i].attenuation) / ((distance * distance) + INVERSE_DENOM_CONST);
+    let window_func = pow(max((1 - pow(point_light_info[i].attenuation / R_MAX, 4)), 0), 2);
+
+    let final_atten = window_func * inverse_square;
+
+    final_colour += saturate(burley_brdf_dir(light_info, light_dir) * point_light_info[i].intensity * final_atten); // Point
+  }
+
+// TO DO: Shouldnt have to do this where is 1 being added?;
+  return vec4f(final_colour.xyz, 1);
   }
