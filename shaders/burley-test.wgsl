@@ -155,6 +155,8 @@ struct Light_Info {
  bitangent: vec3f,
 }
 
+// TO DO: MISSING CLAMP
+
 fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
 {
   let h = normalize(light_dir + light_info.view);
@@ -209,7 +211,7 @@ fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
   let tmp_res = overall_clear; // D_Specular / (4 * (thetaL) * (ndotv));
   // return vec4f(sheen.xyz, 1);
   // return vec4f(tmp_res,tmp_res,tmp_res,1f);
-  return vec4f(((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz, 1);
+  return vec4f(saturate(((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz), 1);
 }
 
 @fragment
@@ -232,21 +234,24 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 
   let light_info:Light_Info = Light_Info(base_col, ndotv, view, fragData.norm, T, bitangent);
 
-  var final_colour = burley_brdf_dir(light_info, light_dir) * dir_light_info.intensity; // Direction
+  var final_colour =  saturate(burley_brdf_dir(light_info, light_dir)); // Direction
+  final_colour *= dir_light_info.intensity;
 
   for (var i = 0; i < TOTAL_POINT_LIGHT_NUMBER; i++) {
 
     let light_ray = point_light_info[i].pos - fragData.wpos;
+    
     light_dir = normalize(light_ray);
     let distance = length(light_ray);
-
     // TO DO: This could be square auto
     let inverse_square = (point_light_info[i].attenuation * point_light_info[i].attenuation) / ((distance * distance) + INVERSE_DENOM_CONST);
     let window_func = pow(max((1 - pow(point_light_info[i].attenuation / R_MAX, 4)), 0), 2);
 
     let final_atten = window_func * inverse_square;
 
-    final_colour += saturate(burley_brdf_dir(light_info, light_dir) * point_light_info[i].intensity * final_atten); // Point
+    //return vec4f((burley_brdf_dir(light_info, light_dir) * final_atten * point_light_info[i].intensity).xyz, 1);
+    // return vec4f(final_colour.xyz, 1);
+    final_colour += vec4((burley_brdf_dir(light_info, light_dir).xyz * point_light_info[i].intensity * final_atten).xyz, 0); // Point
   }
 
 // TO DO: Shouldnt have to do this where is 1 being added?;

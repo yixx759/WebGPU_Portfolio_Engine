@@ -353,7 +353,7 @@ if (DEBUG)
 //   intensity : f32
 // }
 
-const light_intensity = 0;
+const light_intensity = 0.2;
 const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
 
 // TO DO: SHould this be constant?
@@ -371,10 +371,10 @@ device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, 
 // }
 
 // Light 1
-Light_Manager.add_new_light(-8, 0,0, 2, 4);
+Light_Manager.add_new_light(0, 2, -5, 3, 1);
 
 // Light 2 
-Light_Manager.add_new_light(0, 0, 0, 1, 0);
+Light_Manager.add_new_light(0, -2, -5, 3, 1);
 
 const Point_Lights = device.createBuffer({
   size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
