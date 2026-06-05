@@ -47,12 +47,15 @@ fn inverse3x3(m: mat3x3<f32>) -> mat3x3<f32> {
 
 fn GTR_2_ANISO(alpha_x: f32, alpha_y: f32, h_x: f32, h_y: f32, h_n:f32 ) -> f32
 {
-  return ONE_OVER_PI * (1 / (alpha_x * alpha_y)) * (1 / pow(((h_x * h_x) / (alpha_x * alpha_x) + (h_y * h_y) / (alpha_y * alpha_y) + (h_n * h_n)), 2.0));
+  let safe_x = max(0.0001f, alpha_x);
+  let safe_y = max(0.0001f, alpha_y);
+
+  return ONE_OVER_PI * (1 / (safe_x * safe_y)) * (1 / pow(((h_x * h_x) / (safe_x * safe_x) + (h_y * h_y) / (safe_y * safe_y) + (h_n * h_n)), 2.0));
 }
 
 fn GTR_1_ISO(alpha: f32, h_n:f32 ) -> f32
 {
-  let square_alpha = alpha * alpha;
+  let square_alpha = clamp(alpha * alpha, 0.0001f, 0.9999f);
 
   return (square_alpha - 1.0f) / (PI * log(square_alpha) * (1 + (square_alpha - 1) * h_n * h_n));
 }
@@ -82,7 +85,7 @@ fn vertex_main(@location(0) position: vec3f,
       mats.World[2].xyz   // second column's top 2 elements
   );
 
-  worldToNormal = transpose(inverse3x3(worldToNormal));
+  worldToNormal = (inverse3x3(worldToNormal));
 
   output.texcoord = texPos;
   output.norm = worldToNormal * normal;
@@ -109,6 +112,8 @@ struct POINT_LIGHT {
   intensity : f32,
   attenuation : f32
 }
+
+const INCLUDE_POINT_LIGHTS = false;
 
 const TOTAL_POINT_LIGHT_NUMBER = 2;
 const INVERSE_DENOM_CONST = 0.001;
@@ -156,9 +161,12 @@ struct Light_Info {
 }
 
 // TO DO: MISSING CLAMP
+// TO DO: Remeber div by 0
 
 fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
 {
+  let ndotv = max(0.0001f, light_info.ndotv);
+
   let h = normalize(light_dir + light_info.view);
 
   let h_n = dot(h, light_info.norm);
@@ -166,10 +174,9 @@ fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
   let h_y = dot(h, light_info.bitangent);
 
   let thetad = max(0,dot(h, light_dir));
-  let thetaL = max(0,dot(normalize(light_info.norm), light_dir));
+  let thetaL = max(0.0001f, dot(normalize(light_info.norm), light_dir));
 
-  let FV = SchlickFresnel(light_info.ndotv);
-
+  let FV = SchlickFresnel(ndotv);
   let FL = SchlickFresnel(thetaL);
 
   let F90 = (params.ROUGHNESS * thetad * thetad);
@@ -180,9 +187,9 @@ fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
   let fd = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
 
   let fss_mid = mix(1.0, F90, FL) * mix(1.0, F90, FV);
-  let fss = (1 / (thetaL * light_info.ndotv) - 0.5f) * fss_mid + 0.5;
+  let fss = ((1 / (thetaL * ndotv) - 0.5f) * fss_mid + 0.5);
 
-  let aspect = sqrt(1 - 0.9f * params.ANISOTROPIC);
+  let aspect = max(0.0001f, sqrt(1 - 0.9f * params.ANISOTROPIC));
   let aniso_x = params.ROUGHNESS_SQUARED / aspect;
   let aniso_y = params.ROUGHNESS_SQUARED * aspect;
  
@@ -198,28 +205,27 @@ fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
   let schlick = mix(specular_col, vec4f(1.0f), SCHLICK_THETAD);
   let schlickClear = mix(0.04, 1.0f, SCHLICK_THETAD);
 
-  let g_spec = G_GGX(params.ROUGHNESS, light_info.ndotv) * G_GGX(params.ROUGHNESS, thetaL);
-  let g_clear = G_GGX(0.25f, light_info.ndotv) * G_GGX(0.25f, thetaL);
+  let g_spec = G_GGX(params.ROUGHNESS, ndotv) * G_GGX(params.ROUGHNESS, thetaL);
+  let g_clear = G_GGX(0.25f, ndotv) * G_GGX(0.25f, thetaL);
 
   let sheen_colour = mix(vec4f(1.0f), light_info.base_col, params.SHEEN_TINT);
   let sheen = SCHLICK_THETAD * params.SHEEN * sheen_colour;
 
   // TO DO: Should only have one devide 
-  let overall_spec = ((D_Specular * schlick * g_spec) / (4 * (thetaL) * (light_info.ndotv))) ;
-  let overall_clear = ((schlickClear * g_clear * d_clear) * params.CLEARCOAT) / (4 * (thetaL) * (light_info.ndotv));
+  let overall_spec = ((D_Specular * schlick * g_spec) / (4 * (thetaL) * (ndotv))) ;
+  let overall_clear = ((schlickClear * g_clear * d_clear) * params.CLEARCOAT) / (4 * (thetaL) * (ndotv));
 
-  let tmp_res = overall_clear; // D_Specular / (4 * (thetaL) * (ndotv));
-  // return vec4f(sheen.xyz, 1);
-  // return vec4f(tmp_res,tmp_res,tmp_res,1f);
-  return vec4f(saturate(((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz), 1);
+  return vec4f(saturate((((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz) * thetaL), 1);
 }
 
 @fragment
 fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 {
   // To DO: remove reduncant nromalize funcs
-  let T = get_tangent(fragData.position, fragData.texcoord, normalize(fragData.norm));
-  let bitangent = cross(fragData.norm, T);
+  let norm = normalize(fragData.norm);
+
+  let T = get_tangent(fragData.position, fragData.texcoord, (norm));
+  let bitangent = cross(norm, T);
 
   let view = normalize(vec3f(mats.camPos.xyz) - fragData.wpos);
   let texcoord = vec2f(fragData.texcoord.x, fragData.texcoord.y);
@@ -230,13 +236,15 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 
   let base_col = textureSample(ourTexture, ourSampler, texcoord) * ONE_OVER_PI;
 
-  let ndotv = max(0,dot(normalize(fragData.norm), view));
+  let ndotv = saturate(dot((norm), view));
 
-  let light_info:Light_Info = Light_Info(base_col, ndotv, view, fragData.norm, T, bitangent);
+  let light_info:Light_Info = Light_Info(base_col, ndotv, view, norm, T, bitangent);
 
   var final_colour =  saturate(burley_brdf_dir(light_info, light_dir)); // Direction
   final_colour *= dir_light_info.intensity;
 
+// TO DO: Remove me
+if(INCLUDE_POINT_LIGHTS) {
   for (var i = 0; i < TOTAL_POINT_LIGHT_NUMBER; i++) {
 
     let light_ray = point_light_info[i].pos - fragData.wpos;
@@ -252,8 +260,8 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
     //return vec4f((burley_brdf_dir(light_info, light_dir) * final_atten * point_light_info[i].intensity).xyz, 1);
     // return vec4f(final_colour.xyz, 1);
     final_colour += vec4((burley_brdf_dir(light_info, light_dir).xyz * point_light_info[i].intensity * final_atten).xyz, 0); // Point
+    }
   }
-
 // TO DO: Shouldnt have to do this where is 1 being added?;
   return vec4f(final_colour.xyz, 1);
   }

@@ -69,7 +69,7 @@ export function getWorldMatrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, s
 
     let rotationMatrix = multiplyFloat32Matrices(multiplyFloat32Matrices(rotZ,rotY),rotX);
 
-    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotationMatrix,transformMatrix),scaleMatrix);
+    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotationMatrix, transformMatrix) ,scaleMatrix);
 };
 
 export function getWorldMatrixArray(position, angleRotation, scale)
