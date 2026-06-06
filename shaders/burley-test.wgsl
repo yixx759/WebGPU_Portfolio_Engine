@@ -113,7 +113,7 @@ struct POINT_LIGHT {
   attenuation : f32
 }
 
-const INCLUDE_POINT_LIGHTS = false;
+const INCLUDE_POINT_LIGHTS = true;
 
 const TOTAL_POINT_LIGHT_NUMBER = 2;
 const INVERSE_DENOM_CONST = 0.001;

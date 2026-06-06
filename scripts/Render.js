@@ -7,9 +7,11 @@ import * as BRDF_configs from './BRDF_configs.js';
 import * as Light_Manager from './Light_Manager.js';
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
-const DEBUG = true;
+const DEBUG = false;
 const TEST = false;
 const SINGLE_TEST = false;
+
+const TARGET_INDEX = 7;
 const MOVE_TARGET_TEST = false;
 
 // TO DO: debug func script
@@ -61,7 +63,7 @@ const ZEROS = new Float32Array([0, 0, 0]);
 
 */
 
-const AMOUNT_OF_OBJECTS = 2 + 4;
+const AMOUNT_OF_OBJECTS = 2 + 6;
 
 const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
 
@@ -94,9 +96,9 @@ const OTHER_TEXTURE_INDEX = 2;
 
 let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_1_START_POSITION = new Float32Array([0, 0, -20]);
+const WALL_1_START_POSITION = new Float32Array([-8,0,-12.2]);
 const WALL_1_START_SCALE = 1;
-const WALL_1_START_ROTATION = new Float32Array([90,0,0]);
+const WALL_1_START_ROTATION = new Float32Array([90,0,90]);
 
 const WALL_1_ID = 2;
 const WALL_1_MODEL_INDEX = 2;
@@ -104,7 +106,7 @@ const WALL_1_TEXTURE_INDEX = 2;
 
 let wall_1 = new objectInfo.gameObject(objectArray, WALL_1_ID, WALL_1_MODEL_INDEX, WALL_1_TEXTURE_INDEX, WALL_1_START_POSITION, WALL_1_START_SCALE, WALL_1_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_2_START_POSITION = new Float32Array([0, 0, -20]);
+const WALL_2_START_POSITION = new Float32Array([0.4000000059604645,0,-4]);
 const WALL_2_START_SCALE = 1;
 const WALL_2_START_ROTATION = new Float32Array([90,0,0]);
 
@@ -114,9 +116,9 @@ const WALL_2_TEXTURE_INDEX = 2;
 
 let wall_2 = new objectInfo.gameObject(objectArray, WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_3_START_POSITION = new Float32Array([0, 0, -20]);
+const WALL_3_START_POSITION = new Float32Array([8,0,-12.300000190734863]);
 const WALL_3_START_SCALE = 1;
-const WALL_3_START_ROTATION = new Float32Array([90,0,0]);
+const WALL_3_START_ROTATION = new Float32Array([90,0,90]);
 
 const WALL_3_ID = 4;
 const WALL_3_MODEL_INDEX = 2;
@@ -134,9 +136,29 @@ const WALL_4_TEXTURE_INDEX = 2;
 
 let wall_4 = new objectInfo.gameObject(objectArray, WALL_4_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, WALL_4_START_POSITION, WALL_4_START_SCALE, WALL_4_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
+const WALL_5_START_POSITION = new Float32Array([0.20000000298023224,9.5,-12.600000381469727 ]);
+const WALL_5_START_SCALE = 1;
+const WALL_5_START_ROTATION = new Float32Array([0,0,0]);
+
+const WALL_5_ID = 6;
+const WALL_5_MODEL_INDEX = 2;
+const WALL_5_TEXTURE_INDEX = 2;
+
+let wall_5 = new objectInfo.gameObject(objectArray, WALL_5_ID, WALL_5_MODEL_INDEX, WALL_5_TEXTURE_INDEX, WALL_5_START_POSITION, WALL_5_START_SCALE, WALL_5_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
+
+const WALL_6_START_POSITION = new Float32Array([0.800000011920929,-9.300000190734863,-12.10000038]);
+const WALL_6_START_SCALE = 1;
+const WALL_6_START_ROTATION = new Float32Array([0,0,0]);
+
+const WALL_6_ID = 7;
+const WALL_6_MODEL_INDEX = 2;
+const WALL_6_TEXTURE_INDEX = 2;
+
+let wall_6 = new objectInfo.gameObject(objectArray, WALL_6_ID, WALL_6_MODEL_INDEX, WALL_6_TEXTURE_INDEX, WALL_6_START_POSITION, WALL_6_START_SCALE, WALL_6_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
+
 // let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, WALL_3_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
-let gameObjectArray = [playerObject, otherObject, wall_1, wall_2, wall_3, wall_4];
+let gameObjectArray = [playerObject, otherObject, wall_1, wall_2, wall_3, wall_4, wall_5, wall_6];
 
 // Test prints
 if (TEST) testFuncs.objectTestPrints(playerObject, otherObject, indexArray, transformArray)
@@ -408,7 +430,7 @@ if (DEBUG)
 //   intensity : f32
 // }
 
-const light_intensity = 1;
+const light_intensity = 0;
 const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
 
 // TO DO: SHould this be constant?
@@ -426,10 +448,10 @@ device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, 
 // }
 
 // Light 1
-Light_Manager.add_new_light(0, 2, -5, 3, 1);
+Light_Manager.add_new_light(0,0,-12.2, 6, 4);
 
 // Light 2 
-Light_Manager.add_new_light(0, -2, -5, 3, 1);
+Light_Manager.add_new_light(0, -2, -5, 0, 1);
 
 const Point_Lights = device.createBuffer({
   size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
@@ -523,8 +545,6 @@ var worldMatrix = new Float32Array([
     ],
     });
     bindGroupArray.push(bindGroup);
-
-    
 
   if (DEBUG)
   {
@@ -626,6 +646,15 @@ const bindGroupTex = device.createBindGroup({
 const targetPos = [0,0,2];
 const up = [0,1,0];
 
+const DEBUG_TARGET_SENSITIVITY = 1;
+
+var debug_target_keyX = 0;
+var debug_target_keyXDown = 0;
+var debug_target_keyY = 0;
+var debug_target_keyYDown = 0;
+var debug_target_keyZ = 0;
+var debug_target_keyZDown = 0;
+
 var keyX = 0;
 var keyXDown = 0;
 var keyY = 0;
@@ -667,24 +696,74 @@ document.addEventListener('keydown', function(evt) {
     keyYDown = -0.1;
   }
 
+  // DEBUG Control
+
+  if (MOVE_TARGET_TEST)
+  {
+    if (evt.key === 'ArrowUp') {
+    debugLog("Debug Up");
+    debug_target_keyZDown = -0.1;
+  } else if (evt.key === 'ArrowDown') {
+    debugLog("Debug Down");
+    debug_target_keyZDown = 0.1;
+  }
+
+  if (evt.key === 'ArrowRight') {
+    debugLog("Debug Right");
+    debug_target_keyXDown = 0.1;
+  } else if (evt.key === 'ArrowLeft') {
+    debugLog("Debug Left");
+    debug_target_keyXDown = -0.1;
+  }
+
+  if (evt.key === 'f') {
+    debugLog("Debug forward");
+    debug_target_keyYDown = 0.1;
+  } else if (evt.key === 'h') {
+    debugLog("Debug down");
+    debug_target_keyYDown = -0.1;
+  }
+  }
+
 }, false);
 
 document.addEventListener('keyup', function(evt) {
 
-  if (evt.key === 'w' || evt.key === 's') {
-    debugLog("Z stop");
-    keyZDown = 0;
-  }
+  
+    if (evt.key === 'w' || evt.key === 's') {
+        debugLog("debug Z stop");
+        keyZDown = 0;
+      }
 
-  if (evt.key === 'd' || evt.key === 'a') {
-    debugLog("X stop");
-    keyXDown = 0;
-  }
+    if (evt.key === 'd' || evt.key === 'a') {
+      debugLog("debug X stop");
+      keyXDown = 0;
+    }
 
-  if (evt.key === 'e' || evt.key === 'q') {
-    debugLog("Y stop");
-    keyYDown = 0;
-  }
+    if (evt.key === 'e' || evt.key === 'q') {
+      debugLog("debug Y stop");
+      keyYDown = 0;
+    }
+    
+  // DEBUG Control
+
+  if (MOVE_TARGET_TEST)
+      {
+    if (evt.key === 'ArrowUp' || evt.key === 'ArrowDown') {
+      debugLog("Z stop");
+      debug_target_keyZDown = 0;
+    }
+
+    if (evt.key === 'ArrowRight' || evt.key === 'ArrowLeft') {
+      debugLog("X stop");
+      debug_target_keyXDown = 0;
+    }
+
+    if (evt.key === 'f' || evt.key === 'h') {
+      debugLog("Y stop");
+      debug_target_keyYDown = 0;
+    }
+      }
 
 }, false);
 
@@ -743,12 +822,15 @@ function render() {
   // TO DO: Magic numbers
   Time = Date.now() / 100;
 
-  debugLog("mouse x: " + mouse_X);
-  debugLog("mouse y: " + mouse_Y);
+  // debugLog("mouse x: " + mouse_X);
+  // debugLog("mouse y: " + mouse_Y);
 
-  keyY += keyYDown * 10;
-  print(keyY)
-  print(keyYDown)
+  if (MOVE_TARGET_TEST)
+  {
+    debug_target_keyX += debug_target_keyXDown * DEBUG_TARGET_SENSITIVITY;
+    debug_target_keyY += debug_target_keyYDown * DEBUG_TARGET_SENSITIVITY;
+    debug_target_keyZ += debug_target_keyZDown * DEBUG_TARGET_SENSITIVITY;
+  }
 
   // TO DO : dont recreate me
   forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
@@ -798,14 +880,30 @@ function render() {
   {
     if (SINGLE_TEST)
     {
+      debugLog("single HERE")
       gameObjectArray[i].setPosition(transformArray, camPos);
       gameObjectArray[i].setRotation(transformArray, new Float32Array([0,keyY,0]));
     }
+
+    if (MOVE_TARGET_TEST && TARGET_INDEX == i)
+    {
+      debugLog("HERE")
+      gameObjectArray[i].setPosition(transformArray, new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
+      gameObjectArray[i].setRotation(transformArray, new Float32Array([0,0,0]));
+    }
+
     // TO DO: SHould be some scratch memroy here to pass in
     // right no createing vec everytime
     let tmp_pos = gameObjectArray[i].getPosition(transformArray);
     let tmp_scale = gameObjectArray[i].getScale(transformArray);
     let tmp_rot = gameObjectArray[i].getRotation(transformArray);
+
+     if (MOVE_TARGET_TEST && TARGET_INDEX == i)
+    {
+      debugLog("Positon: " + tmp_pos + " \nRotation: " + tmp_rot);
+    }
+
+    debugLog("Positon: " + tmp_pos + " \nRotation: " + tmp_rot);
 
     worldMatrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
     device.queue.writeBuffer(Mats, i*sizet+0, worldMatrix);
