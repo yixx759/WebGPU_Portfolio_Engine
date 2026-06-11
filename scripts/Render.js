@@ -5,6 +5,7 @@ import * as objectInfo from './objectInfoStruct.js'
 import * as testFuncs from './testFuncs.js'
 import * as BRDF_configs from './BRDF_configs.js';
 import * as Light_Manager from './Light_Manager.js';
+import * as Path_Tracing from './Path_Tracing.js';
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 const DEBUG = false;
@@ -13,6 +14,8 @@ const SINGLE_TEST = false;
 
 const TARGET_INDEX = 7;
 const MOVE_TARGET_TEST = false;
+
+const PATH_TEST = true;
 
 // TO DO: debug func script
 // TO DO: dont cretae new memory everytime get positons
@@ -817,6 +820,11 @@ var camPosPrev = new Float32Array([keyX,0,keyY+10, 1]);
 var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), Math.sin(mouse_Y), forward_vector_mat[2] * Math.cos(mouse_Y)])
 
+if (PATH_TEST)
+{
+  Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
+}
+
 function render() {
 
   // TO DO: Magic numbers
@@ -857,7 +865,7 @@ function render() {
     }
   }
   
-  helper.vector_assign_cam(camPosPrev, camPos);
+  helper.vector_assign_cam(camPosPrev, camPos, transformArray);
 
   //TO Do : make new target pos forward vec and use new const.
   // First xz vector = cos(mouseX) , 0  ,sin(mouseX)
