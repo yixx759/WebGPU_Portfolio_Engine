@@ -8,11 +8,11 @@ import * as Light_Manager from './Light_Manager.js';
 import * as Path_Tracing from './Path_Tracing.js';
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
-const DEBUG = false;
+const DEBUG = true;
 const TEST = false;
 const SINGLE_TEST = false;
 
-const TARGET_INDEX = 7;
+const TARGET_INDEX = 2;
 const MOVE_TARGET_TEST = false;
 
 const PATH_TEST = true;
@@ -779,7 +779,7 @@ document.addEventListener('mousemove', function(evt) {
 // TO DO: Manage me and scratch better
 let tmpCamPos = new Float32Array(4);
 
-if (DEBUG)
+if (DEBUG && !PATH_TEST)
 {
   document.addEventListener('click', function(evt) {
     debugLog("clicked")
@@ -822,7 +822,16 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 
 if (PATH_TEST)
 {
-  Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
+  let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
+
+  const PATH_DIR = new Float32Array([-1, 0.3, 0]);
+  const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
+
+  let res = false;
+  res = Path_Tracing.intersect_objects_triangles(verts, PATH_DIR, PATH_ORIGIN);
+  debugLog(res);
+
+  newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, PATH_DIR), res, device, vertexDebugBuffer)
 }
 
 function render() {
@@ -897,7 +906,7 @@ function render() {
     {
       debugLog("HERE")
       gameObjectArray[i].setPosition(transformArray, new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
-      gameObjectArray[i].setRotation(transformArray, new Float32Array([0,0,0]));
+      gameObjectArray[i].setRotation(transformArray, new Float32Array([90,0,0]));
     }
 
     // TO DO: SHould be some scratch memroy here to pass in
@@ -908,10 +917,12 @@ function render() {
 
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
-      debugLog("Positon: " + tmp_pos + " \nRotation: " + tmp_rot);
+      if (PATH_TEST)
+      {
+        debugLog(tmp_pos);
+        Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[i], transformArray);
+      }
     }
-
-    debugLog("Positon: " + tmp_pos + " \nRotation: " + tmp_rot);
 
     worldMatrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
     device.queue.writeBuffer(Mats, i*sizet+0, worldMatrix);

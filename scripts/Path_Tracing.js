@@ -15,24 +15,83 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
     let tmp_scale = game_object.getScale(transformArray);
     let tmp_rot = game_object.getRotation(transformArray);
     let world_matrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
-        
-    console.log(vertex_info.length);
-    console.log(vertex_info[0]);
 
     // Skip to only triangle vertexes
     for (let i = 0; i < vertex_info.length; i += 8)
     {
-        let verts = [vertex_info[i + 0], vertex_info[i + 1], vertex_info[i + 2], 0];
+        let verts = [vertex_info[i + 0], vertex_info[i + 1], vertex_info[i + 2], 1];
         
         world_verts[world_verts_index++] = helper.multiply_matrix_and_point(world_matrix, verts);
-        console.log(helper.multiply_matrix_and_point(world_matrix, verts));
-        console.log(world_matrix);
-        console.log(world_verts[world_verts_index - 1]);
     }
 
-    console.log("vert 1: " + world_verts[0]);
-    console.log("vert 2: " + world_verts[1]);
-    console.log("vert 3: " + world_verts[2]);
+    return world_verts;
+}
+
+const CONST_SMALL_NUMBER = 0.00000001;
+
+export function intersect_objects_triangles(vertexs, dir, origin)
+{
+    for (let i = 0; i < vertexs.length; i += 3)
+    {
+        let res = ray_triangle_intersection(origin, dir, vertexs[i + 0], vertexs[i + 1], vertexs[i + 2])
+
+        if (res[0] == true)
+        {
+            return res;
+        }
+    }
+
+    return CONST_FALSE_RESULT;
+}
+
+const CONST_FALSE_RESULT = [false, -1, -1, -1];
+
+// https://github.com/scratchapixel/scratchapixel-code/blob/main/global-illumination-path-tracing/indirectdiffuse.cpp#L274
+export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
+{
+    let V_0_to_V_1 = helper.vectorSubtract(vec_1, vec_0);
+    let V_0_to_V_2 = helper.vectorSubtract(vec_2, vec_0);
+
+    let p_vec = helper.vectorCross(dir ,V_0_to_V_2);
+    let determinent = helper.vectorDot(V_0_to_V_1, p_vec);
+
+    if (Math.abs(determinent) < CONST_SMALL_NUMBER) return CONST_FALSE_RESULT;
+
+//   float invDet = 1 / det;
+
+    const inverse_determinent = 1 / determinent;
+
+//     Vec3f tvec = orig - v0;
+
+    let t_vec = helper.vectorSubtract(origin, vec_0);
+
+//     u = tvec.dotProduct(pvec) * invDet;
+    
+    let u = helper.vectorDot(t_vec, p_vec) * inverse_determinent;
+
+//     if (u < 0 || u > 1) return false;
+
+    if (u < 0 || u > 1) return CONST_FALSE_RESULT;
+
+//     Vec3f qvec = tvec.crossProduct(v0v1);
+
+    let q_vec = helper.vectorCross(t_vec, V_0_to_V_1);
+
+//     v = dir.dotProduct(qvec) * invDet;
+
+    let v = helper.vectorDot(dir, q_vec) * inverse_determinent;
+
+//     if (v < 0 || u + v > 1) return false;
+
+    if (v < 0 || u + v > 1) return CONST_FALSE_RESULT;
+    
+//    t = v0v2.dotProduct(qvec) * invDet;
+
+    let t = helper.vectorDot(V_0_to_V_2, q_vec) * inverse_determinent;
+    
+//     return (t > 0) ? true : false;
+
+    return (t > 0) ? [true, u, v, t] : CONST_FALSE_RESULT;
 }
 
 
