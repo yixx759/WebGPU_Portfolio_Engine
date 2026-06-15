@@ -567,14 +567,14 @@ var worldMatrix = new Float32Array([
   }
   }
 
- 
-
 const url = 'resources/images/Bunny Texture.png';
 const urlF = 'resources/images/f-texture.png';
 const url_green = 'resources/images/green.png';
 const source = await helper.loadImageBitmap(url);
 const sourceF = await helper.loadImageBitmap(urlF);
 const source_green = await helper.loadImageBitmap(url_green);
+
+const {green_data, green_width, green_height} = await helper.loadImageData(url_green);
 
 // TO DO: Generalize me
 
@@ -828,7 +828,7 @@ if (PATH_TEST)
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 
   let res = false;
-  res = Path_Tracing.intersect_objects_triangles(verts, PATH_DIR, PATH_ORIGIN);
+  res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_DIR, PATH_ORIGIN, verts[1], green_data);
   debugLog(res);
 
   newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, PATH_DIR), res, device, vertexDebugBuffer)

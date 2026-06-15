@@ -363,6 +363,20 @@ export async function loadImageBitmap(url) {
   return await createImageBitmap(blob, { colorSpaceConversion: 'none' });
 }
 
+export async function loadImageData(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = new OffscreenCanvas(img.width, img.height);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(ctx.getImageData(0, 0, img.width, img.height));
+    };
+    img.src = url;
+  });
+}
+
+
 export async function loadShader(url) {
     const response = await fetch(url);
     return await response.text();

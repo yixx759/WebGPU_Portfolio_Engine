@@ -2,6 +2,8 @@ import * as helper from './helperFuncs.js'
 
 // Use the vertex buffer skip normals uvs and shit only do positions.
 
+const OFFSET_INT_VT_INDEX = 3;
+
 // TO DO: Do I do a initial object ray before doing this traingle by triangle ray
 export function transform_vertexs(vertex_info, game_object, transformArray)
 {
@@ -9,6 +11,9 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
 
     let world_verts = [];
     let world_verts_index = 0;
+
+    let tex_verts = [];
+    let tex_verts_index = 0;
 
     // Make world matrix for verts
     let tmp_pos = game_object.getPosition(transformArray);
@@ -22,21 +27,27 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
         let verts = [vertex_info[i + 0], vertex_info[i + 1], vertex_info[i + 2], 1];
         
         world_verts[world_verts_index++] = helper.multiply_matrix_and_point(world_matrix, verts);
+        tex_verts[tex_verts_index++] = [vertex_info[i + OFFSET_INT_VT_INDEX], vertex_info[i + OFFSET_INT_VT_INDEX + 1]];
     }
 
-    return world_verts;
+    return [world_verts, tex_verts];
 }
 
 const CONST_SMALL_NUMBER = 0.00000001;
 
-export function intersect_objects_triangles(vertexs, dir, origin)
+const CONST_INDEX_OF_VERTEX_POS = 0;
+const CONST_INDEX_OF_VERTEX_TEX = 1;
+
+export function intersect_objects_triangles(vertexs, dir, origin, texs, texture)
 {
     for (let i = 0; i < vertexs.length; i += 3)
     {
         let res = ray_triangle_intersection(origin, dir, vertexs[i + 0], vertexs[i + 1], vertexs[i + 2])
 
+        // TO DO: NEED TO CHECK IF CLOSEST
         if (res[0] == true)
         {
+            // TO DO: SRG TO LINEAR
             return res;
         }
     }
@@ -94,6 +105,9 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
     return (t > 0) ? [true, u, v, t] : CONST_FALSE_RESULT;
 }
 
+// Use U V and W = (1 - U - V). to interpolate 3 vertexs vt
+// V0 * w + v1 * u + v2 * v
+
 
 // Dose this have to be transformed ?? by world.
 // Transfrom to world maybe object by object.
@@ -110,3 +124,4 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 // skip first depth step as that is direct lighting
 // indirect lighting is every bouce after that.
 // Convert this to spherical harmonic result
+// DO bilinear interpolation on texture sample wiht UV
