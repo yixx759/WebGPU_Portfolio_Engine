@@ -38,15 +38,19 @@ const CONST_SMALL_NUMBER = 0.00000001;
 const CONST_INDEX_OF_VERTEX_POS = 0;
 const CONST_INDEX_OF_VERTEX_TEX = 1;
 
-export function intersect_objects_triangles(vertexs, dir, origin, texs, texture)
+export function intersect_objects_triangles(vertexs, dir, origin, texs, texture, width, height)
 {
     for (let i = 0; i < vertexs.length; i += 3)
     {
         let res = ray_triangle_intersection(origin, dir, vertexs[i + 0], vertexs[i + 1], vertexs[i + 2])
 
+        // TO DO: Magic numbers
         // TO DO: NEED TO CHECK IF CLOSEST
         if (res[0] == true)
         {
+            console.log(texture);
+            let coords = calculate_UV_from_VT(res[1], res[2], texs[i + 0], texs[i + 1], texs[i + 2]);
+            console.log(sample_tex_at_uv(texture, coords[0], coords[1], width, height));
             // TO DO: SRG TO LINEAR
             return res;
         }
@@ -55,8 +59,39 @@ export function intersect_objects_triangles(vertexs, dir, origin, texs, texture)
     return CONST_FALSE_RESULT;
 }
 
+function sample_tex_at_uv(tex, U, V, width, height)
+{
+    if (U < 0 | V < 0 | width < 0 | height < 0)
+    {
+        console.log("Error in sample_tex_at_uv something is negative");
+        console.log("U: " + U);
+        console.log("V: " + V);
+        console.log("width: " + width);
+        console.log("height: " + height);
+    }
+
+    // Try mirror
+    const x_coord = Math.floor(U * (width - 1));
+    const y_coord = Math.floor((1 - V) * (height - 1)) * width;
+    const r_index = (x_coord + y_coord) * 4;
+
+    return [tex[r_index], tex[r_index + 1], tex[r_index + 2], tex[r_index + 3]];
+}
+
+// Use U V and W = (1 - U - V). to interpolate 3 vertexs vt
+// V0 * w + v1 * u + v2 * v
+
+// Passing in [U, V] array for VT returning [U, V] array
+function calculate_UV_from_VT(U, V, VT0, VT1, VT2)
+{
+    const W = (1 - U - V);
+
+    return [(VT0[0] * W + VT1[0] * U + VT2[0] * V), (VT0[1] * W + VT1[1] * U + VT2[1] * V)];
+}
+
 const CONST_FALSE_RESULT = [false, -1, -1, -1];
 
+// Returns [true, u, v, t]
 // https://github.com/scratchapixel/scratchapixel-code/blob/main/global-illumination-path-tracing/indirectdiffuse.cpp#L274
 export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 {
@@ -105,8 +140,7 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
     return (t > 0) ? [true, u, v, t] : CONST_FALSE_RESULT;
 }
 
-// Use U V and W = (1 - U - V). to interpolate 3 vertexs vt
-// V0 * w + v1 * u + v2 * v
+
 
 
 // Dose this have to be transformed ?? by world.
@@ -117,7 +151,7 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 
 
 // Have ray class Return colided objects uv and coresponding texture colour.
-// Find best testing envornment
+// Find best testing envornment. Wall diffrent colours every so many pixels, should match ray
 // Chang colours better test
 // Remeber to do indirect look at scratch a pixel
 // Dose direct lighting at each step check direct

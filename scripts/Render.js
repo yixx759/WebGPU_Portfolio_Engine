@@ -89,13 +89,13 @@ const PLAYER_TEXTURE_INDEX = 1;
 
 let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, PLAYER_MODEL_INDEX, PLAYER_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, PLAYER_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
-const OTHER_START_POSITION = new Float32Array([500, 0, 0]);
+const OTHER_START_POSITION = new Float32Array([10, 0, 0]);
 const OTHER_START_SCALE = 1;
 const OTHER_START_ROTATION = new Float32Array([180,180,0]);
 
 const OTHER_ID = 1;
 const OTHER_MODEL_INDEX = 0;
-const OTHER_TEXTURE_INDEX = 2;
+const OTHER_TEXTURE_INDEX = 3;
 
 let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -105,7 +105,7 @@ const WALL_1_START_ROTATION = new Float32Array([90,0,90]);
 
 const WALL_1_ID = 2;
 const WALL_1_MODEL_INDEX = 2;
-const WALL_1_TEXTURE_INDEX = 2;
+const WALL_1_TEXTURE_INDEX = 3;
 
 let wall_1 = new objectInfo.gameObject(objectArray, WALL_1_ID, WALL_1_MODEL_INDEX, WALL_1_TEXTURE_INDEX, WALL_1_START_POSITION, WALL_1_START_SCALE, WALL_1_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -115,7 +115,7 @@ const WALL_2_START_ROTATION = new Float32Array([90,0,0]);
 
 const WALL_2_ID = 3;
 const WALL_2_MODEL_INDEX = 2;
-const WALL_2_TEXTURE_INDEX = 2;
+const WALL_2_TEXTURE_INDEX = 3;
 
 let wall_2 = new objectInfo.gameObject(objectArray, WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -125,7 +125,7 @@ const WALL_3_START_ROTATION = new Float32Array([90,0,90]);
 
 const WALL_3_ID = 4;
 const WALL_3_MODEL_INDEX = 2;
-const WALL_3_TEXTURE_INDEX = 2;
+const WALL_3_TEXTURE_INDEX = 3;
 
 let wall_3 = new objectInfo.gameObject(objectArray, WALL_3_ID, WALL_3_MODEL_INDEX, WALL_3_TEXTURE_INDEX, WALL_3_START_POSITION, WALL_3_START_SCALE, WALL_3_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -135,7 +135,7 @@ const WALL_4_START_ROTATION = new Float32Array([90,0,0]);
 
 const WALL_4_ID = 5;
 const WALL_4_MODEL_INDEX = 2;
-const WALL_4_TEXTURE_INDEX = 2;
+const WALL_4_TEXTURE_INDEX = 3;
 
 let wall_4 = new objectInfo.gameObject(objectArray, WALL_4_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, WALL_4_START_POSITION, WALL_4_START_SCALE, WALL_4_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -145,7 +145,7 @@ const WALL_5_START_ROTATION = new Float32Array([0,0,0]);
 
 const WALL_5_ID = 6;
 const WALL_5_MODEL_INDEX = 2;
-const WALL_5_TEXTURE_INDEX = 2;
+const WALL_5_TEXTURE_INDEX = 3;
 
 let wall_5 = new objectInfo.gameObject(objectArray, WALL_5_ID, WALL_5_MODEL_INDEX, WALL_5_TEXTURE_INDEX, WALL_5_START_POSITION, WALL_5_START_SCALE, WALL_5_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -155,7 +155,7 @@ const WALL_6_START_ROTATION = new Float32Array([0,0,0]);
 
 const WALL_6_ID = 7;
 const WALL_6_MODEL_INDEX = 2;
-const WALL_6_TEXTURE_INDEX = 2;
+const WALL_6_TEXTURE_INDEX = 3;
 
 let wall_6 = new objectInfo.gameObject(objectArray, WALL_6_ID, WALL_6_MODEL_INDEX, WALL_6_TEXTURE_INDEX, WALL_6_START_POSITION, WALL_6_START_SCALE, WALL_6_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
@@ -250,7 +250,7 @@ async function init() {
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       });
 
-  let VERTEX_OFFSET = objectArray[1].byteLength
+  let VERTEX_OFFSET = objectArray[1].byteLength;
 
   const tmp_first_2 = 2;
   const tmp_first_1 = 1;
@@ -433,7 +433,7 @@ if (DEBUG)
 //   intensity : f32
 // }
 
-const light_intensity = 0;
+const light_intensity = 2;
 const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
 
 // TO DO: SHould this be constant?
@@ -570,11 +570,15 @@ var worldMatrix = new Float32Array([
 const url = 'resources/images/Bunny Texture.png';
 const urlF = 'resources/images/f-texture.png';
 const url_green = 'resources/images/green.png';
+const url_tester = 'resources/images/uv_test_patchwork.png';
+
 const source = await helper.loadImageBitmap(url);
 const sourceF = await helper.loadImageBitmap(urlF);
 const source_green = await helper.loadImageBitmap(url_green);
+const source_tester = await helper.loadImageBitmap(url_tester);
 
-const {green_data, green_width, green_height} = await helper.loadImageData(url_green);
+const {data: green_data, width: green_width, height: green_height} = await helper.loadImageData(url_green);
+const {data: tester_data, width: tester_width, height: tester_height} = await helper.loadImageData(url_tester);
 
 // TO DO: Generalize me
 
@@ -582,6 +586,15 @@ const texture_green = device.createTexture({
   label: url_green,
   format: 'rgba8unorm',
   size: [sourceF.width, sourceF.height],
+  usage: GPUTextureUsage.TEXTURE_BINDING |
+         GPUTextureUsage.COPY_DST |
+         GPUTextureUsage.RENDER_ATTACHMENT,
+});
+
+const texture_tester = device.createTexture({
+  label: url_tester,
+  format: 'rgba8unorm',
+  size: [source_tester.width, source_tester.height],
   usage: GPUTextureUsage.TEXTURE_BINDING |
          GPUTextureUsage.COPY_DST |
          GPUTextureUsage.RENDER_ATTACHMENT,
@@ -612,6 +625,12 @@ device.queue.copyExternalImageToTexture(
 );
 
 device.queue.copyExternalImageToTexture(
+  {source: source_tester, flipY: true},
+  {texture: texture_tester},
+  {width: source_tester.width, height: source_tester.height},
+);
+
+device.queue.copyExternalImageToTexture(
   {source: sourceF, flipY: true},
   {texture: textureF},
   {width: sourceF.width, height: sourceF.height},
@@ -629,7 +648,7 @@ const sampler = device.createSampler({
   magFilter: 'linear',
 });
 
-let textures = [texture, textureF, texture_green];
+let textures = [texture, textureF, texture_green, texture_tester];
 
 let bindGroupTexArray = [];
 
@@ -823,12 +842,12 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 if (PATH_TEST)
 {
   let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
-
-  const PATH_DIR = new Float32Array([-1, 0.3, 0]);
+  const MAG = 10;
+  const PATH_DIR = new Float32Array([-1  * MAG , 0.5 * MAG, 0.2 * MAG]);
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 
   let res = false;
-  res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_DIR, PATH_ORIGIN, verts[1], green_data);
+  res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_DIR, PATH_ORIGIN, verts[1], tester_data, tester_width, tester_height);
   debugLog(res);
 
   newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, PATH_DIR), res, device, vertexDebugBuffer)
