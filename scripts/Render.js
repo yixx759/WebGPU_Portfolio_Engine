@@ -239,31 +239,32 @@ async function init() {
   const verticiesFromObjB = helper.getVertexBufferFromDecodedObj(decodedObjDataB);
   const verticies_obj_wall = helper.getVertexBufferFromDecodedObj(decoded_obj_data_wall);
 
-  let objectArray = [verticiesFromObj ,verticiesFromObjB, verticies_obj_wall];
+  let Model_Array = [verticiesFromObj ,verticiesFromObjB, verticies_obj_wall];
 
   // TO DO: ADD PLAYER TO SOME SORT OF STRUCT
   const playerCollider = new Float32Array([1, 2, 1, 0]);
 
   // TO DO: Use biggest model precalculate and look into alighnment for this
   const vertexBuffer = device.createBuffer({
-        size: objectArray[1].byteLength * AMOUNT_OF_OBJECTS, // Should pre calculate max
+        size: Model_Array[1].byteLength * AMOUNT_OF_OBJECTS, // Should pre calculate max
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       });
 
-  let VERTEX_OFFSET = objectArray[1].byteLength;
+  let VERTEX_OFFSET = Model_Array[1].byteLength;
 
   const tmp_first_2 = 2;
   const tmp_first_1 = 1;
+
   // TO DO: Change me
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
     const vertex_index = gameObjectArray[i].getModelIndex(indexArray);
 
-    device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, objectArray[vertex_index], 0, objectArray[vertex_index].length);
+    device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, Model_Array[vertex_index], 0, Model_Array[vertex_index].length);
 
       if (!SINGLE_TEST || i < tmp_first_1)
       {
         // TO DO: Get these better include in whatever file type is made
-        gameObjectArray[i].setHalf(transformArray, makeColliderFromVerts(objectArray[0]));
+        gameObjectArray[i].setHalf(transformArray, makeColliderFromVerts(Model_Array[0]));
       }
   }
  
@@ -577,8 +578,10 @@ const sourceF = await helper.loadImageBitmap(urlF);
 const source_green = await helper.loadImageBitmap(url_green);
 const source_tester = await helper.loadImageBitmap(url_tester);
 
-const {data: green_data, width: green_width, height: green_height} = await helper.loadImageData(url_green);
-const {data: tester_data, width: tester_width, height: tester_height} = await helper.loadImageData(url_tester);
+const source_data = await helper.loadImageData(url);
+const sourceF_data = await helper.loadImageData(urlF);
+const green_data = await helper.loadImageData(url_green);
+const tester_data = await helper.loadImageData(url_tester);
 
 // TO DO: Generalize me
 
@@ -649,6 +652,7 @@ const sampler = device.createSampler({
 });
 
 let textures = [texture, textureF, texture_green, texture_tester];
+let textures_data = [source_data, sourceF_data, green_data, tester_data];
 
 let bindGroupTexArray = [];
 
@@ -841,13 +845,19 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 
 if (PATH_TEST)
 {
-  let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
-  const MAG = 10;
-  const PATH_DIR = new Float32Array([-1  * MAG , 0.5 * MAG, 0.2 * MAG]);
+  // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
+  
+  const MAG = 30000;
+  const PATH_DIR = new Float32Array([1  * MAG , -0.05 * MAG, -0.03 * MAG]);
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 
   let res = false;
-  res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_DIR, PATH_ORIGIN, verts[1], tester_data, tester_width, tester_height);
+
+  // path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data)
+  res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data);
+
+  //res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_ORIGIN, PATH_DIR, verts[1], tester_data["data"], tester_data["width"], tester_data["height"]);
+  
   debugLog(res);
 
   newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, PATH_DIR), res, device, vertexDebugBuffer)
@@ -983,8 +993,8 @@ function render() {
     const id = gameObjectArray[i].ID;
     passEncoder.setBindGroup(0, bindGroupArray[id]);
     passEncoder.setBindGroup(1, bindGroupTexArray[tex_index]);
-    passEncoder.setVertexBuffer(0, vertexBuffer, VERTEX_OFFSET * id, objectArray[vert_index].byteLength);
-    passEncoder.draw(objectArray[vert_index].length / 8);
+    passEncoder.setVertexBuffer(0, vertexBuffer, VERTEX_OFFSET * id, Model_Array[vert_index].byteLength);
+    passEncoder.draw(Model_Array[vert_index].length / 8);
   }
 
   if (DEBUG)

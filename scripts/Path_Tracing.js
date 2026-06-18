@@ -3,6 +3,7 @@ import * as helper from './helperFuncs.js'
 // Use the vertex buffer skip normals uvs and shit only do positions.
 
 const OFFSET_INT_VT_INDEX = 3;
+const OFFSET_INT_VN_INDEX = 5;
 
 // TO DO: Do I do a initial object ray before doing this traingle by triangle ray
 export function transform_vertexs(vertex_info, game_object, transformArray)
@@ -14,6 +15,9 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
 
     let tex_verts = [];
     let tex_verts_index = 0;
+
+    let norm_verts = [];
+    let norm_verts_index = 0;
 
     // Make world matrix for verts
     let tmp_pos = game_object.getPosition(transformArray);
@@ -28,9 +32,10 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
         
         world_verts[world_verts_index++] = helper.multiply_matrix_and_point(world_matrix, verts);
         tex_verts[tex_verts_index++] = [vertex_info[i + OFFSET_INT_VT_INDEX], vertex_info[i + OFFSET_INT_VT_INDEX + 1]];
+        norm_verts[norm_verts_index++] = [vertex_info[i + OFFSET_INT_VN_INDEX], vertex_info[i + OFFSET_INT_VN_INDEX + 1], vertex_info[i + OFFSET_INT_VN_INDEX + 2]];
     }
 
-    return [world_verts, tex_verts];
+    return [world_verts, tex_verts, norm_verts];
 }
 
 const CONST_SMALL_NUMBER = 0.00000001;
@@ -38,25 +43,79 @@ const CONST_SMALL_NUMBER = 0.00000001;
 const CONST_INDEX_OF_VERTEX_POS = 0;
 const CONST_INDEX_OF_VERTEX_TEX = 1;
 
-export function intersect_objects_triangles(vertexs, dir, origin, texs, texture, width, height)
+// Res U V T
+const CONST_RESULT_STRUCT_RESULT_INDEX = 0;
+const CONST_RESULT_STRUCT_U_INDEX = 1;
+const CONST_RESULT_STRUCT_V_INDEX = 2;
+const CONST_RESULT_STRUCT_T_INDEX = 3;
+
+const CONST_INDEX_U = 0;
+const CONST_INDEX_V = 1;
+
+// data
+// colorSpace
+// height
+// pixelFormat
+// width
+
+export function path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data)
 {
+    const CONST_START_OBJECT_INDEX = 1;
+    let t_near = -1;
+    let final_res = null;
+    let final_index = -1;
+
+    for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
+    {
+        let verts = transform_vertexs(models[objects[i].getModelIndex(objectArray)], objects[i], transformArray);
+        // TO DO: Print index
+        const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
+        let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
+
+        if (res[CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
+        {
+            t_near = res[CONST_RESULT_STRUCT_T_INDEX];
+            final_res = res;
+            final_index = i;
+            console.log("HIT: " + res);
+        }
+    }
+
+    console.log(final_res);
+    return final_res != null && final_res[CONST_RESULT_STRUCT_RESULT_INDEX];
+}
+
+export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms)
+{
+    let coords = null;
+    let final_norm = null;
+    let t_near = -1;
+    let final_res = CONST_FALSE_RESULT;
+
     for (let i = 0; i < vertexs.length; i += 3)
     {
         let res = ray_triangle_intersection(origin, dir, vertexs[i + 0], vertexs[i + 1], vertexs[i + 2])
 
-        // TO DO: Magic numbers
-        // TO DO: NEED TO CHECK IF CLOSEST
-        if (res[0] == true)
+        if (res[CONST_RESULT_STRUCT_RESULT_INDEX] == true & (t_near == -1 | res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
         {
-            console.log(texture);
-            let coords = calculate_UV_from_VT(res[1], res[2], texs[i + 0], texs[i + 1], texs[i + 2]);
-            console.log(sample_tex_at_uv(texture, coords[0], coords[1], width, height));
-            // TO DO: SRG TO LINEAR
-            return res;
+            final_res = res;
+            t_near = res[CONST_RESULT_STRUCT_T_INDEX];
+            coords = calculate_UV_from_VT(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], texs[i + 0], texs[i + 1], texs[i + 2]);
+            final_norm = calculate_NORM_from_VN(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], norms[i + 0], norms[i + 1], norms[i + 2]);
         }
     }
 
-    return CONST_FALSE_RESULT;
+    // TO DO: SRG TO LINEAR
+
+    if (t_near != -1)
+    {
+        console.log(t_near);
+        console.log(sample_tex_at_uv(texture, coords[CONST_INDEX_U], coords[CONST_INDEX_V], width, height));
+        console.log(final_norm);
+        // TO DO: TEST THIS : vector_reflect
+    }
+
+    return final_res;
 }
 
 function sample_tex_at_uv(tex, U, V, width, height)
@@ -75,7 +134,10 @@ function sample_tex_at_uv(tex, U, V, width, height)
     const y_coord = Math.floor((1 - V) * (height - 1)) * width;
     const r_index = (x_coord + y_coord) * 4;
 
-    return [tex[r_index], tex[r_index + 1], tex[r_index + 2], tex[r_index + 3]];
+    // return [tex[r_index], tex[r_index + 1], tex[r_index + 2], tex[r_index + 3]];
+
+    // Maybe need gamma
+    return [Math.pow(tex[r_index] / 255 , 2.2) * 255, Math.pow(tex[r_index + 1] / 255 , 2.2) * 255, Math.pow(tex[r_index + 2] / 255 , 2.2) * 255, Math.pow(tex[r_index + 3] / 255 , 2.2) * 255];
 }
 
 // Use U V and W = (1 - U - V). to interpolate 3 vertexs vt
@@ -87,6 +149,13 @@ function calculate_UV_from_VT(U, V, VT0, VT1, VT2)
     const W = (1 - U - V);
 
     return [(VT0[0] * W + VT1[0] * U + VT2[0] * V), (VT0[1] * W + VT1[1] * U + VT2[1] * V)];
+}
+
+function calculate_NORM_from_VN(U, V, VN0, VN1, VN2)
+{
+    const W = (1 - U - V);
+
+    return [(VN0[0] * W + VN1[0] * U + VN2[0] * V), (VN0[1] * W + VN1[1] * U + VN2[1] * V), (VN0[2] * W + VN1[2] * U + VN2[2] * V)];
 }
 
 const CONST_FALSE_RESULT = [false, -1, -1, -1];
@@ -141,21 +210,16 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 }
 
 
+// Test refleciton on normal maybe have to get from interseciton
+// Visualize refleciton ray and check colour
+//
 
 
-// Dose this have to be transformed ?? by world.
-// Transfrom to world maybe object by object.
-// do triangle by traingle intersection
-// get uv and pos info
-// use texture ifnormaiton to get colour at that uv point
 
-
-// Have ray class Return colided objects uv and coresponding texture colour.
-// Find best testing envornment. Wall diffrent colours every so many pixels, should match ray
-// Chang colours better test
 // Remeber to do indirect look at scratch a pixel
 // Dose direct lighting at each step check direct
 // skip first depth step as that is direct lighting
 // indirect lighting is every bouce after that.
 // Convert this to spherical harmonic result
 // DO bilinear interpolation on texture sample wiht UV
+// TO DO: Test gamma later

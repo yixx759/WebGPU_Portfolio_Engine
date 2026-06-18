@@ -174,12 +174,20 @@ export function vectorCross(A, B){
 
 export function vectorMag(A){
   return Math.sqrt(A[0]*A[0]+ A[1]*A[1] + A[2]*A[2]);
-
 }
 
 export function vectorNorm(A){
   const mag = vectorMag(A);
   return [A[0]/mag, A[1]/mag, A[2]/mag];
+}
+
+export function vector_reflect(V, N)
+{
+  const V_d_N = vectorDot(V, N) * 2;
+  const R = vector_mult(N, V_d_N);
+
+  // \(\vec{R} = \vec{V} - 2(\vec{V} \cdot \vec{N})\vec{N}\)
+  return vectorSubtract(V, R);
 }
 
 export function applyWorldToCollider(vec, matrix)
