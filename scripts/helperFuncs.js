@@ -1,7 +1,12 @@
 import { debugLog } from './Render.js'
+import * as testFuncs from './testFuncs.js'
 
 export const DIR_FORWARD = new Float32Array([0,0,-1]);
 export const WORLD_UP_VECTOR= new Float32Array([0,1,0]);
+
+const TEST_FUNCS = false;
+
+testFuncs.vectorTestPrints();
 
 export function multiplyFloat32Matrices(A, B) {
   
@@ -139,6 +144,10 @@ export function vector_mult(A, mag_vector){
   return new Float32Array([A[0]*mag_vector[0], A[1]*mag_vector[1],A[2]*mag_vector[2], 0]);
 }
 
+export function vector_mult_scalar(A, mag_scalar){
+  return new Float32Array([A[0]*mag_scalar, A[1]*mag_scalar, A[2]*mag_scalar, 0]);
+}
+
 export function vector_add_cam(A, X, Z){
   A[0]+=X;
   A[2]+=Z;
@@ -184,7 +193,7 @@ export function vectorNorm(A){
 export function vector_reflect(V, N)
 {
   const V_d_N = vectorDot(V, N) * 2;
-  const R = vector_mult(N, V_d_N);
+  const R = vector_mult_scalar(N, V_d_N);
 
   // \(\vec{R} = \vec{V} - 2(\vec{V} \cdot \vec{N})\vec{N}\)
   return vectorSubtract(V, R);

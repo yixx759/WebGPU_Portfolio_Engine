@@ -212,7 +212,7 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 
 // Test refleciton on normal maybe have to get from interseciton
 // Visualize refleciton ray and check colour
-//
+//Also rember apply brdf
 
 
 
