@@ -139,7 +139,7 @@ const WALL_4_TEXTURE_INDEX = 3;
 
 let wall_4 = new objectInfo.gameObject(objectArray, WALL_4_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, WALL_4_START_POSITION, WALL_4_START_SCALE, WALL_4_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_5_START_POSITION = new Float32Array([0.20000000298023224,9.5,-12.600000381469727 ]);
+const WALL_5_START_POSITION = new Float32Array([0.20000000298023224,9.5,-12.600000381469727]);
 const WALL_5_START_SCALE = 1;
 const WALL_5_START_ROTATION = new Float32Array([0,0,0]);
 
@@ -848,19 +848,22 @@ if (PATH_TEST)
   // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
   
   const MAG = 30000;
-  const PATH_DIR = new Float32Array([1  * MAG , -0.05 * MAG, -0.03 * MAG]);
+  const PATH_DIR = helper.vectorNorm(new Float32Array([1, 0.2, 0.1]));
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 
   let res = false;
 
+  Path_Tracing.PATH_TRACE();
+
   // path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data)
-  res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data);
+  // res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data);
 
   //res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_ORIGIN, PATH_DIR, verts[1], tester_data["data"], tester_data["width"], tester_data["height"]);
   
-  debugLog(res);
+  // debugLog(res);
 
-  newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, PATH_DIR), res, device, vertexDebugBuffer)
+  // newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
+  // newRayPos(res[1], helper.vectorAdd(res[1], helper.vector_mult_scalar(res[2], MAG)), res[0][0], device, vertexDebugBuffer)
 }
 
 function render() {

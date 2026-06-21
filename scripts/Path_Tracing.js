@@ -5,6 +5,65 @@ import * as helper from './helperFuncs.js'
 const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
+export function PATH_TRACE(origin)
+{
+    // Random sample in sphere
+    // Random smaple on hemispere
+    // Run both random smaples and claude check
+
+    console.log(random_sample_sphere());
+    console.log(random_sample_hemi_sphere([1,0,0]));
+
+    // Do Lighting from normal just lambertian with lighitng.
+    // do first ray but skip any results
+    // Reflect random directions
+    // Do thins until depth
+    // Average this out
+    // Check resulting color try green
+
+    // Then store this as spherical harmioc
+
+}
+
+export function random_sample_sphere()
+{
+    const theta = Math.random() * Math.PI * 2; 
+    const alpha = Math.acos(1 - 2 * Math.random());
+
+    return [Math.cos(theta) * Math.sin(alpha), Math.cos(alpha), Math.sin(theta) * Math.sin(alpha)];
+}
+
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/global-illumination-path-tracing/global-illumination-path-tracing-practical-implementation.html
+export function random_sample_hemi_sphere(normal)
+{
+    const r1 = Math.random();
+    const theta = Math.sqrt(1 - r1 * r1); 
+    const phi = 2 * Math.random() * Math.PI;
+
+    const x = theta * Math.cos(phi);
+    const z = theta * Math.sin(phi);
+    const dir = new Float32Array([x, r1, z]);
+    
+    let tangent;
+
+    if (Math.abs(normal[0]) > Math.abs(normal[1]))
+    {
+       tangent = helper.vectorNorm([normal[2], 0, -normal[0]]);
+    }
+    else
+    {
+        tangent = helper.vectorNorm([0, -normal[2], normal[1]]);
+    }
+
+    const cross = helper.vectorCross(normal, tangent);
+
+    const sample = new Float32Array([dir[0] * cross[0] + dir[1] * normal[0] + dir[2] * tangent[0],
+    dir[0] * cross[1] + dir[1] * normal[1] + dir[2] * tangent[1],
+ dir[0] * cross[2] + dir[1] * normal[2] + dir[2] * tangent[2]]);
+
+    return sample;
+}
+
 // TO DO: Do I do a initial object ray before doing this traingle by triangle ray
 export function transform_vertexs(vertex_info, game_object, transformArray)
 {
@@ -32,7 +91,11 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
         
         world_verts[world_verts_index++] = helper.multiply_matrix_and_point(world_matrix, verts);
         tex_verts[tex_verts_index++] = [vertex_info[i + OFFSET_INT_VT_INDEX], vertex_info[i + OFFSET_INT_VT_INDEX + 1]];
-        norm_verts[norm_verts_index++] = [vertex_info[i + OFFSET_INT_VN_INDEX], vertex_info[i + OFFSET_INT_VN_INDEX + 1], vertex_info[i + OFFSET_INT_VN_INDEX + 2]];
+
+        let norm = [vertex_info[i + OFFSET_INT_VN_INDEX], vertex_info[i + OFFSET_INT_VN_INDEX + 1], vertex_info[i + OFFSET_INT_VN_INDEX + 2], 0];
+  
+        // TO DO: Create func to transfrom vec with inver transpose of word matrix
+        norm_verts[norm_verts_index++] = helper.multiply_matrix_and_normal(world_matrix, norm);
     }
 
     return [world_verts, tex_verts, norm_verts];
@@ -72,7 +135,7 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
         const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
 
-        if (res[CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
+        if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
         {
             t_near = res[CONST_RESULT_STRUCT_T_INDEX];
             final_res = res;
@@ -81,8 +144,16 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
         }
     }
 
-    console.log(final_res);
-    return final_res != null && final_res[CONST_RESULT_STRUCT_RESULT_INDEX];
+    // if (origin[0] === 0 | origin[2] === -12.2)
+    // {
+    //     console.log("Second Ray")
+    //     path_trace_ray(final_res[1], final_res[2], objects, transformArray, objectArray, models, texture_data);
+    // }
+
+    console.log("og dir" + dir);
+    console.log("Final" +  final_res[2]);
+    return final_res;
+    return final_res != null && final_res[0][CONST_RESULT_STRUCT_RESULT_INDEX];
 }
 
 export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms)
@@ -111,11 +182,18 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
     {
         console.log(t_near);
         console.log(sample_tex_at_uv(texture, coords[CONST_INDEX_U], coords[CONST_INDEX_V], width, height));
-        console.log(final_norm);
+        console.log("Normal: " + final_norm);
         // TO DO: TEST THIS : vector_reflect
+        
+        // Find new orign and dir create ray, maybe intersect agains with ray tri
+
+       const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
+       const nu_dir = helper.vector_reflect(dir, final_norm);
+     
+        return [final_res, nu_origin, nu_dir];
     }
 
-    return final_res;
+    return [final_res, null, null];
 }
 
 function sample_tex_at_uv(tex, U, V, width, height)
@@ -210,16 +288,12 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 }
 
 
-// Test refleciton on normal maybe have to get from interseciton
-// Visualize refleciton ray and check colour
-//Also rember apply brdf
-
-
 
 // Remeber to do indirect look at scratch a pixel
 // Dose direct lighting at each step check direct
 // skip first depth step as that is direct lighting
 // indirect lighting is every bouce after that.
 // Convert this to spherical harmonic result
+// TO DO: BRDF bit lambertian works find for indirect
 // DO bilinear interpolation on texture sample wiht UV
 // TO DO: Test gamma later

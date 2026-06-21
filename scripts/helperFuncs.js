@@ -6,7 +6,10 @@ export const WORLD_UP_VECTOR= new Float32Array([0,1,0]);
 
 const TEST_FUNCS = false;
 
-testFuncs.vectorTestPrints();
+if (TEST_FUNCS)
+{
+  testFuncs.vectorTestPrints();
+}
 
 export function multiplyFloat32Matrices(A, B) {
   
@@ -262,6 +265,31 @@ export function multiply_matrix_and_point(matrix, point) {
   return [resultX, resultY, resultZ, resultW];
 }
 
+const SMALL_NUM = 0.00000000000001;
+
+
+// TO DO: STORE Inverse matrix and pass in instead of run every time 
+// TO DO: Clean this up including the preciisons tuff nto at 0
+export function multiply_matrix_and_normal(matrix, normal)
+{
+  if (normal.length !== 4 | normal[3] == 1)
+  {
+    console.log("Normal input wrong");
+    console.log("Lenght: " + normal.length);
+    console.log("Is Point?: " + (normal[3] == 1));
+  }
+
+  const inv_transpose_matrix = transpose_matrix(inverse_matrix(matrix));
+
+  let normal_final = multiply_matrix_and_point(inv_transpose_matrix, normal);
+
+  normal_final[3] = 0;
+
+  normal_final = vectorNorm(normal_final);
+
+  return normal_final;
+}
+
 export function getPerspectiveMatrix(FOV, n, f){
     const S = 1 / Math.tan((FOV/2) * (Math.PI / 180));
 
@@ -276,6 +304,50 @@ export function getPerspectiveMatrix(FOV, n, f){
     ]);
 
   return test;
+}
+
+// Matrix funcs from: 
+// https://evanw.github.io/lightgl.js/docs/matrix.html
+export function inverse_matrix(m)
+{
+  let r = new Float32Array(4*4);
+
+  r[0] = m[5]*m[10]*m[15] - m[5]*m[14]*m[11] - m[6]*m[9]*m[15] + m[6]*m[13]*m[11] + m[7]*m[9]*m[14] - m[7]*m[13]*m[10];
+  r[1] = -m[1]*m[10]*m[15] + m[1]*m[14]*m[11] + m[2]*m[9]*m[15] - m[2]*m[13]*m[11] - m[3]*m[9]*m[14] + m[3]*m[13]*m[10];
+  r[2] = m[1]*m[6]*m[15] - m[1]*m[14]*m[7] - m[2]*m[5]*m[15] + m[2]*m[13]*m[7] + m[3]*m[5]*m[14] - m[3]*m[13]*m[6];
+  r[3] = -m[1]*m[6]*m[11] + m[1]*m[10]*m[7] + m[2]*m[5]*m[11] - m[2]*m[9]*m[7] - m[3]*m[5]*m[10] + m[3]*m[9]*m[6];
+
+  r[4] = -m[4]*m[10]*m[15] + m[4]*m[14]*m[11] + m[6]*m[8]*m[15] - m[6]*m[12]*m[11] - m[7]*m[8]*m[14] + m[7]*m[12]*m[10];
+  r[5] = m[0]*m[10]*m[15] - m[0]*m[14]*m[11] - m[2]*m[8]*m[15] + m[2]*m[12]*m[11] + m[3]*m[8]*m[14] - m[3]*m[12]*m[10];
+  r[6] = -m[0]*m[6]*m[15] + m[0]*m[14]*m[7] + m[2]*m[4]*m[15] - m[2]*m[12]*m[7] - m[3]*m[4]*m[14] + m[3]*m[12]*m[6];
+  r[7] = m[0]*m[6]*m[11] - m[0]*m[10]*m[7] - m[2]*m[4]*m[11] + m[2]*m[8]*m[7] + m[3]*m[4]*m[10] - m[3]*m[8]*m[6];
+
+  r[8] = m[4]*m[9]*m[15] - m[4]*m[13]*m[11] - m[5]*m[8]*m[15] + m[5]*m[12]*m[11] + m[7]*m[8]*m[13] - m[7]*m[12]*m[9];
+  r[9] = -m[0]*m[9]*m[15] + m[0]*m[13]*m[11] + m[1]*m[8]*m[15] - m[1]*m[12]*m[11] - m[3]*m[8]*m[13] + m[3]*m[12]*m[9];
+  r[10] = m[0]*m[5]*m[15] - m[0]*m[13]*m[7] - m[1]*m[4]*m[15] + m[1]*m[12]*m[7] + m[3]*m[4]*m[13] - m[3]*m[12]*m[5];
+  r[11] = -m[0]*m[5]*m[11] + m[0]*m[9]*m[7] + m[1]*m[4]*m[11] - m[1]*m[8]*m[7] - m[3]*m[4]*m[9] + m[3]*m[8]*m[5];
+
+  r[12] = -m[4]*m[9]*m[14] + m[4]*m[13]*m[10] + m[5]*m[8]*m[14] - m[5]*m[12]*m[10] - m[6]*m[8]*m[13] + m[6]*m[12]*m[9];
+  r[13] = m[0]*m[9]*m[14] - m[0]*m[13]*m[10] - m[1]*m[8]*m[14] + m[1]*m[12]*m[10] + m[2]*m[8]*m[13] - m[2]*m[12]*m[9];
+  r[14] = -m[0]*m[5]*m[14] + m[0]*m[13]*m[6] + m[1]*m[4]*m[14] - m[1]*m[12]*m[6] - m[2]*m[4]*m[13] + m[2]*m[12]*m[5];
+  r[15] = m[0]*m[5]*m[10] - m[0]*m[9]*m[6] - m[1]*m[4]*m[10] + m[1]*m[8]*m[6] + m[2]*m[4]*m[9] - m[2]*m[8]*m[5];
+
+  var det = m[0]*r[0] + m[1]*r[4] + m[2]*r[8] + m[3]*r[12];
+  for (var i = 0; i < 16; i++) r[i] /= det;
+  
+  return r;
+}
+
+// TO DO: Creates too many new matrixs
+export function transpose_matrix(m)
+{
+  var r = new Float32Array(4*4);
+
+  r[0] = m[0]; r[1] = m[4]; r[2] = m[8]; r[3] = m[12];
+  r[4] = m[1]; r[5] = m[5]; r[6] = m[9]; r[7] = m[13];
+  r[8] = m[2]; r[9] = m[6]; r[10] = m[10]; r[11] = m[14];
+  r[12] = m[3]; r[13] = m[7]; r[14] = m[11]; r[15] = m[15];
+  return r;
 }
 
 export function getVertexBufferFromDecodedObj(decodedObj) {
