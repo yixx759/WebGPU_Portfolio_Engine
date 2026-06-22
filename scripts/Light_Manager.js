@@ -1,3 +1,4 @@
+import * as helper from './helperFuncs.js'
 import * as objectInfo from './objectInfoStruct.js';
 
 const DEBUG = true;
@@ -11,12 +12,12 @@ export const SIZE_OF_POINT_LIGHT_BYTES = objectInfo.BYTES_OF_VECTOR3 + objectInf
 const SIZE_OF_POINT_LIGHT_F32 = SIZE_OF_POINT_LIGHT_BYTES / objectInfo.BYTES_OF_FLOAT_32;
 
 export const ALIGNED_SIZE_OF_POINT_LIGHT_BYTES = (SIZE_OF_POINT_LIGHT_BYTES  + ALLIGHNMENT_NUMBER - 1) & ~(ALLIGHNMENT_NUMBER - 1);
-const ALIGNED_SIZE_OF_POINT_LIGHT_F32 = ALIGNED_SIZE_OF_POINT_LIGHT_BYTES / objectInfo.BYTES_OF_FLOAT_32;
+export const ALIGNED_SIZE_OF_POINT_LIGHT_F32 = ALIGNED_SIZE_OF_POINT_LIGHT_BYTES / objectInfo.BYTES_OF_FLOAT_32;
 
 export let POINT_LIGHT_ARRAY = new Float32Array(ALIGNED_SIZE_OF_POINT_LIGHT_F32 * TOTAL_AMOUNT_OF_POINT_LIGHTS);
 
-let light_number = 0;
-let light_index = light_number * ALIGNED_SIZE_OF_POINT_LIGHT_F32;
+export let light_number = 0;
+export let light_index = light_number * ALIGNED_SIZE_OF_POINT_LIGHT_F32;
 
 export function add_new_light(pos_x, pos_y, pos_z, intensity, attenuation)
 {
@@ -39,4 +40,45 @@ export function add_new_light(pos_x, pos_y, pos_z, intensity, attenuation)
     }
 
     light_index = light_number * ALIGNED_SIZE_OF_POINT_LIGHT_F32;
+}
+
+const INVERSE_DENOM_CONST = 0.001;
+const R_MAX = 300;
+
+export function lambertian(N, L)
+{
+    return Math.max(helper.vectorDot(N, L), 0);
+}
+
+export function point_light_illuminate(light_pos, surface_pos, atten, intensity, normal)
+{
+    // let light_ray = point_light_info[i].pos - fragData.wpos;
+    const light_ray = helper.vectorSubtract(light_pos, surface_pos);
+    
+    // light_dir = normalize(light_ray);
+    const light_dir = helper.vectorNorm(light_ray);
+
+    // let distance = length(light_ray);
+    const dist = helper.vector_mag(light_ray);
+
+    // // TO DO: This could be square auto
+    // let inverse_square = (point_light_info[i].attenuation * point_light_info[i].attenuation) / ((distance * distance) + INVERSE_DENOM_CONST);
+    const inverse_square = (atten * atten) / (dist * dist) + INVERSE_DENOM_CONST;
+
+    // let window_func = pow(max((1 - pow(point_light_info[i].attenuation / R_MAX, 4)), 0), 2);
+    const window_func = Math.pow(Math.max((1 - Math.pow(atten / R_MAX, 4)), 0), 2);
+
+    // let final_atten = window_func * inverse_square;
+    const final_atten = window_func * inverse_square;
+
+    // Lambert func
+
+    // final_colour += vec4((burley_brdf_dir(light_info, light_dir).xyz * point_light_info[i].intensity * final_atten).xyz, 0); // Point
+    
+    return lambertian(normal, light_dir) * intensity * final_atten;
+}
+
+export function dir_light_illuminate(light_dir, normal, intensity)
+{
+    return lambertian(normal, light_dir) * intensity;
 }

@@ -452,10 +452,10 @@ device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, 
 // }
 
 // Light 1
-Light_Manager.add_new_light(0,0,-12.2, 6, 4);
+Light_Manager.add_new_light(0,0,-12.2, 6, 2);
 
 // Light 2 
-Light_Manager.add_new_light(0, -2, -5, 0, 1);
+Light_Manager.add_new_light(0, -2, -5, 0, 2);
 
 const Point_Lights = device.createBuffer({
   size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
@@ -847,13 +847,13 @@ if (PATH_TEST)
 {
   // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
   
-  const MAG = 30000;
-  const PATH_DIR = helper.vectorNorm(new Float32Array([1, 0.2, 0.1]));
+  const MAG = 3000000;
+  const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 
   let res = false;
 
-  Path_Tracing.PATH_TRACE();
+  res =  Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data, dir_light_dir_and_intensity);
 
   // path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data)
   // res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data);
@@ -862,7 +862,7 @@ if (PATH_TEST)
   
   // debugLog(res);
 
-  // newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
+  newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
   // newRayPos(res[1], helper.vectorAdd(res[1], helper.vector_mult_scalar(res[2], MAG)), res[0][0], device, vertexDebugBuffer)
 }
 

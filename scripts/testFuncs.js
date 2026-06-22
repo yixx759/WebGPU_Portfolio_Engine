@@ -79,8 +79,8 @@ export function vectorTestPrints() {
     console.log("R:              " + R4);                           // expect [0, -1, 0] (straight back)
 
     console.log("=== Magnitude preserved after reflect ===");
-    const magV = helper_func.vectorMag(V);
-    const magR = helper_func.vectorMag(R);
+    const magV = helper_func.vector_mag(V);
+    const magR = helper_func.vector_mag(R);
     console.log("mag(V):         " + magV.toFixed(4));
     console.log("mag(R):         " + magR.toFixed(4));
     console.log("mags match:     " + (Math.abs(magV - magR) < 0.0001));  // expect true

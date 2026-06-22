@@ -97,8 +97,6 @@ const ONE_OVER_PI: f32 = 0.31830988618;
 
 @group(1) @binding(0) var ourSampler: sampler;
 @group(1) @binding(1) var ourTexture: texture_2d<f32>;
-
-
 // TO DO: Try to get f16 back
 
 // Light Stuff

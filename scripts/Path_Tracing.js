@@ -1,20 +1,70 @@
 import * as helper from './helperFuncs.js'
+import * as light_manager from './Light_Manager.js'
 
 // Use the vertex buffer skip normals uvs and shit only do positions.
 
 const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
-export function PATH_TRACE(origin)
+export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
 {
-    // Random sample in sphere
-    // Random smaple on hemispere
-    // Run both random smaples and claude check
-
+    
     console.log(random_sample_sphere());
     console.log(random_sample_hemi_sphere([1,0,0]));
 
     // Do Lighting from normal just lambertian with lighitng.
+
+    let direct_lighting = new Float32Array([0,0,0]);
+
+    // get colour
+    const res = path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data);
+    const colour_from_ray = res[3];
+    const norm_from_ray = res[4];
+
+    // Rember the dir array first 3 items are the dir 
+    // get mult by lambertian
+
+    // TO DO: DOSE THISE NEED /PI
+    direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(colour_from_ray, light_manager.dir_light_illuminate(directional_array, norm_from_ray, directional_array[3])));
+   
+    // direct_lighting = helper.vector_mult_scalar(direct_lighting, 1/Math.PI);
+
+    for (let i = 0; i < light_manager.light_number; i++)
+    {
+        const index = i*light_manager.ALIGNED_SIZE_OF_POINT_LIGHT_F32;
+        const light_point = [light_manager.POINT_LIGHT_ARRAY[index], light_manager.POINT_LIGHT_ARRAY[index + 1], light_manager.POINT_LIGHT_ARRAY[index + 2]];
+        const intensity = light_manager.POINT_LIGHT_ARRAY[index + 3];
+        const atten = light_manager.POINT_LIGHT_ARRAY[index + 4];
+
+        direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[1], atten, intensity, norm_from_ray)));
+    }
+    
+    console.log(direct_lighting);
+
+    return res;
+
+    // do for dir light then do for spot
+    // then compare this with actual lkughutg
+// Break
+
+    // then do indirect forget direct
+
+    // Directional then point
+
+
+
+    //  Remember skip direct light
+
+    //  Vec3f directLighting = 0;
+    // for (uint32_t i = 0; i < lights.size(); ++i) { 
+    //     Vec3f lightDir, lightIntensity; 
+    //     IsectInfo isectShad; 
+    //     lights[i]->illuminate(hitPoint, lightDir, lightIntensity, isectShad.tNear); 
+    //     bool vis = !trace(hitPoint + hitNormal * options.bias, -lightDir, objects, isectShad, kShadowRay); 
+    //     directLighting = vis * lightIntensity * std::max(0.f, hitNormal.dotProduct(-lightDir));
+    // }
+
+
     // do first ray but skip any results
     // Reflect random directions
     // Do thins until depth
@@ -24,6 +74,10 @@ export function PATH_TRACE(origin)
     // Then store this as spherical harmioc
 
 }
+
+// Func take in normal light dir, color for direcitonal
+
+// Fumc tale om normal light dir. pos, color for spot
 
 export function random_sample_sphere()
 {
@@ -144,22 +198,15 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
         }
     }
 
-    // if (origin[0] === 0 | origin[2] === -12.2)
-    // {
-    //     console.log("Second Ray")
-    //     path_trace_ray(final_res[1], final_res[2], objects, transformArray, objectArray, models, texture_data);
-    // }
-
-    console.log("og dir" + dir);
-    console.log("Final" +  final_res[2]);
+ 
     return final_res;
-    return final_res != null && final_res[0][CONST_RESULT_STRUCT_RESULT_INDEX];
 }
 
 export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms)
 {
     let coords = null;
     let final_norm = null;
+    let final_colour = null;
     let t_near = -1;
     let final_res = CONST_FALSE_RESULT;
 
@@ -173,6 +220,7 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
             t_near = res[CONST_RESULT_STRUCT_T_INDEX];
             coords = calculate_UV_from_VT(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], texs[i + 0], texs[i + 1], texs[i + 2]);
             final_norm = calculate_NORM_from_VN(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], norms[i + 0], norms[i + 1], norms[i + 2]);
+            final_colour = sample_tex_at_uv(texture, coords[CONST_INDEX_U], coords[CONST_INDEX_V], width, height);
         }
     }
 
@@ -190,10 +238,10 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
        const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
        const nu_dir = helper.vector_reflect(dir, final_norm);
      
-        return [final_res, nu_origin, nu_dir];
+        return [final_res, nu_origin, nu_dir, final_colour, final_norm];
     }
 
-    return [final_res, null, null];
+    return [final_res, null, null, null, null];
 }
 
 function sample_tex_at_uv(tex, U, V, width, height)
@@ -212,7 +260,7 @@ function sample_tex_at_uv(tex, U, V, width, height)
     const y_coord = Math.floor((1 - V) * (height - 1)) * width;
     const r_index = (x_coord + y_coord) * 4;
 
-    // return [tex[r_index], tex[r_index + 1], tex[r_index + 2], tex[r_index + 3]];
+   // return [tex[r_index], tex[r_index + 1], tex[r_index + 2], tex[r_index + 3]];
 
     // Maybe need gamma
     return [Math.pow(tex[r_index] / 255 , 2.2) * 255, Math.pow(tex[r_index + 1] / 255 , 2.2) * 255, Math.pow(tex[r_index + 2] / 255 , 2.2) * 255, Math.pow(tex[r_index + 3] / 255 , 2.2) * 255];
@@ -297,3 +345,4 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 // TO DO: BRDF bit lambertian works find for indirect
 // DO bilinear interpolation on texture sample wiht UV
 // TO DO: Test gamma later
+// TO DO: Light color will be important later (torches)

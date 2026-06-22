@@ -184,12 +184,12 @@ export function vectorCross(A, B){
   return [A[1]*B[2] - A[2]*B[1], A[2]*B[0] - A[0]*B[2] ,A[0]*B[1] - A[1]*B[0]];
 }
 
-export function vectorMag(A){
-  return Math.sqrt(A[0]*A[0]+ A[1]*A[1] + A[2]*A[2]);
+export function vector_mag(A){
+  return Math.sqrt(A[0]*A[0] + A[1]*A[1] + A[2]*A[2]);
 }
 
 export function vectorNorm(A){
-  const mag = vectorMag(A);
+  const mag = vector_mag(A);
   return [A[0]/mag, A[1]/mag, A[2]/mag];
 }
 
