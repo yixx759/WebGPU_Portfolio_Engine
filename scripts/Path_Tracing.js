@@ -6,9 +6,17 @@ import * as light_manager from './Light_Manager.js'
 const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
+const MAX_DEPTH = 4;
+const MAX_SAMPLES_PER_BOUNCE = 128;
+const MAX_SAMPLES_AROUND_SPHERE = 128;
+
 export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
 {
-    
+    // samples around sphere to fill out
+    // recursive until depth
+    // each hit samples how many times
+    // Do direct light then start recurse
+
     console.log(random_sample_sphere());
     console.log(random_sample_hemi_sphere([1,0,0]));
 
@@ -16,13 +24,30 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
 
     let direct_lighting = new Float32Array([0,0,0]);
 
+    // TO DO: CHANGE MEEEE
+    for (let i = 0; i < 1; i++)
+    {
+        const dir_from_sphere = random_sample_sphere();
+        const res = path_trace_ray(origin, dir_from_sphere, objects, transformArray, objectArray, models, texture_data);
+   
+        for (let j = 0; j < MAX_SAMPLES_PER_BOUNCE; j++)
+        {
+            const sample_on_hemisphere = random_sample_hemi_sphere(res[4]);
+
+        }
+
+    }
+
     // get colour
-    const res = path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data);
+    const res = path_trace_ray(origin, random_sample_sphere(), objects, transformArray, objectArray, models, texture_data);
     const colour_from_ray = res[3];
     const norm_from_ray = res[4];
 
     // Rember the dir array first 3 items are the dir 
     // get mult by lambertian
+
+
+
 
     // TO DO: DOSE THISE NEED /PI
     direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(colour_from_ray, light_manager.dir_light_illuminate(directional_array, norm_from_ray, directional_array[3])));
@@ -36,10 +61,24 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
         const intensity = light_manager.POINT_LIGHT_ARRAY[index + 3];
         const atten = light_manager.POINT_LIGHT_ARRAY[index + 4];
 
-        direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[1], atten, intensity, norm_from_ray)));
+        // mult by me
+        // TO DO: const indexes
+
+        // Vector from hit origin in direciton of light
+        // cpompared with length of vector from hit origin to actual light
+        // If longer to hit light then thesrse somehting between light and origin
+
+        const to_light = helper.vectorSubtract(light_point, res[1]); 
+        const length_to_light = helper.vector_mag(to_light);  
+        const dir_to_light = helper.vectorNorm(to_light);  
+        const vis = vis_check(res[1], dir_to_light, objects, transformArray, objectArray, models, texture_data) > length_to_light ? 1 : 0;
+
+        direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[1], atten, intensity, norm_from_ray)), vis));
     }
+
+    // TO DO: Make sure light isnt blcoked before applying this is seprate from colour pick ray
     
-    console.log(direct_lighting);
+    console.log("Final: " + direct_lighting);
 
     return res;
 
@@ -75,6 +114,79 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
 
 }
 
+export function direct_light(origin, dir, objects, transformArray, objectArray, models, texture_data)
+{
+    // get colour
+    const res = path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data);
+    const colour_from_ray = res[3];
+    const norm_from_ray = res[4];
+
+    // Rember the dir array first 3 items are the dir 
+    // get mult by lambertian
+
+
+    // TO DO: DOSE THISE NEED /PI
+    direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(colour_from_ray, light_manager.dir_light_illuminate(directional_array, norm_from_ray, directional_array[3])));
+   
+    // direct_lighting = helper.vector_mult_scalar(direct_lighting, 1/Math.PI);
+
+    for (let i = 0; i < light_manager.light_number; i++)
+    {
+        const index = i*light_manager.ALIGNED_SIZE_OF_POINT_LIGHT_F32;
+        const light_point = [light_manager.POINT_LIGHT_ARRAY[index], light_manager.POINT_LIGHT_ARRAY[index + 1], light_manager.POINT_LIGHT_ARRAY[index + 2]];
+        const intensity = light_manager.POINT_LIGHT_ARRAY[index + 3];
+        const atten = light_manager.POINT_LIGHT_ARRAY[index + 4];
+
+        // mult by me
+        // TO DO: const indexes
+
+        // Vector from hit origin in direciton of light
+        // cpompared with length of vector from hit origin to actual light
+        // If longer to hit light then thesrse somehting between light and origin
+
+        const to_light = helper.vectorSubtract(light_point, res[1]); 
+        const length_to_light = helper.vector_mag(to_light);  
+        const dir_to_light = helper.vectorNorm(to_light);  
+        const vis = vis_check(res[1], dir_to_light, objects, transformArray, objectArray, models, texture_data) > length_to_light ? 1 : 0;
+
+        direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[1], atten, intensity, norm_from_ray)), vis));
+    }
+
+    return [direct_lighting, res[1], res[4]];
+}
+
+const PDF = (2 * Math.PI);
+
+export function indirect(norm, depth, origin, dir, objects, transformArray, objectArray, models, texture_data)
+{
+    if (depth >= MAX_DEPTH) return helper.ZEROS;
+
+    const res = direct_light(origin, dir, objects, transformArray, objectArray, models, texture_data);
+    
+    const nu_origin = res[1];
+
+    const nu_normal = res[2];
+
+    let direct_light = res[0];
+
+    let indirect_light = new Float32Array([0, 0, 0]);
+
+    for (let j = 0; j < MAX_SAMPLES_PER_BOUNCE; j++)
+    {
+        const r1 = Math.random();
+        const sample_on_hemisphere = random_sample_hemi_sphere(norm, r1);
+
+        const indirect_light_tmp = indirect(nu_normal, depth + 1, nu_origin, sample_on_hemisphere, objects, transformArray, objectArray, models, texture_data);
+
+        // Multiply r1
+        indirect_light = helper.vectorAdd(indirect_light, helper.vector_mult_scalar(helper.vector_mult_scalar(indirect_light_tmp, r1), pdf));
+    }
+
+    indirect_light = helper.vector_mult_scalar(indirect_light, (1 / MAX_SAMPLES_PER_BOUNCE) * 2);
+
+    return helper.vectorAdd(direct_light, indirect_light);
+}
+
 // Func take in normal light dir, color for direcitonal
 
 // Fumc tale om normal light dir. pos, color for spot
@@ -88,9 +200,8 @@ export function random_sample_sphere()
 }
 
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/global-illumination-path-tracing/global-illumination-path-tracing-practical-implementation.html
-export function random_sample_hemi_sphere(normal)
+export function random_sample_hemi_sphere(normal, r1)
 {
-    const r1 = Math.random();
     const theta = Math.sqrt(1 - r1 * r1); 
     const phi = 2 * Math.random() * Math.PI;
 
@@ -191,15 +302,37 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
 
         if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
         {
-            t_near = res[CONST_RESULT_STRUCT_T_INDEX];
+            t_near = res[0][CONST_RESULT_STRUCT_T_INDEX];
             final_res = res;
             final_index = i;
-            console.log("HIT: " + res);
+        }
+    }
+ 
+    return final_res;
+}
+
+
+export function vis_check(origin, dir, objects, transformArray, objectArray, models, texture_data)
+{
+    const CONST_START_OBJECT_INDEX = 1;
+    let t_near = -1;
+
+    for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
+    {
+        let verts = transform_vertexs(models[objects[i].getModelIndex(objectArray)], objects[i], transformArray);
+        // TO DO: Print index
+        const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
+        let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
+
+        if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
+        {
+            t_near = res[0][CONST_RESULT_STRUCT_T_INDEX];
         }
     }
 
+    
  
-    return final_res;
+    return (t_near == -1) ? BIG_NUMBER : t_near;
 }
 
 export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms)
@@ -228,9 +361,6 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
 
     if (t_near != -1)
     {
-        console.log(t_near);
-        console.log(sample_tex_at_uv(texture, coords[CONST_INDEX_U], coords[CONST_INDEX_V], width, height));
-        console.log("Normal: " + final_norm);
         // TO DO: TEST THIS : vector_reflect
         
         // Find new orign and dir create ray, maybe intersect agains with ray tri

@@ -1,8 +1,12 @@
 import { debugLog } from './Render.js'
 import * as testFuncs from './testFuncs.js'
 
+export const BIG_NUMBER = 10 ** 1000;
+
 export const DIR_FORWARD = new Float32Array([0,0,-1]);
 export const WORLD_UP_VECTOR= new Float32Array([0,1,0]);
+
+export const ZEROS = new Float32Array([0, 0, 0]);
 
 const TEST_FUNCS = false;
 
