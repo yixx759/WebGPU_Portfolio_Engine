@@ -473,3 +473,11 @@ export async function loadShader(url) {
     const response = await fetch(url);
     return await response.text();
 }
+
+export function is_undefined(x)
+{
+  if (x === undefined)
+  {
+    console.log("Is Underfined BROKE");
+  }
+}
