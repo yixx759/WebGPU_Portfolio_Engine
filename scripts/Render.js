@@ -848,7 +848,9 @@ if (PATH_TEST)
   
   const MAG = 3000000;
   const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
+  // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
+  // const PATH_ORIGIN = new Float32Array([4.689762592315674,-2.9941444396972656,-5]);
 
   let res = false;
 
@@ -860,8 +862,8 @@ if (PATH_TEST)
   //res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_ORIGIN, PATH_DIR, verts[1], tester_data["data"], tester_data["width"], tester_data["height"]);
   
   // debugLog(res);
-
-  newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
+  // newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), true, device, vertexDebugBuffer)
+ newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
   // newRayPos(res[1], helper.vectorAdd(res[1], helper.vector_mult_scalar(res[2], MAG)), res[0][0], device, vertexDebugBuffer)
 }
 

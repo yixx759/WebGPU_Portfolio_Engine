@@ -123,6 +123,8 @@ export function indirect(norm, depth, origin, dir, objects, transformArray, obje
 {
     if (depth >= MAX_DEPTH) return helper.ZEROS;
 
+    origin = helper.vectorAdd(origin, helper.vector_mult_scalar(norm, 0.001));
+
     const res = direct_light(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array);
     
     if (res[INDEX_RES_NU_ORIGIN] == null) {return res[INDEX_DIRECT_LIGHT]};
@@ -147,7 +149,6 @@ export function indirect(norm, depth, origin, dir, objects, transformArray, obje
     }
 
     indirect_light = helper.vector_mult_scalar(indirect_light, (1 / MAX_SAMPLES_PER_BOUNCE) * 2);
-    console.log(indirect_light);
 
     return helper.vectorAdd(direct_lighting, indirect_light);
 }
@@ -291,13 +292,21 @@ export function vis_check(origin, dir, objects, transformArray, objectArray, mod
 
         if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
         {
+
             t_near = res[0][CONST_RESULT_STRUCT_T_INDEX];
+
+            if (t_near < 0.1)
+            {
+                console.log("NOT VISIBLE");
+                console.log("From: " + origin);
+                console.log("To: " + res[INDEX_RES_NU_ORIGIN]);
+                console.log("in Dir: " + dir);
+                
+            }
         }
     }
 
-    
- 
-    return (t_near == -1) ? BIG_NUMBER : t_near;
+    return (t_near == -1) ? helper.BIG_NUMBER : t_near;
 }
 
 export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms)
@@ -314,8 +323,18 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
 
         if (res[CONST_RESULT_STRUCT_RESULT_INDEX] == true & (t_near == -1 | res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
         {
+            
             final_res = res;
             t_near = res[CONST_RESULT_STRUCT_T_INDEX];
+
+            if (t_near < 0.1)
+            {
+                console.log("T Test: " + t_near);
+                const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
+                console.log("Original: " + origin);
+                console.log("New: " + nu_origin);
+            }
+
             coords = calculate_UV_from_VT(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], texs[i + 0], texs[i + 1], texs[i + 2]);
             final_norm = calculate_NORM_from_VN(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], norms[i + 0], norms[i + 1], norms[i + 2]);
             final_colour = sample_tex_at_uv(texture, coords[CONST_INDEX_U], coords[CONST_INDEX_V], width, height);
