@@ -133,6 +133,17 @@ export function getWorldMatrixArray(position, angleRotation, scale)
     return multiplyFloat32Matrices(multiplyFloat32Matrices(rotationMatrix,transformMatrix),scaleMatrix);
 };
 
+export function vector_3_equality(A, B)
+{
+    return ((A[0] == B[0]) && (A[1] == B[1]) && (A[2] == B[2]));
+}
+
+export function vector_4_equality(A, B)
+{
+    return ((A[0] == B[0]) && (A[1] == B[1]) && (A[2] == B[2]) && (A[3] == B[3]));
+}
+
+
 export function negateVertex(inpVec)
 {
   let vec = new Float32Array([...inpVec]);

@@ -98,7 +98,7 @@ const OTHER_TEXTURE_INDEX = 3;
 
 let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_1_START_POSITION = new Float32Array([-8,0,-12.2]);
+const WALL_1_START_POSITION = new Float32Array([-8.7,0,-12.2]);
 const WALL_1_START_SCALE = 1;
 const WALL_1_START_ROTATION = new Float32Array([90,0,90]);
 
@@ -108,7 +108,7 @@ const WALL_1_TEXTURE_INDEX = 3;
 
 let wall_1 = new objectInfo.gameObject(objectArray, WALL_1_ID, WALL_1_MODEL_INDEX, WALL_1_TEXTURE_INDEX, WALL_1_START_POSITION, WALL_1_START_SCALE, WALL_1_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_2_START_POSITION = new Float32Array([0.4000000059604645,0,-4]);
+const WALL_2_START_POSITION = new Float32Array([0.4000000059604645,0, -3.08]);
 const WALL_2_START_SCALE = 1;
 const WALL_2_START_ROTATION = new Float32Array([90,0,0]);
 
@@ -118,7 +118,7 @@ const WALL_2_TEXTURE_INDEX = 3;
 
 let wall_2 = new objectInfo.gameObject(objectArray, WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_3_START_POSITION = new Float32Array([8,0,-12.300000190734863]);
+const WALL_3_START_POSITION = new Float32Array([9, 0,-12.2]);
 const WALL_3_START_SCALE = 1;
 const WALL_3_START_ROTATION = new Float32Array([90,0,90]);
 
@@ -128,7 +128,7 @@ const WALL_3_TEXTURE_INDEX = 3;
 
 let wall_3 = new objectInfo.gameObject(objectArray, WALL_3_ID, WALL_3_MODEL_INDEX, WALL_3_TEXTURE_INDEX, WALL_3_START_POSITION, WALL_3_START_SCALE, WALL_3_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_4_START_POSITION = new Float32Array([0, 0, -20]);
+const WALL_4_START_POSITION = new Float32Array([0, 0, -21.3]);
 const WALL_4_START_SCALE = 1;
 const WALL_4_START_ROTATION = new Float32Array([90,0,0]);
 
@@ -148,7 +148,7 @@ const WALL_5_TEXTURE_INDEX = 3;
 
 let wall_5 = new objectInfo.gameObject(objectArray, WALL_5_ID, WALL_5_MODEL_INDEX, WALL_5_TEXTURE_INDEX, WALL_5_START_POSITION, WALL_5_START_SCALE, WALL_5_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_6_START_POSITION = new Float32Array([0.800000011920929,-9.300000190734863,-12.10000038]);
+const WALL_6_START_POSITION = new Float32Array([0.200000011920929,-9.300000190734863,-12.10000038]);
 const WALL_6_START_SCALE = 1;
 const WALL_6_START_ROTATION = new Float32Array([0,0,0]);
 
@@ -454,7 +454,7 @@ device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, 
 Light_Manager.add_new_light(0,0,-12.2, 10, 2);
 
 // Light 2 
-Light_Manager.add_new_light(8, -2, -5, 0, 2);
+Light_Manager.add_new_light(12, -2, -5, 0, 2);
 
 const Point_Lights = device.createBuffer({
   size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
@@ -753,7 +753,6 @@ document.addEventListener('keydown', function(evt) {
 }, false);
 
 document.addEventListener('keyup', function(evt) {
-
   
     if (evt.key === 'w' || evt.key === 's') {
         debugLog("debug Z stop");
@@ -844,9 +843,13 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 
 if (PATH_TEST)
 {
+
+const TEST_ORIGIN = new Float32Array([4.672310829162598,9.195158004760742,-20]);
+const TEST_DIR = helper.vectorNorm(new Float32Array([-0.3613148159718969,-0.7110714470419972,0.6031823944386924]));
+
   // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
   
-  const MAG = 3000000;
+  const MAG =  100;
   const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
   // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
@@ -863,8 +866,13 @@ if (PATH_TEST)
   
   // debugLog(res);
   // newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), true, device, vertexDebugBuffer)
- newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
-  // newRayPos(res[1], helper.vectorAdd(res[1], helper.vector_mult_scalar(res[2], MAG)), res[0][0], device, vertexDebugBuffer)
+
+  if (res){
+    newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
+  }
+
+  debugLog()
+  newRayPos(TEST_ORIGIN,  helper.vectorAdd(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device, vertexDebugBuffer)
 }
 
 function render() {
