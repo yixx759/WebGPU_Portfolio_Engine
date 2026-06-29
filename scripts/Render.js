@@ -118,7 +118,7 @@ const WALL_2_TEXTURE_INDEX = 3;
 
 let wall_2 = new objectInfo.gameObject(objectArray, WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_3_START_POSITION = new Float32Array([9, 0,-12.2]);
+const WALL_3_START_POSITION = new Float32Array([9.2, 0,-12.2]);
 const WALL_3_START_SCALE = 1;
 const WALL_3_START_ROTATION = new Float32Array([90,0,90]);
 
@@ -128,7 +128,7 @@ const WALL_3_TEXTURE_INDEX = 3;
 
 let wall_3 = new objectInfo.gameObject(objectArray, WALL_3_ID, WALL_3_MODEL_INDEX, WALL_3_TEXTURE_INDEX, WALL_3_START_POSITION, WALL_3_START_SCALE, WALL_3_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_4_START_POSITION = new Float32Array([0, 0, -21.3]);
+const WALL_4_START_POSITION = new Float32Array([0.2, 0, -21.3]);
 const WALL_4_START_SCALE = 1;
 const WALL_4_START_ROTATION = new Float32Array([90,0,0]);
 
@@ -844,12 +844,12 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 if (PATH_TEST)
 {
 
-const TEST_ORIGIN = new Float32Array([4.672310829162598,9.195158004760742,-20]);
-const TEST_DIR = helper.vectorNorm(new Float32Array([-0.3613148159718969,-0.7110714470419972,0.6031823944386924]));
+  const TEST_ORIGIN = new Float32Array([-7.692999839782715,-6.358855724334717,-10.07223129272461]);
+  const TEST_DIR = new Float32Array([ 0.798290491104126,0.3029164671897888,0.5205515027046204]);
 
   // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
   
-  const MAG =  100;
+  const MAG = 20.605903863122848;
   const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
   // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
@@ -871,7 +871,6 @@ const TEST_DIR = helper.vectorNorm(new Float32Array([-0.3613148159718969,-0.7110
     newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
   }
 
-  debugLog()
   newRayPos(TEST_ORIGIN,  helper.vectorAdd(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device, vertexDebugBuffer)
 }
 

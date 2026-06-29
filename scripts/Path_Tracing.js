@@ -8,7 +8,7 @@ const OFFSET_INT_VN_INDEX = 5;
 
 const MAX_DEPTH = 1;
 const MAX_SAMPLES_PER_BOUNCE = 1000; // 128;
-const MAX_SAMPLES_AROUND_SPHERE = 1; // 128;
+const MAX_SAMPLES_AROUND_SPHERE = 7000; // 128;
 
 // final_res = [true, u, v, t]
 const CONST_RESULT_STRUCT_RESULT_INDEX = 0;
@@ -44,12 +44,13 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
         // Once hit new place dont do direct
         // send new locaiton and new smaple dir to indierct
 
+        // console.log("Main Loop ray");
         if (res != null)
         {
             const nu_origin = res[INDEX_RES_NU_ORIGIN];
             const nu_normal = res[INDEX_RES_NORM];
 
-            for (let j = 0; j < MAX_SAMPLES_PER_BOUNCE; j++)
+            for (let j = 0; j < MAX_SAMPLES_AROUND_SPHERE; j++)
             {
                 const r1 = Math.random();
                 const sample_on_hemisphere = random_sample_hemi_sphere(nu_normal, r1);
@@ -59,6 +60,7 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
                     indirect_lighting[1] === helper.ZEROS[1] &&
                     indirect_lighting[2] === helper.ZEROS[2])
                 {
+                    console.log("Break at: " + j + " OUT OF: " + MAX_SAMPLES_AROUND_SPHERE)
                     console.log(indirect_lighting);
                     break;
                 }
@@ -82,7 +84,7 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
     // Then store this as spherical harmioc
 }
 
-export function direct_light(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
+export function direct_light(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array, norm)
 {
     // get colour
     const res = path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data);
@@ -92,6 +94,20 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
 
     const colour_from_ray = res[INDEX_RES_COLOUR];
     const norm_from_ray = res[INDEX_RES_NORM];
+    const object_from_ray = res[INDEX_RES_OBJECT_INDEX];
+    const index_from_ray = res[INDEX_RES_VERTEX_INDEX];
+    const origin_from_ray = res[INDEX_RES_NU_ORIGIN];
+
+    // if (origin_from_ray[0] > 9 || origin_from_ray[1] > 9.1)
+    // {
+    //     console.log("Outside box");
+
+    //     console.log("origin: " + origin);
+    //     console.log("dir: " + dir);
+    //     console.log("nu point: " + origin_from_ray);
+
+    //     console.log(res);
+    // }
 
     // Rember the dir array first 3 items are the dir 
     // get mult by lambertian
@@ -115,35 +131,42 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
         // cpompared with length of vector from hit origin to actual light
         // If longer to hit light then thesrse somehting between light and origin
 
-        const to_light = helper.vectorSubtract(light_point, res[INDEX_RES_NU_ORIGIN]); 
+        const to_light = helper.vectorSubtract(light_point, origin_from_ray); 
         const length_to_light = helper.vector_mag(to_light);  
         const dir_to_light = helper.vectorNorm(to_light);  
-      
-        const vis = vis_check(res[INDEX_RES_NU_ORIGIN], dir_to_light, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]) > length_to_light ? 1 : 0;
-        //const vis = vis_check(TEST_ORIGIN, TEST_DIR, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]) > length_to_light ? 1 : 0;
-    
-        // console.log("Spot Lighitng Col: " + colour_from_ray);
-         // console.log("spot lighitng pos: " + light_point);
-        // console.log("spot lighitng hit pos: " + res[INDEX_RES_NU_ORIGIN]);
-        // console.log("spot lighitng vis check length to collide: " + vis_check(res[INDEX_RES_NU_ORIGIN], dir_to_light, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]));
-        // console.log("spot lighitng length to light: " + length_to_light);
-        // console.log("spot lighitng illumination: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray));
 
+        const nu_origin = helper.vectorAdd(origin_from_ray, helper.vector_mult_scalar(norm_from_ray, OFFSET_FROM_TRIANGLE_FACE));
+
+        const vis = vis_check(nu_origin, dir_to_light, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]) > length_to_light ? 1 : 0;
+   
         direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)), vis));
-        
-        
-        console.log("Vis: " + vis); 
 
        if (i == 0 && vis == 0)
        {
             console.log("HIT NO LIGHT");
             console.log("Vis: " + vis);
-            console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray));
+            console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
             console.log("nu origin : " + res[INDEX_RES_NU_ORIGIN]);
             console.log("dir light : " + dir_to_light);
             console.log("light_point : " + light_point);
             console.log("lenght : " + length_to_light);
             console.log("lenght to collide : " + vis_check(res[INDEX_RES_NU_ORIGIN], dir_to_light, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]));
+            console.log("og from: " + origin);
+            console.log("og dir: " + dir);
+
+            console.log(object_from_ray);
+            let tmp_verts = transform_vertexs(models[objects[object_from_ray].getModelIndex(objectArray)], objects[object_from_ray], transformArray);
+            
+            console.log("og result verts: " + tmp_verts[0][index_from_ray * 3 + 0] + " : " + tmp_verts[0][index_from_ray * 3 + 1] + " : " + tmp_verts[0][index_from_ray * 3 + 2]);
+            
+            console.log("Direct Lighitng: " + direct_lighting);
+       }
+
+       if (i == 0 && helper.vector_3_equality(direct_lighting, helper.ZEROS))
+       {
+            console.log("HIT NO LIGHT");
+            console.log("Vis: " + vis);
+            console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
             console.log("Direct Lighitng: " + direct_lighting);
        }
     }
@@ -158,14 +181,19 @@ const INDEX_DIRECT_LIGHT = 0;
 const INDEX_NU_ORIGIN = 1;
 const INDEX_NORM = 2;
 
-const TEST_ORIGIN = new Float32Array([8.344025611877441,9.738006591796875,-18.001483917236328]);
-const TEST_DIR = new Float32Array([ -0.5928212948324045,-0.6918600140222468,0.4121803408586679]);
+const TEST_ORIGIN = new Float32Array([-7.692999839782715,-6.358855724334717,-10.07223129272461]);
+const TEST_DIR = new Float32Array([ 0.798290491104126,0.3029164671897888,0.5205515027046204]);
+
+const OFFSET_FROM_TRIANGLE_FACE = 0.007;
 
 export function indirect(norm, depth, origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
 {
     if (depth >= MAX_DEPTH) return helper.ZEROS;
+    
+    // console.log("Before: " + origin);
+    origin = helper.vectorAdd(origin, helper.vector_mult_scalar(norm, OFFSET_FROM_TRIANGLE_FACE));
 
-    origin = helper.vectorAdd(origin, helper.vector_mult_scalar(norm, 0.01));
+   // console.log("After: " + origin);
 
     //const res = direct_light(TEST_ORIGIN, TEST_DIR, objects, transformArray, objectArray, models, texture_data, directional_array);
     const res = direct_light(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array);
@@ -232,11 +260,15 @@ export function random_sample_hemi_sphere(normal, r1)
         tangent = helper.vectorNorm([0, -normal[2], normal[1]]);
     }
 
-    const cross = helper.vectorCross(normal, tangent);
+    const bitangent = helper.vectorCross(normal, tangent);
 
-    const sample = new Float32Array([dir[0] * cross[0] + dir[1] * normal[0] + dir[2] * tangent[0],
-    dir[0] * cross[1] + dir[1] * normal[1] + dir[2] * tangent[1],
-    dir[0] * cross[2] + dir[1] * normal[2] + dir[2] * tangent[2]]);
+    const sample = new Float32Array([
+    dir[0] * tangent[0]   + dir[1] * normal[0] + dir[2] * bitangent[0],
+    dir[0] * tangent[1]   + dir[1] * normal[1] + dir[2] * bitangent[1],
+    dir[0] * tangent[2]   + dir[1] * normal[2] + dir[2] * bitangent[2],
+    ]);
+
+    // console.log("Noraml: " + normal);
 
     return sample;
 }
@@ -302,6 +334,13 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
     let final_res = null;
     let final_index = -1;
 
+    // console.log("In path trace");
+
+    // if (origin[1] > 8.5 || origin[0] > 8.5 )
+    // {
+    //     console.log("Origin OUTSIDE TOP");
+    // }
+
     for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
     {
         let verts = transform_vertexs(models[objects[i].getModelIndex(objectArray)], objects[i], transformArray);
@@ -309,11 +348,30 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
         const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
 
-        if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
+        const tmp_T_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX] ;
+        // console.log("Before intersection");
+        // console.log("T: " +tmp_T_near);
+        // console.log("positon of object: " + objects[i].getPosition(transformArray));
+        
+
+        if (res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (tmp_T_near < t_near)))
         {
-            t_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX];
+            // console.log("Intersect");
+            // console.log("positon of object: " + objects[i].getPosition(transformArray));
+
+            // console.log("current  tnear: " + t_near);
+
+            t_near = tmp_T_near;
+
+           // console.log("tnear: " + t_near);
+
             final_res = res;
             final_index = i;
+
+            if (res[INDEX_RES_NU_ORIGIN][1] > 8.5 || res[INDEX_RES_NU_ORIGIN][0] > 8.5 )
+            {
+                // console.log("OUTSIDE TOP");
+            }
         }
     }
  
@@ -337,20 +395,21 @@ export function vis_check(origin, dir, objects, transformArray, objectArray, mod
         let verts = transform_vertexs(models[objects[i].getModelIndex(objectArray)], objects[i], transformArray);
         // TO DO: Print index
         const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
+      
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2], vertex_skip_index, object_skip_index, i);
 
         if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
         {
             t_near = res[0][CONST_RESULT_STRUCT_T_INDEX];
 
-            // if (t_near < 0.0001)
-            // {
-            //     console.log("NOT VISIBLE");
-            //     console.log("From: " + origin);
-            //     console.log("To: " + res[INDEX_RES_NU_ORIGIN]);
-            //     console.log("in Dir: " + dir);
-                
-            // }
+            if (t_near < 2)
+            {
+                // BE CAREFUL THIS COULD BE INSIDE WALL FACE TO OUTSIDE WALL FACE.
+                // console.log("NOT VISIBLE");
+                // console.log("From: " + origin);
+                // console.log("To: " + res[INDEX_RES_NU_ORIGIN]);
+                // console.log("in Dir: " + dir);
+            }
 
         }
     }
@@ -358,6 +417,8 @@ export function vis_check(origin, dir, objects, transformArray, objectArray, mod
     return (t_near == -1) ? helper.BIG_NUMBER : t_near;
 }
 
+// TO DO: Way too scrappy a fix
+const T_MIN = 0.1;
 
  // Can just do second one
 export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms, skip_index = -1, skip_object_index = -1, current_object_index = -1)
@@ -375,18 +436,39 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
         {
             let res = ray_triangle_intersection(origin, dir, vertexs[i + 0], vertexs[i + 1], vertexs[i + 2])
 
-            if (res[CONST_RESULT_STRUCT_RESULT_INDEX] == true & (t_near == -1 | res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
+            if (res[CONST_RESULT_STRUCT_RESULT_INDEX] == true &&
+                (res[CONST_RESULT_STRUCT_T_INDEX] > T_MIN) &&
+                (t_near == -1 | res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
             {
         
                 final_res = res;
                 t_near = res[CONST_RESULT_STRUCT_T_INDEX];
 
-                if (t_near < 0.0001)
+                if (t_near < 3)
                 {
-                    console.log("T Test: " + t_near);
-                    const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
-                    console.log("Original: " + origin);
-                    console.log("New: " + nu_origin);
+                    // console.log("T Test: " + t_near);
+                    // const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
+                   
+                    // // console.log("Hit that box");
+                    // console.log("Original: " + origin);
+                    // console.log("dir: " + dir);
+                    // // If not -1 its vis check
+                    // console.log("Is vis check vertex index: " + skip_index);
+                    // console.log("skip object index: " + skip_object_index);
+                    // console.log("current object: " + current_object_index);
+
+                    if (skip_object_index == current_object_index)
+                    {
+                        // console.log("New: " + nu_origin);
+                        // console.log("Obejject : " + current_object_index);
+                        // console.log("index : " + i);
+                        // console.log("Vertexes: " + vertexs[i + 0] + " : " + vertexs[i + 1] + " : " + vertexs[i + 2]);
+                        // console.log("skip Obejject : " + skip_object_index);
+                        // console.log("skip index : " + skip_index);
+                        // console.log("og Vertexes: " + vertexs[skip_index + 0] + " : " + vertexs[skip_index + 1] + " : " + vertexs[skip_index + 2]);
+                        // // THIS IS WRONG AS DIFFREN OBJHECT TANSFROM VERTEX ARRAY DIFFRENTLEYU  
+                    }
+                    
                 }
 
                 coords = calculate_UV_from_VT(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], texs[i + 0], texs[i + 1], texs[i + 2]);
