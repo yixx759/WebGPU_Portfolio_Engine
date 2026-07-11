@@ -7,8 +7,8 @@ const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
 const MAX_DEPTH = 1;
-const MAX_SAMPLES_PER_BOUNCE = 1000; // 128;
-const MAX_SAMPLES_AROUND_SPHERE = 7000; // 128;
+const MAX_SAMPLES_PER_BOUNCE = 100; // 128;
+const MAX_SAMPLES_AROUND_SPHERE = 100; // 128;
 
 // final_res = [true, u, v, t]
 const CONST_RESULT_STRUCT_RESULT_INDEX = 0;
@@ -32,13 +32,13 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
     // each hit samples how many times
     // Do direct light then start recurse
 
-    // Do Lighting from normal just lambertian with lighitng.
-
-    let indirect_lighting = null;
 
     // TO DO: CHANGE MEEEE
     for (let i = 0; i < 1; i++)
     {
+        // Do Lighting from normal just lambertian with lighitng.
+        let indirect_lighting =  new Float32Array([0, 0, 0]);
+
         const dir_from_sphere = random_sample_sphere();
         const res = path_trace_ray(origin, dir_from_sphere, objects, transformArray, objectArray, models, texture_data);
         // Once hit new place dont do direct
@@ -50,12 +50,14 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
             const nu_origin = res[INDEX_RES_NU_ORIGIN];
             const nu_normal = res[INDEX_RES_NORM];
 
-            for (let j = 0; j < MAX_SAMPLES_AROUND_SPHERE; j++)
+            for (let j = 0; j < MAX_SAMPLES_PER_BOUNCE; j++)
             {
                 const r1 = Math.random();
                 const sample_on_hemisphere = random_sample_hemi_sphere(nu_normal, r1);
-                indirect_lighting = indirect(nu_normal, 0, nu_origin, sample_on_hemisphere, objects, transformArray, objectArray, models, texture_data, directional_array);
-            
+                const tmp_indirect_lighting = indirect(nu_normal, 0, nu_origin, sample_on_hemisphere, objects, transformArray, objectArray, models, texture_data, directional_array);
+                
+                indirect_lighting = helper.vectorAdd(indirect_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(tmp_indirect_lighting, r1), PDF));
+
                 if (indirect_lighting[0] === helper.ZEROS[0] && 
                     indirect_lighting[1] === helper.ZEROS[1] &&
                     indirect_lighting[2] === helper.ZEROS[2])
@@ -69,12 +71,17 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
 
         // TOTAL ME
 
+        indirect_lighting = helper.vector_div_scalar(indirect_lighting, MAX_SAMPLES_PER_BOUNCE);
+        indirect_lighting = helper.vector_mult_scalar(indirect_lighting, helper.ONE_OVER_PI);
+
+        console.log(indirect_lighting);
+
     }
 
-    console.log(indirect_lighting);
+    
 
     // devide me
-    return indirect_lighting;
+    return 0;
 
     // do first ray but skip any results
     // Do thins until depth
@@ -220,6 +227,8 @@ export function indirect(norm, depth, origin, dir, objects, transformArray, obje
     }
 
     indirect_light = helper.vector_mult_scalar(indirect_light, (1 / MAX_SAMPLES_PER_BOUNCE) * 2);
+
+    direct_lighting = helper.vector_mult_scalar(direct_lighting, helper.ONE_OVER_PI);
 
     return helper.vectorAdd(direct_lighting, indirect_light);
 }

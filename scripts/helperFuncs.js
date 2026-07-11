@@ -8,6 +8,8 @@ export const WORLD_UP_VECTOR= new Float32Array([0,1,0]);
 
 export const ZEROS = new Float32Array([0, 0, 0]);
 
+export const ONE_OVER_PI = 0.31830988618;
+
 const TEST_FUNCS = false;
 
 if (TEST_FUNCS)
@@ -164,6 +166,10 @@ export function vector_mult(A, mag_vector){
 
 export function vector_mult_scalar(A, mag_scalar){
   return new Float32Array([A[0]*mag_scalar, A[1]*mag_scalar, A[2]*mag_scalar, 0]);
+}
+
+export function vector_div_scalar(A, mag_scalar){
+  return new Float32Array([A[0]/mag_scalar, A[1]/mag_scalar, A[2]/mag_scalar, 0]);
 }
 
 export function vector_add_cam(A, X, Z){
