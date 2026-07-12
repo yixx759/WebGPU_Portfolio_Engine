@@ -1,14 +1,17 @@
 import * as helper from './helperFuncs.js'
 import * as light_manager from './Light_Manager.js'
+import * as sh_funcs from './SH_Funcs.js'
+
+const SH_DEGREES = 3;
 
 // Use the vertex buffer skip normals uvs and shit only do positions.
 
 const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
-const MAX_DEPTH = 1;
-const MAX_SAMPLES_PER_BOUNCE = 100; // 128;
-const MAX_SAMPLES_AROUND_SPHERE = 100; // 128;
+const MAX_DEPTH = 2;
+const MAX_SAMPLES_PER_BOUNCE = 10; // 128;
+const MAX_SAMPLES_AROUND_SPHERE = 10; // 128;
 
 // final_res = [true, u, v, t]
 const CONST_RESULT_STRUCT_RESULT_INDEX = 0;
@@ -33,8 +36,13 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
     // Do direct light then start recurse
 
 
+    // Get cefficents
+     var shRgb = [ 
+    [],[],[]
+    ];
+
     // TO DO: CHANGE MEEEE
-    for (let i = 0; i < 1; i++)
+    for (let i = 0; i < MAX_SAMPLES_AROUND_SPHERE; i++)
     {
         // Do Lighting from normal just lambertian with lighitng.
         let indirect_lighting =  new Float32Array([0, 0, 0]);
@@ -74,11 +82,14 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
         indirect_lighting = helper.vector_div_scalar(indirect_lighting, MAX_SAMPLES_PER_BOUNCE);
         indirect_lighting = helper.vector_mult_scalar(indirect_lighting, helper.ONE_OVER_PI);
 
-        console.log(indirect_lighting);
 
+        shRgb = sh_funcs.sampleToSH(dir_from_sphere, indirect_lighting, SH_DEGREES, shRgb);
+
+        console.log(indirect_lighting);
     }
 
     
+    console.log(shRgb);
 
     // devide me
     return 0;
@@ -104,6 +115,11 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
     const object_from_ray = res[INDEX_RES_OBJECT_INDEX];
     const index_from_ray = res[INDEX_RES_VERTEX_INDEX];
     const origin_from_ray = res[INDEX_RES_NU_ORIGIN];
+
+      if (origin_from_ray[1] > 9.5 || origin_from_ray[1] < -9.5 || origin_from_ray[0] > 9.2 ||  origin_from_ray[0] < -8.7)
+        {
+                console.log("OUTSIDE box");
+        }
 
     // if (origin_from_ray[0] > 9 || origin_from_ray[1] > 9.1)
     // {
@@ -168,12 +184,27 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
             
             console.log("Direct Lighitng: " + direct_lighting);
        }
-
-       if (i == 0 && helper.vector_3_equality(direct_lighting, helper.ZEROS))
+       else if (i == 0 && helper.vector_3_equality(direct_lighting, helper.ZEROS))
        {
-            console.log("HIT NO LIGHT");
+            console.log("HIT NO LIGHT With VIS");
             console.log("Vis: " + vis);
             console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
+            if (light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray) == 0)
+            {
+                console.log("norm_from_ray: " + norm_from_ray);
+
+                // light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray, true);
+
+                console.log("light_point: " + light_point);
+                console.log("res[INDEX_RES_NU_ORIGIN]: " + res[INDEX_RES_NU_ORIGIN]);
+                const tmp_ray =  helper.vectorSubtract(light_point, res[INDEX_RES_NU_ORIGIN]);
+                
+                console.log("helper.vectorSubtract(light_pos, surface_pos): " + tmp_ray);
+                console.log("dir: " + helper.vectorNorm(tmp_ray));
+                console.log("Intensity: " + intensity);
+                console.log("Atten: " + atten);
+            }
+
             console.log("Direct Lighitng: " + direct_lighting);
        }
     }
@@ -316,6 +347,10 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
         norm_verts[norm_verts_index++] = helper.multiply_matrix_and_normal(world_matrix, norm);
     }
 
+    // console.log("norm verts");
+
+    // console.log(norm_verts);
+
     return [world_verts, tex_verts, norm_verts];
 }
 
@@ -377,10 +412,6 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
             final_res = res;
             final_index = i;
 
-            if (res[INDEX_RES_NU_ORIGIN][1] > 8.5 || res[INDEX_RES_NU_ORIGIN][0] > 8.5 )
-            {
-                // console.log("OUTSIDE TOP");
-            }
         }
     }
  

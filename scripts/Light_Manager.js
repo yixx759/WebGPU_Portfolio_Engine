@@ -50,26 +50,65 @@ export function lambertian(N, L)
     return Math.max(helper.vectorDot(N, L), 0);
 }
 
-export function point_light_illuminate(light_pos, surface_pos, atten, intensity, normal)
+export function point_light_illuminate(light_pos, surface_pos, atten, intensity, normal, debug = false)
 {
     // let light_ray = point_light_info[i].pos - fragData.wpos;
     const light_ray = helper.vectorSubtract(light_pos, surface_pos);
+
+    if (debug)
+    {
+        console.log("Light ray: " + light_ray);
+    }
     
     // light_dir = normalize(light_ray);
     const light_dir = helper.vectorNorm(light_ray);
 
+    if (debug)
+    {
+        console.log("Light dir: " + light_dir);
+    }
+
     // let distance = length(light_ray);
     const dist = helper.vector_mag(light_ray);
+
+    if (debug)
+    {
+        console.log("dist: " + dist);
+    }
 
     // // TO DO: This could be square auto
     // let inverse_square = (point_light_info[i].attenuation * point_light_info[i].attenuation) / ((distance * distance) + INVERSE_DENOM_CONST);
     const inverse_square = (atten * atten) / (dist * dist) + INVERSE_DENOM_CONST;
 
+    if (debug)
+    {
+        console.log("inverse_square: " + inverse_square);
+    }
+
     // let window_func = pow(max((1 - pow(point_light_info[i].attenuation / R_MAX, 4)), 0), 2);
     const window_func = Math.pow(Math.max((1 - Math.pow(atten / R_MAX, 4)), 0), 2);
 
+     if (debug)
+    {
+        console.log("window_func: " + window_func);
+    }
+
     // let final_atten = window_func * inverse_square;
     const final_atten = window_func * inverse_square;
+
+    if (debug)
+    {
+        console.log("final_atten: " + final_atten);
+    }
+
+    
+    if (debug)
+    {
+        console.log("light_dir: " + light_dir);
+        console.log("normal: " + normal);
+        console.log("dot: " + helper.vectorDot(normal, light_dir));
+        console.log("lambert: " + lambertian(normal, light_dir));
+    }
 
     // Lambert func
 

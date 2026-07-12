@@ -844,12 +844,12 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 if (PATH_TEST)
 {
 
-  const TEST_ORIGIN = new Float32Array([-7.692999839782715,-6.358855724334717,-10.07223129272461]);
-  const TEST_DIR = new Float32Array([ 0.798290491104126,0.3029164671897888,0.5205515027046204]);
+  const TEST_ORIGIN = new Float32Array([ -7.692999839782715,8.434772491455078,-12.690458297729492]);
+  const TEST_DIR = new Float32Array([0.25433915853500366,0.9196410775184631,-0.2992856502532959]);
 
   // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
   
-  const MAG = 20.605903863122848;
+  const MAG = 12.74056736299502;
   const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
   // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
   const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
