@@ -116,10 +116,12 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
     const index_from_ray = res[INDEX_RES_VERTEX_INDEX];
     const origin_from_ray = res[INDEX_RES_NU_ORIGIN];
 
-      if (origin_from_ray[1] > 9.5 || origin_from_ray[1] < -9.5 || origin_from_ray[0] > 9.2 ||  origin_from_ray[0] < -8.7)
-        {
-                console.log("OUTSIDE box");
-        }
+    if (origin_from_ray[1] > 9.5 || origin_from_ray[1] < -9.5 || origin_from_ray[0] > 9.2 ||  origin_from_ray[0] < -8.7 || origin_from_ray[2] < -21.3 || origin_from_ray[2] > -3.3)
+    {
+        console.log("OUTSIDE box!");
+        console.log("nu origin: " + origin_from_ray);
+        path_trace_ray_debug(origin, dir, objects, transformArray, objectArray, models, texture_data);
+    }
 
     // if (origin_from_ray[0] > 9 || origin_from_ray[1] > 9.1)
     // {
@@ -385,6 +387,7 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
     //     console.log("Origin OUTSIDE TOP");
     // }
 
+   //  console.log("Path trace!");
     for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
     {
         let verts = transform_vertexs(models[objects[i].getModelIndex(objectArray)], objects[i], transformArray);
@@ -392,22 +395,66 @@ export function path_trace_ray(origin, dir, objects, transformArray, objectArray
         const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
 
-        const tmp_T_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX] ;
+        const tmp_T_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX];
         // console.log("Before intersection");
         // console.log("T: " +tmp_T_near);
         // console.log("positon of object: " + objects[i].getPosition(transformArray));
         
-
         if (res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (tmp_T_near < t_near)))
         {
             // console.log("Intersect");
             // console.log("positon of object: " + objects[i].getPosition(transformArray));
 
             // console.log("current  tnear: " + t_near);
+            
+            // const origin_from_ray = res[INDEX_RES_NU_ORIGIN];
+            // if (origin_from_ray[1] > 9.5 || origin_from_ray[1] < -9.5 || origin_from_ray[0] > 9.2 ||  origin_from_ray[0] < -8.7)
+            // {
+            //     console.log("OUTSIDE box IN INTERSECTION");
+            //     console.log("outsaide  tnear: " + tmp_T_near);
+            // }
 
             t_near = tmp_T_near;
-
            // console.log("tnear: " + t_near);
+
+            final_res = res;
+            final_index = i;
+
+        }
+    }
+ 
+    if (final_res != null)
+    {
+        final_res.push(final_index);
+    }
+
+    return final_res;
+}
+
+export function path_trace_ray_debug(origin, dir, objects, transformArray, objectArray, models, texture_data)
+{
+    const CONST_START_OBJECT_INDEX = 1;
+    let t_near = -1;
+    let final_res = null;
+    let final_index = -1;
+
+   
+    for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
+    {
+        let verts = transform_vertexs(models[objects[i].getModelIndex(objectArray)], objects[i], transformArray);
+        // TO DO: Print index
+        const tex_data = texture_data[objects[i].getTextureIndex(objectArray)];
+        let res = intersect_objects_triangles_debug(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
+
+        const tmp_T_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX];
+
+        if (res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (tmp_T_near < t_near)))
+        {
+            console.log("Intersect");
+            console.log("index: " + i);
+            console.log("tmp_T_near: " + tmp_T_near);
+
+            t_near = tmp_T_near;
 
             final_res = res;
             final_index = i;
@@ -458,7 +505,7 @@ export function vis_check(origin, dir, objects, transformArray, objectArray, mod
 }
 
 // TO DO: Way too scrappy a fix
-const T_MIN = 0.1;
+const T_MIN = 0.01;
 
  // Can just do second one
 export function intersect_objects_triangles(vertexs, origin, dir, texs, texture, width, height, norms, skip_index = -1, skip_object_index = -1, current_object_index = -1)
@@ -478,38 +525,13 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
 
             if (res[CONST_RESULT_STRUCT_RESULT_INDEX] == true &&
                 (res[CONST_RESULT_STRUCT_T_INDEX] > T_MIN) &&
-                (t_near == -1 | res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
+                (t_near == -1 || res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
             {
         
                 final_res = res;
                 t_near = res[CONST_RESULT_STRUCT_T_INDEX];
-
-                if (t_near < 3)
-                {
-                    // console.log("T Test: " + t_near);
-                    // const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
-                   
-                    // // console.log("Hit that box");
-                    // console.log("Original: " + origin);
-                    // console.log("dir: " + dir);
-                    // // If not -1 its vis check
-                    // console.log("Is vis check vertex index: " + skip_index);
-                    // console.log("skip object index: " + skip_object_index);
-                    // console.log("current object: " + current_object_index);
-
-                    if (skip_object_index == current_object_index)
-                    {
-                        // console.log("New: " + nu_origin);
-                        // console.log("Obejject : " + current_object_index);
-                        // console.log("index : " + i);
-                        // console.log("Vertexes: " + vertexs[i + 0] + " : " + vertexs[i + 1] + " : " + vertexs[i + 2]);
-                        // console.log("skip Obejject : " + skip_object_index);
-                        // console.log("skip index : " + skip_index);
-                        // console.log("og Vertexes: " + vertexs[skip_index + 0] + " : " + vertexs[skip_index + 1] + " : " + vertexs[skip_index + 2]);
-                        // // THIS IS WRONG AS DIFFREN OBJHECT TANSFROM VERTEX ARRAY DIFFRENTLEYU  
-                    }
-                    
-                }
+           
+             
 
                 coords = calculate_UV_from_VT(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], texs[i + 0], texs[i + 1], texs[i + 2]);
                 final_norm = calculate_NORM_from_VN(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], norms[i + 0], norms[i + 1], norms[i + 2]);
@@ -528,6 +550,65 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
         
         // Find new orign and dir create ray, maybe intersect agains with ray tri
 
+       // console.log("Final Indesx: " + final_index);
+       const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
+       const nu_dir = helper.vector_reflect(dir, final_norm);
+     
+        return [final_res, nu_origin, nu_dir, final_colour, final_norm, final_index];
+    }
+
+    return [final_res, null, null, null, null, null];
+}
+
+ // Can just do second one
+export function intersect_objects_triangles_debug(vertexs, origin, dir, texs, texture, width, height, norms, skip_index = -1, skip_object_index = -1, current_object_index = -1)
+{
+    let coords = null;
+    let final_norm = null;
+    let final_colour = null;
+    let t_near = -1;
+    let final_res = CONST_FALSE_RESULT;
+    let final_index = null;
+
+    console.log("start intersect")
+    for (let i = 0; i < vertexs.length; i += 3)
+    {
+        if ((skip_index == -1 || skip_object_index == -1 || current_object_index == -1) || !(i == skip_index && (skip_object_index == current_object_index)))
+        {
+            let res = ray_triangle_intersection(origin, dir, vertexs[i + 0], vertexs[i + 1], vertexs[i + 2]);
+
+            if (res[CONST_RESULT_STRUCT_RESULT_INDEX] == true &&
+                (res[CONST_RESULT_STRUCT_T_INDEX] > T_MIN) &&
+                (t_near == -1 || res[CONST_RESULT_STRUCT_T_INDEX] < t_near))
+            {
+        
+                final_res = res;
+                t_near = res[CONST_RESULT_STRUCT_T_INDEX];
+           
+                console.log("origin: " + origin);
+                console.log("dir: " + dir);
+                console.log("final index: " + i);
+                console.log("final tnear: " + t_near);
+                console.log("verexes: " + vertexs[i + 0] +  vertexs[i + 1] + vertexs[i + 2]);
+
+                coords = calculate_UV_from_VT(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], texs[i + 0], texs[i + 1], texs[i + 2]);
+                final_norm = calculate_NORM_from_VN(res[CONST_RESULT_STRUCT_U_INDEX], res[CONST_RESULT_STRUCT_V_INDEX], norms[i + 0], norms[i + 1], norms[i + 2]);
+                final_colour = sample_tex_at_uv(texture, coords[CONST_INDEX_U], coords[CONST_INDEX_V], width, height);
+                final_index = i;
+            
+            }
+        }
+    }
+
+    // TO DO: SRG TO LINEAR
+
+    if (t_near != -1)
+    {
+        // TO DO: TEST THIS : vector_reflect
+        
+        // Find new orign and dir create ray, maybe intersect agains with ray tri
+
+       // console.log("Final Indesx: " + final_index);
        const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
        const nu_dir = helper.vector_reflect(dir, final_norm);
      
