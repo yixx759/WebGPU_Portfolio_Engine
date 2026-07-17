@@ -6,6 +6,7 @@ import * as testFuncs from './testFuncs.js'
 import * as BRDF_configs from './BRDF_configs.js';
 import * as Light_Manager from './Light_Manager.js';
 import * as Path_Tracing from './Path_Tracing.js';
+import * as sh_funcs from './SH_Funcs.js'
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 const DEBUG = true;
@@ -16,6 +17,9 @@ const TARGET_INDEX = 2;
 const MOVE_TARGET_TEST = false;
 
 const PATH_TEST = true;
+
+const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
+const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
 
 // TO DO: debug func script
 // TO DO: dont cretae new memory everytime get positons
@@ -98,7 +102,7 @@ const OTHER_TEXTURE_INDEX = 3;
 
 let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_1_START_POSITION = new Float32Array([-8.7,0,-12.2]);
+const WALL_1_START_POSITION = new Float32Array([-8.738,0,-12.2]);
 const WALL_1_START_SCALE = 1;
 const WALL_1_START_ROTATION = new Float32Array([90,0,90]);
 
@@ -108,7 +112,7 @@ const WALL_1_TEXTURE_INDEX = 3;
 
 let wall_1 = new objectInfo.gameObject(objectArray, WALL_1_ID, WALL_1_MODEL_INDEX, WALL_1_TEXTURE_INDEX, WALL_1_START_POSITION, WALL_1_START_SCALE, WALL_1_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_2_START_POSITION = new Float32Array([0.4000000059604645,0, -3.08]);
+const WALL_2_START_POSITION = new Float32Array([0.4000000059604645,0, -3.055]);
 const WALL_2_START_SCALE = 1;
 const WALL_2_START_ROTATION = new Float32Array([90,0,0]);
 
@@ -118,7 +122,7 @@ const WALL_2_TEXTURE_INDEX = 3;
 
 let wall_2 = new objectInfo.gameObject(objectArray, WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_3_START_POSITION = new Float32Array([9.2, 0,-12.2]);
+const WALL_3_START_POSITION = new Float32Array([9.49, 0,-12.2]);
 const WALL_3_START_SCALE = 1;
 const WALL_3_START_ROTATION = new Float32Array([90,0,90]);
 
@@ -128,7 +132,7 @@ const WALL_3_TEXTURE_INDEX = 3;
 
 let wall_3 = new objectInfo.gameObject(objectArray, WALL_3_ID, WALL_3_MODEL_INDEX, WALL_3_TEXTURE_INDEX, WALL_3_START_POSITION, WALL_3_START_SCALE, WALL_3_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_4_START_POSITION = new Float32Array([0.2, 0, -21.3]);
+const WALL_4_START_POSITION = new Float32Array([0.4, 0, -21.34]);
 const WALL_4_START_SCALE = 1;
 const WALL_4_START_ROTATION = new Float32Array([90,0,0]);
 
@@ -138,7 +142,7 @@ const WALL_4_TEXTURE_INDEX = 3;
 
 let wall_4 = new objectInfo.gameObject(objectArray, WALL_4_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, WALL_4_START_POSITION, WALL_4_START_SCALE, WALL_4_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_5_START_POSITION = new Float32Array([0.20000000298023224,9.5,-12.600000381469727]);
+const WALL_5_START_POSITION = new Float32Array([0.35000000298023224,10.43,-12.600000381469727]);
 const WALL_5_START_SCALE = 1;
 const WALL_5_START_ROTATION = new Float32Array([0,0,0]);
 
@@ -148,7 +152,7 @@ const WALL_5_TEXTURE_INDEX = 3;
 
 let wall_5 = new objectInfo.gameObject(objectArray, WALL_5_ID, WALL_5_MODEL_INDEX, WALL_5_TEXTURE_INDEX, WALL_5_START_POSITION, WALL_5_START_SCALE, WALL_5_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-const WALL_6_START_POSITION = new Float32Array([0.200000011920929,-9.300000190734863,-12.10000038]);
+const WALL_6_START_POSITION = new Float32Array([0.3500000011920929,-9.900000190734863,-12.10000038]);
 const WALL_6_START_SCALE = 1;
 const WALL_6_START_ROTATION = new Float32Array([0,0,0]);
 
@@ -348,7 +352,8 @@ async function init() {
     const group2Layout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }},
-      { binding: 1, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }}
+      { binding: 1, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }},
+      { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" }},
     ],
 
     label: "bind group 2",
@@ -426,54 +431,6 @@ if (DEBUG)
 {
     renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
 }
-
-// Lights
-// struct DIR_LIGHT {
-//   dir : vec3f,
-//   intensity : f32
-// }
-
-const light_intensity = 0;
-const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
-
-// TO DO: SHould this be constant?
-const Directional_Lights = device.createBuffer({
-  size:  objectInfo.BYTES_OF_VECTOR3 + objectInfo.BYTES_OF_FLOAT_32, // dir (vec3) + intensity (f32)
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-});
-
-device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, dir_light_dir_and_intensity.length);
-
-// struct POINT_LIGHT {
-//   position : vec3f,
-//   intensity : f32,
-//   attenuation : f32
-// }
-
-// Light 1
-Light_Manager.add_new_light(0,0,-12.2, 10, 2);
-
-// Light 2 
-Light_Manager.add_new_light(12, -2, -5, 0, 2);
-
-const Point_Lights = device.createBuffer({
-  size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-});
-
-device.queue.writeBuffer(Point_Lights, 0, Light_Manager.POINT_LIGHT_ARRAY, 0, Light_Manager.POINT_LIGHT_ARRAY.length);
-
-const lightBindGroup = device.createBindGroup({
-    layout: renderPipeline.getBindGroupLayout(2),
-    entries: [
-        {binding: 0, resource: {
-          buffer: Directional_Lights
-        }},
-        {binding: 1, resource: {
-          buffer: Point_Lights
-        }},
-    ],
-    });
 
 // Matrixs
 
@@ -668,6 +625,68 @@ const bindGroupTex = device.createBindGroup({
   bindGroupTexArray.push(bindGroupTex);
 }
 
+// Lights
+// struct DIR_LIGHT {
+//   dir : vec3f,
+//   intensity : f32
+// }
+
+const light_intensity = 0;
+const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
+
+// TO DO: SHould this be constant?
+const Directional_Lights = device.createBuffer({
+  size:  objectInfo.BYTES_OF_VECTOR3 + objectInfo.BYTES_OF_FLOAT_32, // dir (vec3) + intensity (f32)
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, dir_light_dir_and_intensity.length);
+
+// struct POINT_LIGHT {
+//   position : vec3f,
+//   intensity : f32,
+//   attenuation : f32
+// }
+
+// Light 1
+Light_Manager.add_new_light(0,0,-12.2, 10, 2);
+
+// Light 2 
+Light_Manager.add_new_light(12, -2, -5, 0, 2);
+
+const Point_Lights = device.createBuffer({
+  size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+device.queue.writeBuffer(Point_Lights, 0, Light_Manager.POINT_LIGHT_ARRAY, 0, Light_Manager.POINT_LIGHT_ARRAY.length);
+
+const coeffs = Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data, dir_light_dir_and_intensity);
+
+const SH_COEFF = device.createBuffer({
+  size:  3 * sh_funcs.TOTAL_COEFF * objectInfo.BYTES_OF_FLOAT_32, 
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+device.queue.writeBuffer(SH_COEFF, 0, coeffs, 0, coeffs.length);
+
+debugLog(coeffs);
+
+const lightBindGroup = device.createBindGroup({
+  layout: renderPipeline.getBindGroupLayout(2),
+  entries: [
+      {binding: 0, resource: {
+        buffer: Directional_Lights
+      }},
+      {binding: 1, resource: {
+        buffer: Point_Lights
+      }},
+      {binding: 2, resource: {
+        buffer: SH_COEFF
+      }}
+  ],
+  });
+
 const targetPos = [0,0,2];
 const up = [0,1,0];
 
@@ -836,23 +855,22 @@ const depthTexture = device.createTexture({
 });
 
 // Put up here to avoid re allocation
-var camPos = new Float32Array([keyX,0,keyY+10, 1]);
+var camPos = new Float32Array([keyX,-5.5,keyY+10, 1]);
 var camPosPrev = new Float32Array([keyX,0,keyY+10, 1]);
 var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), Math.sin(mouse_Y), forward_vector_mat[2] * Math.cos(mouse_Y)])
 
-if (PATH_TEST)
+if (false & PATH_TEST)
 {
 
-  const TEST_ORIGIN = new Float32Array([ -7.692999839782715,8.434772491455078,-12.690458297729492]);
-  const TEST_DIR = new Float32Array([0.25433915853500366,0.9196410775184631,-0.2992856502532959]);
+  const TEST_ORIGIN = new Float32Array([-7.737100124359131,-3.6731858253479004,-20.333486557006836]);
+  const TEST_DIR = new Float32Array([0.18422017991542816,0.39131084084510803,-0.9016311764717102]);
 
   // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
   
   const MAG = 12.74056736299502;
-  const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
   // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
-  const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
+  // const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
   // const PATH_ORIGIN = new Float32Array([4.689762592315674,-2.9941444396972656,-5]);
 
   let res = false;
@@ -899,7 +917,7 @@ function render() {
   }
   else
   {
-      helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3]);
+    helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3]);
   }
  
   let OBJECTS_TO_RENDER = SINGLE_TEST ? tmp_first_1 : AMOUNT_OF_OBJECTS;

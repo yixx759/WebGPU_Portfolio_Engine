@@ -9,9 +9,9 @@ const SH_DEGREES = 3;
 const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
-const MAX_DEPTH = 2;
-const MAX_SAMPLES_PER_BOUNCE = 10; // 128;
-const MAX_SAMPLES_AROUND_SPHERE = 10; // 128;
+const MAX_DEPTH = 3;
+const MAX_SAMPLES_PER_BOUNCE = 100; // 128;
+const MAX_SAMPLES_AROUND_SPHERE = 120; // 128;
 
 // final_res = [true, u, v, t]
 const CONST_RESULT_STRUCT_RESULT_INDEX = 0;
@@ -28,13 +28,16 @@ const INDEX_RES_NORM = 4;
 const INDEX_RES_VERTEX_INDEX = 5;
 const INDEX_RES_OBJECT_INDEX = 6;
 
+const RGB_COFF_RED_INDEX = 0; 
+const RGB_COFF_GREEN_INDEX = 1; 
+const RGB_COFF_BLUE_INDEX = 2; 
+
 export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
 {
     // samples around sphere to fill out
     // recursive until depth
     // each hit samples how many times
     // Do direct light then start recurse
-
 
     // Get cefficents
      var shRgb = [ 
@@ -92,7 +95,7 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
     console.log(shRgb);
 
     // devide me
-    return 0;
+    return sh_funcs.create_coeff_buffer(shRgb);
 
     // do first ray but skip any results
     // Do thins until depth
@@ -221,10 +224,10 @@ const INDEX_DIRECT_LIGHT = 0;
 const INDEX_NU_ORIGIN = 1;
 const INDEX_NORM = 2;
 
-const TEST_ORIGIN = new Float32Array([-7.692999839782715,-6.358855724334717,-10.07223129272461]);
-const TEST_DIR = new Float32Array([ 0.798290491104126,0.3029164671897888,0.5205515027046204]);
+const TEST_ORIGIN = new Float32Array([2.679107189178467,9.421055793762207,-4.0550103187561035]);
+const TEST_DIR = new Float32Array([0.3692111074924469,0.8945819139480591,-0.25180625915527344]);
 
-const OFFSET_FROM_TRIANGLE_FACE = 0.007;
+const OFFSET_FROM_TRIANGLE_FACE = 0.00001;
 
 export function indirect(norm, depth, origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
 {

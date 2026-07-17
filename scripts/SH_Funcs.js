@@ -1,4 +1,6 @@
 // FROM: https://gpfault.net/posts/sph.html
+import * as objectInfo from './objectInfoStruct.js'
+
 
 // Having these constants makes writing down the basis functions easier.
 const RECIP_PI = 1/Math.PI;
@@ -232,6 +234,8 @@ export function sampleToSH(dir, texelColor, maxDegree, shRgb) {
     return shRgb;
 }
 
+export const TOTAL_COEFF = 16;
+
 // Evaluates the given SH representation of a function projected onto 
 // l-band basis in the given direction.
 function evalSHRepresentation(coeffs, d, l) {
@@ -244,4 +248,21 @@ function evalSHRepresentation(coeffs, d, l) {
   
   // add up the results.
   return basis_coefs.reduce(function(a, v) { return a+v; }, 0.0);  
+}
+
+export function create_coeff_buffer(coeffs)
+{
+  //  * 3 for rgb
+  let coeffs_buffer = new Float32Array(TOTAL_COEFF * 3);
+  
+  for (let i = 0; i < 3; i++)
+  {
+    for (let j = 0; j < TOTAL_COEFF; j++)
+    {
+      coeffs_buffer[i * TOTAL_COEFF + j] = coeffs[i][j];
+    }
+  }
+
+  return coeffs_buffer;
+  
 }

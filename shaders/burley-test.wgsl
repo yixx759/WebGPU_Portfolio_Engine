@@ -1,3 +1,85 @@
+const PI: f32 = 3.141592653589793;
+const ONE_OVER_PI: f32 = 0.31830988618;
+
+const TOTAL_COEFF = 16;
+
+const C: array<f32, 10> = array<f32, 10>(
+  sqrt(ONE_OVER_PI) * 0.5,
+  sqrt(3 * ONE_OVER_PI) * 0.5,
+  sqrt(15 * ONE_OVER_PI) * 0.5,
+  sqrt(5 * ONE_OVER_PI) * 0.25,
+  sqrt(15 * ONE_OVER_PI) * 0.25,
+  sqrt(70 * ONE_OVER_PI) * 0.125,
+  sqrt(105 * ONE_OVER_PI) * 0.5,
+  sqrt(42 * ONE_OVER_PI) * 0.125,
+  sqrt(7 * ONE_OVER_PI) * 0.25,
+  sqrt(105 * ONE_OVER_PI) * 0.25);
+
+fn y00(x : f32, y : f32, z : f32) -> f32 { return C[0]; }
+fn y_11(x : f32, y : f32, z : f32) -> f32 { return C[1] * y; }
+fn y01(x : f32, y : f32, z : f32) -> f32 { return C[1] * z; }
+fn y11(x : f32, y : f32, z : f32) -> f32 { return C[1] * x; }
+fn y_22(x : f32, y : f32, z : f32) -> f32 { return C[2] * y * x; }
+fn y_12(x : f32, y : f32, z : f32) -> f32 { return C[2] * y * z; }
+fn y02(x : f32, y : f32, z : f32) -> f32 { return C[3] * (3 * z * z - 1.0); }
+fn y12(x : f32, y : f32, z : f32) -> f32 { return C[2] * x * z; }
+fn y22(x : f32, y : f32, z : f32) -> f32 { return C[4] * (x*x - y*y); }
+fn y_33(x : f32, y : f32, z : f32) -> f32 { return C[5] * y * (3*x*x - y*y); }
+fn y_23(x : f32, y : f32, z : f32) -> f32 { return C[6] * z * (y*x); }
+fn y_13(x : f32, y : f32, z : f32) -> f32 { return C[7] * y * (5*z*z -1); }
+fn y03(x : f32, y : f32, z : f32) -> f32 { return C[8] * z * (5*z*z - 3); }
+fn y13(x : f32, y : f32, z : f32) -> f32 { return C[7] * x * (5 * z * z - 1); }
+fn y23(x : f32, y : f32, z : f32) -> f32 { return C[9] * z * (x*x - y*y); }
+fn y33(x : f32, y : f32, z : f32) -> f32 { return C[5] * x * (x*x - 3*y*y); }
+
+// TO 
+fn eval_SH_basis(d : vec3f) -> array<f32, TOTAL_COEFF> { 
+  let x = d[0];
+  let y = d[1];
+  let z = d[2];
+
+  let res = array<f32, TOTAL_COEFF>(
+    y00(x,y,z), // l = 0
+    y_11(x,y,z), // l = 1
+    y01(x,y,z),
+    y11(x,y,z),
+    y_22(x,y,z), // l = 2
+    y_12(x,y,z),
+    y02(x,y,z),
+    y12(x,y,z),
+    y22(x,y,z),
+    y_33(x,y,z), // l = 3
+    y_23(x,y,z),
+    y_13(x,y,z),
+    y03(x,y,z),
+    y13(x,y,z),
+    y23(x,y,z),
+    y33(x,y,z)
+  ); 
+
+ return res;
+}
+
+fn eval_SH_rep(coeffs : array<f32, TOTAL_COEFF>, d : vec3f) -> f32
+{
+  var basis = eval_SH_basis(d);
+
+  for (var i = 0; i < TOTAL_COEFF; i++)
+  {
+    basis[i] = basis[i] * coeffs[i];
+  }
+
+  var total : f32 = 0;
+
+  for (var i = 0; i < TOTAL_COEFF; i++)
+  {
+    total  = total + basis[i];
+  }
+
+  return total;
+}
+
+
 struct MATS {
   World : mat4x4f,
   View : mat4x4f,
@@ -92,9 +174,6 @@ fn vertex_main(@location(0) position: vec3f,
   return output;
 }
 
-const PI: f32 = 3.141592653589793;
-const ONE_OVER_PI: f32 = 0.31830988618;
-
 @group(1) @binding(0) var ourSampler: sampler;
 @group(1) @binding(1) var ourTexture: texture_2d<f32>;
 // TO DO: Try to get f16 back
@@ -122,6 +201,9 @@ const R_MAX = 300;
 
 @group(2) @binding(0) var<uniform> dir_light_info: DIR_LIGHT;
 @group(2) @binding(1) var<uniform> point_light_info: array<POINT_LIGHT, TOTAL_POINT_LIGHT_NUMBER>;
+
+// To DO: Magic numbers
+@group(2) @binding(2) var<uniform> sh_coeff: array<f32, TOTAL_COEFF * 3>;
 
 fn SchlickFresnel(x : f32) -> f32 {
     var xtmp = saturate(1.0f - x);
@@ -242,6 +324,7 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
   final_colour *= dir_light_info.intensity;
 
 // TO DO: Remove me
+// To do: UNROLL
 if(INCLUDE_POINT_LIGHTS) {
   for (var i = 0; i < TOTAL_POINT_LIGHT_NUMBER; i++) {
 
@@ -260,6 +343,25 @@ if(INCLUDE_POINT_LIGHTS) {
     final_colour += vec4((burley_brdf_dir(light_info, light_dir).xyz * point_light_info[i].intensity * final_atten).xyz, 0); // Point
     }
   }
+
+// TO DO: Optimze can send mem adress for r g and b
+  var r_coeff : array<f32, TOTAL_COEFF>;
+  var g_coeff : array<f32, TOTAL_COEFF>;
+  var b_coeff : array<f32, TOTAL_COEFF>;
+
+  for (var i = 0; i < TOTAL_COEFF; i++)
+  {
+    r_coeff[i] = sh_coeff[i];
+    g_coeff[i] = sh_coeff[i + TOTAL_COEFF];
+    b_coeff[i] = sh_coeff[i + TOTAL_COEFF * 2];
+  }
+
+  // Ambient Light
+  let r_ambient = eval_SH_rep(r_coeff, norm);
+  let g_ambient = eval_SH_rep(g_coeff, norm);
+  let b_ambient = eval_SH_rep(b_coeff, norm);
+
+  return vec4f(r_ambient, g_ambient, b_ambient, 1);
 // TO DO: Shouldnt have to do this where is 1 being added?;
-  return vec4f(final_colour.xyz, 1);
+  // return vec4f(final_colour.xyz, 1);
   }
