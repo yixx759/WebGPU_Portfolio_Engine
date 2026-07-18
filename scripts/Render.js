@@ -82,9 +82,9 @@ const indexArray = new Int8Array(objectArray);
 
 // Player Defaults
 
-const PLAYER_START_POSITION = new Float32Array([100, 0, 0]);
-const PLAYER_START_SCALE = 1;
-const PLAYER_START_ROTATION = new Float32Array([180,0,0]);
+const PLAYER_START_POSITION = new Float32Array([0, 0, -30.2]);
+const PLAYER_START_SCALE = 0.5;
+const PLAYER_START_ROTATION = new Float32Array([180,180,0]);
 
 const PLAYER_ID = 0;
 const PLAYER_MODEL_INDEX = 1;
@@ -649,7 +649,7 @@ device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, 
 // }
 
 // Light 1
-Light_Manager.add_new_light(0,0,-12.2, 10, 2);
+Light_Manager.add_new_light(0,0,-12.2, 1, 2);
 
 // Light 2 
 Light_Manager.add_new_light(12, -2, -5, 0, 2);
@@ -855,7 +855,7 @@ const depthTexture = device.createTexture({
 });
 
 // Put up here to avoid re allocation
-var camPos = new Float32Array([keyX,-5.5,keyY+10, 1]);
+var camPos = new Float32Array([keyX,0,keyY+10, 1]);
 var camPosPrev = new Float32Array([keyX,0,keyY+10, 1]);
 var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), Math.sin(mouse_Y), forward_vector_mat[2] * Math.cos(mouse_Y)])

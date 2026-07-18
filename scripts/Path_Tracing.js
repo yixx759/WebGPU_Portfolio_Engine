@@ -10,8 +10,8 @@ const OFFSET_INT_VT_INDEX = 3;
 const OFFSET_INT_VN_INDEX = 5;
 
 const MAX_DEPTH = 3;
-const MAX_SAMPLES_PER_BOUNCE = 100; // 128;
-const MAX_SAMPLES_AROUND_SPHERE = 120; // 128;
+const MAX_SAMPLES_PER_BOUNCE = 40; // 128;
+const MAX_SAMPLES_AROUND_SPHERE = 40; // 128;
 
 // final_res = [true, u, v, t]
 const CONST_RESULT_STRUCT_RESULT_INDEX = 0;
@@ -67,24 +67,26 @@ export function PATH_TRACE(origin, dir, objects, transformArray, objectArray, mo
                 const sample_on_hemisphere = random_sample_hemi_sphere(nu_normal, r1);
                 const tmp_indirect_lighting = indirect(nu_normal, 0, nu_origin, sample_on_hemisphere, objects, transformArray, objectArray, models, texture_data, directional_array);
                 
-                indirect_lighting = helper.vectorAdd(indirect_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(tmp_indirect_lighting, r1), PDF));
+                indirect_lighting = helper.vectorAdd(indirect_lighting, helper.vector_mult_scalar(tmp_indirect_lighting, r1));
 
-                if (indirect_lighting[0] === helper.ZEROS[0] && 
-                    indirect_lighting[1] === helper.ZEROS[1] &&
-                    indirect_lighting[2] === helper.ZEROS[2])
-                {
-                    console.log("Break at: " + j + " OUT OF: " + MAX_SAMPLES_AROUND_SPHERE)
-                    console.log(indirect_lighting);
-                    break;
-                }
+                // if (indirect_lighting[0] === helper.ZEROS[0] && 
+                //     indirect_lighting[1] === helper.ZEROS[1] &&
+                //     indirect_lighting[2] === helper.ZEROS[2])
+                // {
+                //     console.log("Break at: " + j + " OUT OF: " + MAX_SAMPLES_AROUND_SPHERE)
+                //     console.log(indirect_lighting);
+                //     break;
+                // }
             }
         }
 
         // TOTAL ME
 
         indirect_lighting = helper.vector_div_scalar(indirect_lighting, MAX_SAMPLES_PER_BOUNCE);
-        indirect_lighting = helper.vector_mult_scalar(indirect_lighting, helper.ONE_OVER_PI);
 
+        // Since this is indirect wiht out difrect test which one looks right
+        indirect_lighting = helper.vector_mult_scalar(indirect_lighting, 255);
+        indirect_lighting = helper.vector_mult_scalar(indirect_lighting, 2);
 
         shRgb = sh_funcs.sampleToSH(dir_from_sphere, indirect_lighting, SH_DEGREES, shRgb);
 
@@ -113,7 +115,7 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
     // Change to background colour
     if (res === null || res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_RESULT_INDEX] == false) {return [helper.ZEROS, null, null]};
 
-    const colour_from_ray = res[INDEX_RES_COLOUR];
+    const colour_from_ray = helper.vector_div_scalar(res[INDEX_RES_COLOUR], 255);
     const norm_from_ray = res[INDEX_RES_NORM];
     const object_from_ray = res[INDEX_RES_OBJECT_INDEX];
     const index_from_ray = res[INDEX_RES_VERTEX_INDEX];
@@ -121,9 +123,9 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
 
     if (origin_from_ray[1] > 9.5 || origin_from_ray[1] < -9.5 || origin_from_ray[0] > 9.2 ||  origin_from_ray[0] < -8.7 || origin_from_ray[2] < -21.3 || origin_from_ray[2] > -3.3)
     {
-        console.log("OUTSIDE box!");
-        console.log("nu origin: " + origin_from_ray);
-        path_trace_ray_debug(origin, dir, objects, transformArray, objectArray, models, texture_data);
+        // console.log("OUTSIDE box!");
+        // console.log("nu origin: " + origin_from_ray);
+        // path_trace_ray_debug(origin, dir, objects, transformArray, objectArray, models, texture_data);
     }
 
     // if (origin_from_ray[0] > 9 || origin_from_ray[1] > 9.1)
@@ -169,65 +171,66 @@ export function direct_light(origin, dir, objects, transformArray, objectArray, 
    
         direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)), vis));
 
-       if (i == 0 && vis == 0)
-       {
-            console.log("HIT NO LIGHT");
-            console.log("Vis: " + vis);
-            console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
-            console.log("nu origin : " + res[INDEX_RES_NU_ORIGIN]);
-            console.log("dir light : " + dir_to_light);
-            console.log("light_point : " + light_point);
-            console.log("lenght : " + length_to_light);
-            console.log("lenght to collide : " + vis_check(res[INDEX_RES_NU_ORIGIN], dir_to_light, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]));
-            console.log("og from: " + origin);
-            console.log("og dir: " + dir);
+    //    if (i == 0 && vis == 0)
+    //    {
+    //         console.log("HIT NO LIGHT");
+    //         console.log("Vis: " + vis);
+    //         console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
+    //         console.log("nu origin : " + res[INDEX_RES_NU_ORIGIN]);
+    //         console.log("dir light : " + dir_to_light);
+    //         console.log("light_point : " + light_point);
+    //         console.log("lenght : " + length_to_light);
+    //         console.log("lenght to collide : " + vis_check(res[INDEX_RES_NU_ORIGIN], dir_to_light, objects, transformArray, objectArray, models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]));
+    //         console.log("og from: " + origin);
+    //         console.log("og dir: " + dir);
 
-            console.log(object_from_ray);
-            let tmp_verts = transform_vertexs(models[objects[object_from_ray].getModelIndex(objectArray)], objects[object_from_ray], transformArray);
+    //         console.log(object_from_ray);
+    //         let tmp_verts = transform_vertexs(models[objects[object_from_ray].getModelIndex(objectArray)], objects[object_from_ray], transformArray);
             
-            console.log("og result verts: " + tmp_verts[0][index_from_ray * 3 + 0] + " : " + tmp_verts[0][index_from_ray * 3 + 1] + " : " + tmp_verts[0][index_from_ray * 3 + 2]);
+    //         console.log("og result verts: " + tmp_verts[0][index_from_ray * 3 + 0] + " : " + tmp_verts[0][index_from_ray * 3 + 1] + " : " + tmp_verts[0][index_from_ray * 3 + 2]);
             
-            console.log("Direct Lighitng: " + direct_lighting);
-       }
-       else if (i == 0 && helper.vector_3_equality(direct_lighting, helper.ZEROS))
-       {
-            console.log("HIT NO LIGHT With VIS");
-            console.log("Vis: " + vis);
-            console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
-            if (light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray) == 0)
-            {
-                console.log("norm_from_ray: " + norm_from_ray);
+    //         console.log("Direct Lighitng: " + direct_lighting);
+    //    }
+    //    else if (i == 0 && helper.vector_3_equality(direct_lighting, helper.ZEROS))
+    //    {
+    //         console.log("HIT NO LIGHT With VIS");
+    //         console.log("Vis: " + vis);
+    //         console.log("Mult: " + light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)); 
+    //         if (light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray) == 0)
+    //         {
+    //             console.log("norm_from_ray: " + norm_from_ray);
 
-                // light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray, true);
+    //             // light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray, true);
 
-                console.log("light_point: " + light_point);
-                console.log("res[INDEX_RES_NU_ORIGIN]: " + res[INDEX_RES_NU_ORIGIN]);
-                const tmp_ray =  helper.vectorSubtract(light_point, res[INDEX_RES_NU_ORIGIN]);
+    //             console.log("light_point: " + light_point);
+    //             console.log("res[INDEX_RES_NU_ORIGIN]: " + res[INDEX_RES_NU_ORIGIN]);
+    //             const tmp_ray =  helper.vectorSubtract(light_point, res[INDEX_RES_NU_ORIGIN]);
                 
-                console.log("helper.vectorSubtract(light_pos, surface_pos): " + tmp_ray);
-                console.log("dir: " + helper.vectorNorm(tmp_ray));
-                console.log("Intensity: " + intensity);
-                console.log("Atten: " + atten);
-            }
+    //             console.log("helper.vectorSubtract(light_pos, surface_pos): " + tmp_ray);
+    //             console.log("dir: " + helper.vectorNorm(tmp_ray));
+    //             console.log("Intensity: " + intensity);
+    //             console.log("Atten: " + atten);
+    //         }
 
-            console.log("Direct Lighitng: " + direct_lighting);
-       }
+    //         console.log("Direct Lighitng: " + direct_lighting);
+    //    }
     }
 
-    return [direct_lighting, res[INDEX_RES_NU_ORIGIN], res[INDEX_RES_NORM]];
+    return [direct_lighting, res[INDEX_RES_NU_ORIGIN], res[INDEX_RES_NORM], colour_from_ray];
 }
 
-const PDF = (2 * Math.PI);
+const PDF = 1 / (2 * Math.PI);
 
 //[direct_lighting, res[INDEX_RES_NU_ORIGIN], res[INDEX_RES_NORM]];
 const INDEX_DIRECT_LIGHT = 0;
 const INDEX_NU_ORIGIN = 1;
 const INDEX_NORM = 2;
+const INDEX_COL = 3;
 
 const TEST_ORIGIN = new Float32Array([2.679107189178467,9.421055793762207,-4.0550103187561035]);
 const TEST_DIR = new Float32Array([0.3692111074924469,0.8945819139480591,-0.25180625915527344]);
 
-const OFFSET_FROM_TRIANGLE_FACE = 0.00001;
+const OFFSET_FROM_TRIANGLE_FACE = 0.0001;
 
 export function indirect(norm, depth, origin, dir, objects, transformArray, objectArray, models, texture_data, directional_array)
 {
@@ -259,10 +262,15 @@ export function indirect(norm, depth, origin, dir, objects, transformArray, obje
         const indirect_light_tmp = indirect(nu_normal, depth + 1, nu_origin, sample_on_hemisphere, objects, transformArray, objectArray, models, texture_data, directional_array);
 
         // Multiply r1
-        indirect_light = helper.vectorAdd(indirect_light, helper.vector_mult_scalar(helper.vector_mult_scalar(indirect_light_tmp, r1), PDF));
+        indirect_light = helper.vectorAdd(indirect_light, helper.vector_mult_scalar(indirect_light_tmp, r1));
     }
 
-    indirect_light = helper.vector_mult_scalar(indirect_light, (1 / MAX_SAMPLES_PER_BOUNCE) * 2);
+    indirect_light = helper.vector_div_scalar(indirect_light, (MAX_SAMPLES_PER_BOUNCE));
+    indirect_light = helper.vector_mult_scalar(indirect_light, 2);
+
+    // TO DO: Yes scratch apixel shows direct and indirect being multipled by color 
+    // TO DO: REARRANGE INTO ONE MULT.
+    indirect_light = helper.vector_mult(indirect_light, res[INDEX_COL]);
 
     direct_lighting = helper.vector_mult_scalar(direct_lighting, helper.ONE_OVER_PI);
 
@@ -488,7 +496,7 @@ export function vis_check(origin, dir, objects, transformArray, objectArray, mod
       
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2], vertex_skip_index, object_skip_index, i);
 
-        if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[CONST_RESULT_STRUCT_T_INDEX] < t_near)))
+        if (res[0][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (res[0][CONST_RESULT_STRUCT_T_INDEX] < t_near)))
         {
             t_near = res[0][CONST_RESULT_STRUCT_T_INDEX];
 
@@ -623,7 +631,7 @@ export function intersect_objects_triangles_debug(vertexs, origin, dir, texs, te
 
 function sample_tex_at_uv(tex, U, V, width, height)
 {
-    if (U < 0 | V < 0 | width < 0 | height < 0)
+    if (U < 0 | V < 0 | U > 1 | V > 1 | width < 0 | height < 0)
     {
         console.log("Error in sample_tex_at_uv something is negative");
         console.log("U: " + U);

@@ -357,11 +357,11 @@ if(INCLUDE_POINT_LIGHTS) {
   }
 
   // Ambient Light
-  let r_ambient = eval_SH_rep(r_coeff, norm);
-  let g_ambient = eval_SH_rep(g_coeff, norm);
-  let b_ambient = eval_SH_rep(b_coeff, norm);
+  let r_ambient = eval_SH_rep(r_coeff, norm) * ONE_OVER_PI;
+  let g_ambient = eval_SH_rep(g_coeff, norm) * ONE_OVER_PI;
+  let b_ambient = eval_SH_rep(b_coeff, norm) * ONE_OVER_PI;
 
-  return vec4f(r_ambient, g_ambient, b_ambient, 1);
+   // return vec4f(r_ambient, g_ambient, b_ambient, 1);
 // TO DO: Shouldnt have to do this where is 1 being added?;
-  // return vec4f(final_colour.xyz, 1);
+   return vec4f(final_colour.x + r_ambient, final_colour.y + g_ambient, final_colour.z + b_ambient, 1);
   }
