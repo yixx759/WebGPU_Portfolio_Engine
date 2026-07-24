@@ -16,13 +16,12 @@ const SINGLE_TEST = false;
 const TARGET_INDEX = 2;
 const MOVE_TARGET_TEST = false;
 
-const PATH_TEST = true;
+const PATH_TEST = false;
 
 const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
 
-// TO DO: debug func script
-// TO DO: dont cretae new memory everytime get positons
+
 // TO DO: Do that roation system casey did a article on research turns and normalized lerp
 // TO DO: Validaiton with max amount of moidels and texture so cant create object
 // with any more than that
@@ -71,15 +70,6 @@ function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
 
 const AMOUNT_OF_OBJECTS = 2 + 6;
 
-const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
-
-// TO DO: Obhject creating func
-
-// TO DO: Hide this inside of object info struct dont have to send as param
-const objectArray = new ArrayBuffer(objectInfo.ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
-const transformArray = new Float32Array(objectArray);
-const indexArray = new Int8Array(objectArray);
-
 // Player Defaults
 
 const PLAYER_START_POSITION = new Float32Array([0, 0, -30.2]);
@@ -90,7 +80,7 @@ const PLAYER_ID = 0;
 const PLAYER_MODEL_INDEX = 1;
 const PLAYER_TEXTURE_INDEX = 1;
 
-let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, PLAYER_MODEL_INDEX, PLAYER_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, PLAYER_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let playerObject = new objectInfo.gameObject(PLAYER_ID, PLAYER_MODEL_INDEX, PLAYER_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, PLAYER_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const OTHER_START_POSITION = new Float32Array([10, 0, 0]);
 const OTHER_START_SCALE = 1;
@@ -100,7 +90,7 @@ const OTHER_ID = 1;
 const OTHER_MODEL_INDEX = 0;
 const OTHER_TEXTURE_INDEX = 3;
 
-let otherObject = new objectInfo.gameObject(objectArray, OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let otherObject = new objectInfo.gameObject(OTHER_ID, OTHER_MODEL_INDEX, OTHER_TEXTURE_INDEX, OTHER_START_POSITION, OTHER_START_SCALE, OTHER_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const WALL_1_START_POSITION = new Float32Array([-8.738,0,-12.2]);
 const WALL_1_START_SCALE = 1;
@@ -110,7 +100,7 @@ const WALL_1_ID = 2;
 const WALL_1_MODEL_INDEX = 2;
 const WALL_1_TEXTURE_INDEX = 3;
 
-let wall_1 = new objectInfo.gameObject(objectArray, WALL_1_ID, WALL_1_MODEL_INDEX, WALL_1_TEXTURE_INDEX, WALL_1_START_POSITION, WALL_1_START_SCALE, WALL_1_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let wall_1 = new objectInfo.gameObject(WALL_1_ID, WALL_1_MODEL_INDEX, WALL_1_TEXTURE_INDEX, WALL_1_START_POSITION, WALL_1_START_SCALE, WALL_1_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const WALL_2_START_POSITION = new Float32Array([0.4000000059604645,0, -3.055]);
 const WALL_2_START_SCALE = 1;
@@ -120,7 +110,7 @@ const WALL_2_ID = 3;
 const WALL_2_MODEL_INDEX = 2;
 const WALL_2_TEXTURE_INDEX = 3;
 
-let wall_2 = new objectInfo.gameObject(objectArray, WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let wall_2 = new objectInfo.gameObject(WALL_2_ID, WALL_2_MODEL_INDEX, WALL_2_TEXTURE_INDEX, WALL_2_START_POSITION, WALL_2_START_SCALE, WALL_2_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const WALL_3_START_POSITION = new Float32Array([9.49, 0,-12.2]);
 const WALL_3_START_SCALE = 1;
@@ -130,7 +120,7 @@ const WALL_3_ID = 4;
 const WALL_3_MODEL_INDEX = 2;
 const WALL_3_TEXTURE_INDEX = 3;
 
-let wall_3 = new objectInfo.gameObject(objectArray, WALL_3_ID, WALL_3_MODEL_INDEX, WALL_3_TEXTURE_INDEX, WALL_3_START_POSITION, WALL_3_START_SCALE, WALL_3_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let wall_3 = new objectInfo.gameObject(WALL_3_ID, WALL_3_MODEL_INDEX, WALL_3_TEXTURE_INDEX, WALL_3_START_POSITION, WALL_3_START_SCALE, WALL_3_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const WALL_4_START_POSITION = new Float32Array([0.4, 0, -21.34]);
 const WALL_4_START_SCALE = 1;
@@ -140,7 +130,7 @@ const WALL_4_ID = 5;
 const WALL_4_MODEL_INDEX = 2;
 const WALL_4_TEXTURE_INDEX = 3;
 
-let wall_4 = new objectInfo.gameObject(objectArray, WALL_4_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, WALL_4_START_POSITION, WALL_4_START_SCALE, WALL_4_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let wall_4 = new objectInfo.gameObject(WALL_4_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, WALL_4_START_POSITION, WALL_4_START_SCALE, WALL_4_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const WALL_5_START_POSITION = new Float32Array([0.35000000298023224,10.43,-12.600000381469727]);
 const WALL_5_START_SCALE = 1;
@@ -150,7 +140,7 @@ const WALL_5_ID = 6;
 const WALL_5_MODEL_INDEX = 2;
 const WALL_5_TEXTURE_INDEX = 3;
 
-let wall_5 = new objectInfo.gameObject(objectArray, WALL_5_ID, WALL_5_MODEL_INDEX, WALL_5_TEXTURE_INDEX, WALL_5_START_POSITION, WALL_5_START_SCALE, WALL_5_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let wall_5 = new objectInfo.gameObject(WALL_5_ID, WALL_5_MODEL_INDEX, WALL_5_TEXTURE_INDEX, WALL_5_START_POSITION, WALL_5_START_SCALE, WALL_5_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 const WALL_6_START_POSITION = new Float32Array([0.3500000011920929,-9.900000190734863,-12.10000038]);
 const WALL_6_START_SCALE = 1;
@@ -160,14 +150,14 @@ const WALL_6_ID = 7;
 const WALL_6_MODEL_INDEX = 2;
 const WALL_6_TEXTURE_INDEX = 3;
 
-let wall_6 = new objectInfo.gameObject(objectArray, WALL_6_ID, WALL_6_MODEL_INDEX, WALL_6_TEXTURE_INDEX, WALL_6_START_POSITION, WALL_6_START_SCALE, WALL_6_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
+let wall_6 = new objectInfo.gameObject(WALL_6_ID, WALL_6_MODEL_INDEX, WALL_6_TEXTURE_INDEX, WALL_6_START_POSITION, WALL_6_START_SCALE, WALL_6_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
 // let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, WALL_3_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
 
 let gameObjectArray = [playerObject, otherObject, wall_1, wall_2, wall_3, wall_4, wall_5, wall_6];
 
 // Test prints
-if (TEST) testFuncs.objectTestPrints(playerObject, otherObject, indexArray, transformArray)
+if (TEST) testFuncs.objectTestPrints(playerObject, otherObject)
 
 // Vertex and fragment shaders
 const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");
@@ -260,14 +250,14 @@ async function init() {
 
   // TO DO: Change me
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
-    const vertex_index = gameObjectArray[i].getModelIndex(indexArray);
+    const vertex_index = gameObjectArray[i].getModelIndex();
 
     device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, Model_Array[vertex_index], 0, Model_Array[vertex_index].length);
 
       if (!SINGLE_TEST || i < tmp_first_1)
       {
         // TO DO: Get these better include in whatever file type is made
-        gameObjectArray[i].setHalf(transformArray, makeColliderFromVerts(Model_Array[0]));
+        gameObjectArray[i].setHalf( makeColliderFromVerts(Model_Array[0]));
       }
   }
  
@@ -473,16 +463,16 @@ var worldMatrix = new Float32Array([
   device.queue.writeBuffer(Mats, 0, worldMatrix, 0, worldMatrix.length);
 
   const BRDF_PARAMS = device.createBuffer({
-    size: SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
+    size: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
   {
-    let BRDF_index = gameObjectArray[i].getBRDFIndex(indexArray);
+    let BRDF_index = gameObjectArray[i].getBRDFIndex();
     const params = BRDF_configs.BRDF_config[BRDF_index];
     const size = params.length;
-    device.queue.writeBuffer(BRDF_PARAMS, i * SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
+    device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
   }
 
   let bindGroupArray = [];
@@ -500,7 +490,7 @@ var worldMatrix = new Float32Array([
         }},
         {binding: 1, resource: {
           buffer: BRDF_PARAMS,
-          offset: SIZE_OF_BRDF_PARAMS_BYTES*i
+          offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES*i
         }},
     ],
     });
@@ -517,7 +507,7 @@ var worldMatrix = new Float32Array([
             }},
             {binding: 1, resource: {
               buffer: BRDF_PARAMS,
-              offset: SIZE_OF_BRDF_PARAMS_BYTES*i
+              offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES*i
             }},
         ],
         });
@@ -661,16 +651,22 @@ const Point_Lights = device.createBuffer({
 
 device.queue.writeBuffer(Point_Lights, 0, Light_Manager.POINT_LIGHT_ARRAY, 0, Light_Manager.POINT_LIGHT_ARRAY.length);
 
-const coeffs = Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data, dir_light_dir_and_intensity);
+
+if (PATH_TEST)
+{
+  const coeffs = Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data, dir_light_dir_and_intensity);
+}
 
 const SH_COEFF = device.createBuffer({
   size:  3 * sh_funcs.TOTAL_COEFF * objectInfo.BYTES_OF_FLOAT_32, 
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-device.queue.writeBuffer(SH_COEFF, 0, coeffs, 0, coeffs.length);
-
-debugLog(coeffs);
+if (PATH_TEST)
+{
+  device.queue.writeBuffer(SH_COEFF, 0, coeffs, 0, coeffs.length);
+  debugLog(coeffs);
+}
 
 const lightBindGroup = device.createBindGroup({
   layout: renderPipeline.getBindGroupLayout(2),
@@ -829,9 +825,14 @@ if (DEBUG && !PATH_TEST)
 
     let did_hit = false;
 
+    const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
+
     for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
-      if (ray_AABB_intersection(ray_from_player_forward, gameObjectArray[i].get_min(transformArray), gameObjectArray[i].get_max(transformArray)))
+      gameObjectArray[i].get_min_Into( min_max);
+      gameObjectArray[i].get_max_Into( min_max);
+
+      if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
       {
         did_hit = true;
       }
@@ -866,7 +867,7 @@ if (false & PATH_TEST)
   const TEST_ORIGIN = new Float32Array([-7.737100124359131,-3.6731858253479004,-20.333486557006836]);
   const TEST_DIR = new Float32Array([0.18422017991542816,0.39131084084510803,-0.9016311764717102]);
 
-  // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], transformArray);
+  // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], );
   
   const MAG = 12.74056736299502;
   // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
@@ -875,10 +876,10 @@ if (false & PATH_TEST)
 
   let res = false;
 
-  res =  Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data, dir_light_dir_and_intensity);
+  res =  Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data, dir_light_dir_and_intensity);
 
-  // path_trace_ray(origin, dir, objects, transformArray, objectArray, models, texture_data)
-  // res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray, transformArray, indexArray, Model_Array, textures_data);
+  // path_trace_ray(origin, dir, objects,  objectArray, models, texture_data)
+  // res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data);
 
   //res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_ORIGIN, PATH_DIR, verts[1], tester_data["data"], tester_data["width"], tester_data["height"]);
   
@@ -924,15 +925,22 @@ function render() {
 
   // TO DO: This could be better
 
+  {
+  let tmp_pos = new Float32Array(3);
+  let tmp_half = new Float32Array(3);
+
   for (let i = 0; i < OBJECTS_TO_RENDER; i++)
   {
-    if (AABB(gameObjectArray[i].getPosition(transformArray), gameObjectArray[i].getHalf(transformArray), camPos, playerCollider) && !SINGLE_TEST)
+    gameObjectArray[i].getPosition_Into( tmp_pos);
+    gameObjectArray[i].getHalf_Into( tmp_half);
+    if (AABB(tmp_pos, tmp_half, camPos, playerCollider) && !SINGLE_TEST)
     {
       helper.vector_assign_cam(camPos, camPosPrev);
     }
   }
   
-  helper.vector_assign_cam(camPosPrev, camPos, transformArray);
+  }
+  helper.vector_assign_cam(camPosPrev, camPos);
 
   //TO Do : make new target pos forward vec and use new const.
   // First xz vector = cos(mouseX) , 0  ,sin(mouseX)
@@ -950,35 +958,41 @@ function render() {
 
   var perMatrix = helper.getPerspectiveMatrix(70, 1,1000);
 
+  {
+
+  let tmp_pos = new Float32Array(3);
+  let tmp_scale = 0;
+  let tmp_rot = new Float32Array(3);
+
   // TO DO: Only need to change world
   for(let i = 0; i < OBJECTS_TO_RENDER; i++ )
   {
     if (SINGLE_TEST)
     {
       debugLog("single HERE")
-      gameObjectArray[i].setPosition(transformArray, camPos);
-      gameObjectArray[i].setRotation(transformArray, new Float32Array([0,keyY,0]));
+      gameObjectArray[i].setPosition( camPos);
+      gameObjectArray[i].setRotation( new Float32Array([0,keyY,0]));
     }
 
     if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
       debugLog("HERE")
-      gameObjectArray[i].setPosition(transformArray, new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
-      gameObjectArray[i].setRotation(transformArray, new Float32Array([90,0,0]));
+      gameObjectArray[i].setPosition( new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
+      gameObjectArray[i].setRotation( new Float32Array([90,0,0]));
     }
 
     // TO DO: SHould be some scratch memroy here to pass in
     // right no createing vec everytime
-    let tmp_pos = gameObjectArray[i].getPosition(transformArray);
-    let tmp_scale = gameObjectArray[i].getScale(transformArray);
-    let tmp_rot = gameObjectArray[i].getRotation(transformArray);
+    gameObjectArray[i].getPosition_Into( tmp_pos);
+    tmp_scale = gameObjectArray[i].getScale();
+    gameObjectArray[i].getRotation_Into( tmp_rot);
 
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
       if (PATH_TEST)
       {
         debugLog(tmp_pos);
-        Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[i], transformArray);
+        Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[i], );
       }
     }
 
@@ -988,6 +1002,7 @@ function render() {
     device.queue.writeBuffer(Mats, i*sizet+matrixSize * 2, perMatrix);
     device.queue.writeBuffer(Mats, i*sizet+matrixSize * 3, camPos);
   }
+}
 
   const commandEncoder = device.createCommandEncoder();
 
@@ -1017,8 +1032,8 @@ function render() {
 
   for (let i = 0; i < OBJECTS_TO_RENDER; i++)
   {
-    const vert_index = gameObjectArray[i].getModelIndex(indexArray);
-    const tex_index = gameObjectArray[i].getTextureIndex(indexArray);
+    const vert_index = gameObjectArray[i].getModelIndex();
+    const tex_index = gameObjectArray[i].getTextureIndex();
     const id = gameObjectArray[i].ID;
     passEncoder.setBindGroup(0, bindGroupArray[id]);
     passEncoder.setBindGroup(1, bindGroupTexArray[tex_index]);

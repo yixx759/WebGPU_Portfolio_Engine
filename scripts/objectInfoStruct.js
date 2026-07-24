@@ -1,3 +1,5 @@
+const AMOUNT_OF_OBJECTS = 2 + 6;
+
 // Data type size
 // refrence: https://www.w3schools.com/js/js_datatypes.asp
 
@@ -42,6 +44,14 @@ export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_
 const ALLIGHNMENT_NUMBER = 64
 export const ALIGNMENT_BYTES_OF_OBJECT = (BYTES_OF_OBJECT + ALLIGHNMENT_NUMBER - 1) & ~(ALLIGHNMENT_NUMBER - 1);
 
+export const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
+
+const objectArray = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
+const transformArray = new Float32Array(objectArray);
+const indexArray = new Int8Array(objectArray);
+
+
+
 /* Object structure
 
 * Render Info *
@@ -71,7 +81,7 @@ export class gameObject
  
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(objectArray, objectID, vertexIndex, textureIndex, position, scale, rotation, half, param_array_index)
+  constructor(objectID, vertexIndex, textureIndex, position, scale, rotation, half, param_array_index)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
@@ -90,206 +100,280 @@ export class gameObject
     
     // Set vertexIndex
     renderInfoView[0] = vertexIndex;
+
     // Set textureIndex
     renderInfoView[1] = textureIndex;
 
     // Offset into Transform
     index += ALIGNMENT_BYTES_OF_RENDER_INFO;
-
-    const setTransfromView = new Float32Array(objectArray, index);
-
+    const base_index = index / BYTES_OF_FLOAT_32;
+    
     // Set position
+    index += this.setVector3(base_index + OFFSET_TRANSFROM_POSITION, position);
     
-    index += this.setVector3(setTransfromView, OFFSET_TRANSFROM_POSITION, position);
     // Set scale
-    
-    setTransfromView[OFFSET_TRANSFROM_SCALE] = scale;
+    transformArray[base_index + OFFSET_TRANSFROM_SCALE] = scale;
     index += BYTES_OF_FLOAT_32;
+
     // Set rotation
-    
-    index += this.setVector3(setTransfromView, OFFSET_TRANSFROM_ROTATION, rotation);
+    index += this.setVector3(base_index + OFFSET_TRANSFROM_ROTATION, rotation);
 
     // Set half
-    index += this.setVector3(setTransfromView, OFFSET_INTO_TRANSFROM_HALF, half);
+    index += this.setVector3(base_index + OFFSET_INTO_TRANSFROM_HALF, half);
 
     // Set BRDF TO DO: Fix this
     renderInfoView[index - this.byteIndex] = param_array_index;
+
     ++index;
   }
 
     // NOTE: Have a view for int8 to pass in.
-    getModelIndex(objectArrayView)
+    getModelIndex()
     {
-      if (!(objectArrayView instanceof Int8Array)) {
+      if (!(indexArray instanceof Int8Array)) {
         console.log("ERROR: Get model index wasnt given int8array");
         return -1;
       }
 
-      return objectArrayView[this.byteIndex];
+      return indexArray[this.byteIndex];
     }
 
     // NOTE: Have a view for int8 to pass in.
-    getTextureIndex(objectArrayView)
+    getTextureIndex()
     {
-      if (!(objectArrayView instanceof Int8Array)) {
+      if (!(indexArray instanceof Int8Array)) {
         console.log("ERROR: Get texture index wasnt given int8array");
         return -1;
       }
 
-      return objectArrayView[this.byteIndex + 1];
+      return indexArray[this.byteIndex + 1];
     }
 
     // NOTE: Have a view for int8 to pass in.
-    setModelIndex(objectArrayView, data)
+    setModelIndex(data)
     {
-      if (!(objectArrayView instanceof Int8Array)) {
+      if (!(indexArray instanceof Int8Array)) {
         console.log("ERROR: Set model index wasnt given int8array");
         return -1;
       }
 
-      objectArrayView[this.byteIndex] = data
+      indexArray[this.byteIndex] = data
     }
 
     // NOTE: Have a view for int8 to pass in.
-    setTextureIndex(objectArrayView, data)
+    setTextureIndex(data)
     {
-      if (!(objectArrayView instanceof Int8Array)) {
+      if (!(indexArray instanceof Int8Array)) {
         console.log("ERROR: Set texture index wasnt given int8array");
         return -1;
       }
 
-      objectArrayView[this.byteIndex + 1] = data;
+      indexArray[this.byteIndex + 1] = data;
     }
 
-    // NOTE: Have a view for float32 to pass in.
-    getPosition(objectArrayView)
+     // NOTE: Have a view for float32 to pass in.
+    getPosition_Into(pos)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get position wasnt given float32array");
         return -1;
       }
 
-      const x = objectArrayView[this.transformIndex]
-      const y = objectArrayView[this.transformIndex + 1]
-      const z = objectArrayView[this.transformIndex + 2]
+      const x = transformArray[this.transformIndex]
+      const y = transformArray[this.transformIndex + 1]
+      const z = transformArray[this.transformIndex + 2]
+
+      pos.set([x, y, z]);
+
+      return 1;
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getPosition()
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get position wasnt given float32array");
+        return -1;
+      }
+
+      const x = transformArray[this.transformIndex]
+      const y = transformArray[this.transformIndex + 1]
+      const z = transformArray[this.transformIndex + 2]
 
       return new Float32Array([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setPosition(objectArrayView, data)
+    setPosition(data)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set position wasnt given float32array");
         return -1;
       }
 
-      return this.setVector3(objectArrayView, this.transformIndex, data)
+      return this.setVector3( this.transformIndex, data)
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getScale(objectArrayView)
+    getScale()
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get scale wasnt given float32array");
         return -1;
       }
 
-      return objectArrayView[this.transformIndex + OFFSET_TRANSFROM_SCALE];
+      return transformArray[this.transformIndex + OFFSET_TRANSFROM_SCALE];
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setScale(objectArrayView, data)
+    setScale( data)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set scale wasnt given float32array");
         return -1;
       }
 
-      objectArrayView[this.transformIndex + OFFSET_TRANSFROM_SCALE] = data;
+      transformArray[this.transformIndex + OFFSET_TRANSFROM_SCALE] = data;
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getRotation(objectArrayView)
+    getRotation_Into( rot)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get rotation wasnt given float32array");
         return -1;
       }
 
-      const x = objectArrayView[this.transformIndex + OFFSET_TRANSFROM_ROTATION]
-      const y = objectArrayView[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 1]
-      const z = objectArrayView[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 2]
+      const x = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION]
+      const y = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 1]
+      const z = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 2]
+
+      return rot.set([x, y, z]);
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getRotation()
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get rotation wasnt given float32array");
+        return -1;
+      }
+
+      const x = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION]
+      const y = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 1]
+      const z = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 2]
 
       return new Float32Array([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setRotation(objectArrayView, data)
+    setRotation( data)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set rotation wasnt given float32array");
         return -1;
       }
 
-      return this.setVector3(objectArrayView, this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
+      return this.setVector3( this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getHalf(objectArrayView)
+    getHalf_Into( halfs)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get half wasnt given float32array");
         return -1;
       }
 
-      const x = objectArrayView[this.collisionIndex]
-      const y = objectArrayView[this.collisionIndex + 1]
-      const z = objectArrayView[this.collisionIndex + 2]
+      const x = transformArray[this.collisionIndex]
+      const y = transformArray[this.collisionIndex + 1]
+      const z = transformArray[this.collisionIndex + 2]
+
+      return halfs.set([x, y, z]);
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    getHalf()
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get half wasnt given float32array");
+        return -1;
+      }
+
+      const x = transformArray[this.collisionIndex]
+      const y = transformArray[this.collisionIndex + 1]
+      const z = transformArray[this.collisionIndex + 2]
 
       return new Float32Array([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setHalf(objectArrayView, data)
+    setHalf( data)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set half wasnt given float32array");
         return -1;
       }
 
-      return this.setVector3(objectArrayView, this.collisionIndex, data)
+      return this.setVector3( this.collisionIndex, data)
     }
 
-    get_min(objectArrayView)
+    get_min()
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(objectArrayView);
-      const pos = this.getPosition(objectArrayView);
+      const halfs = this.getHalf(transformArray);
+      const pos = this.getPosition(transformArray);
 
       return new Float32Array([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
-    get_max(objectArrayView)
+    get_min_Into( min_max)
     {
-      if (!(objectArrayView instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(objectArrayView);
-      const pos = this.getPosition(objectArrayView);
+      const halfs = this.getHalf(transformArray);
+      const pos = this.getPosition(transformArray);
+
+      return min_max.min.set([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
+    }
+
+    get_max_Into( min_max)
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get min wasnt given float32array");
+        return -1;
+      }
+
+      const halfs = this.getHalf(transformArray);
+      const pos = this.getPosition(transformArray);
+
+       return min_max.max.set([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
+    }
+
+    get_max()
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get min wasnt given float32array");
+        return -1;
+      }
+
+      const halfs = this.getHalf(transformArray);
+      const pos = this.getPosition(transformArray);
 
       return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
 
-    setVector3(objectArray, offset, data)
+    setVector3(offset, data)
     {
-      if (!(objectArray instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set vector3 wasnt given float32array");
         return -1;
       }
@@ -299,28 +383,28 @@ export class gameObject
         return -1;
       }
 
-      objectArray[offset] = data[0];
-      objectArray[offset + 1] = data[1];
-      objectArray[offset + 2] = data[2];
+      transformArray[offset] = data[0];
+      transformArray[offset + 1] = data[1];
+      transformArray[offset + 2] = data[2];
 
       return BYTES_OF_VECTOR3;
     }
 
-    setFloat32(objectArray, offset, data)
+    setFloat32( offset, data)
     {
-      if (!(objectArray instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set Float32 wasnt given float32array");
         return -1;
       }
 
-      objectArray[offset] = data;
+      transformArray[offset] = data;
 
       return BYTES_OF_FLOAT_32;
     }
 
-    set_BRDF_Params(objectArray, offset, data)
+    set_BRDF_Params( offset, data)
     {
-      if (!(objectArray instanceof Float32Array)) {
+      if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set BRDF Params wasnt given float32array");
         return -1;
       }
@@ -336,37 +420,37 @@ export class gameObject
       let base_index = 0;
 
      // ROUGHNESS
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // ROUGHNESS_SQUARED
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SUBSURFACE
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // ANISOTROPIC
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // CLEARCOAT
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // CLEARCOAT_GLOSS
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SPECULAR
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SPECULAR_TINT
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // METALLIC
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SHEEN
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SHEEN_TINT
-      index += setFloat32(setTransfromView, offset + base_index, param_array[base_index]);
+      index += setFloat32( offset + base_index, param_array[base_index]);
       ++base_index;
 
       return index;
@@ -374,14 +458,14 @@ export class gameObject
 
 
     // NOTE: Have a view for int8 to pass in.
-    getBRDFIndex(objectArrayView)
+    getBRDFIndex()
     {
-      if (!(objectArrayView instanceof Int8Array)) {
+      if (!(indexArray instanceof Int8Array)) {
         console.log("ERROR: Get BRDF index wasnt given int8array");
         return -1;
       }
 
-      return objectArrayView[this.BRDF_Index];
+      return indexArray[this.BRDF_Index];
     }
     
 }
