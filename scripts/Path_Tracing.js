@@ -346,6 +346,9 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
     let tmp_rot = game_object.getRotation(transformArray);
     let world_matrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
 
+    // THIS WAS CHANGED RECENTLY
+    const inverse_trans_world_matrix = helper.transpose_matrix(helper.inverse_matrix(world_matrix));
+
     // Skip to only triangle vertexes
     for (let i = 0; i < vertex_info.length; i += 8)
     {
@@ -357,7 +360,7 @@ export function transform_vertexs(vertex_info, game_object, transformArray)
         let norm = [vertex_info[i + OFFSET_INT_VN_INDEX], vertex_info[i + OFFSET_INT_VN_INDEX + 1], vertex_info[i + OFFSET_INT_VN_INDEX + 2], 0];
   
         // TO DO: Create func to transfrom vec with inver transpose of word matrix
-        norm_verts[norm_verts_index++] = helper.multiply_matrix_and_normal(world_matrix, norm);
+        norm_verts[norm_verts_index++] = helper.multiply_inverse_transpose_matrix_and_normal(inverse_trans_world_matrix, norm);
     }
 
     // console.log("norm verts");

@@ -37,6 +37,12 @@ export function multiplyFloat32Matrices(A, B) {
     return C;
 }
 
+// TO DO: Experiment wth & aligh -1 option
+export function align(x, align)
+{
+  return Math.ceil(x / align) * align;
+}
+
 export function getWorldMatrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, scale)
 {
  var transformMatrix = new Float32Array([
@@ -83,7 +89,7 @@ export function getWorldMatrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, s
 
     let rotationMatrix = multiplyFloat32Matrices(multiplyFloat32Matrices(rotZ,rotY),rotX);
 
-    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotationMatrix, transformMatrix) ,scaleMatrix);
+    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotationMatrix, transformMatrix), scaleMatrix);
 };
 
 export function getWorldMatrixArray(position, angleRotation, scale)
@@ -288,9 +294,6 @@ export function multiply_matrix_and_point(matrix, point) {
 
 const SMALL_NUM = 0.00000000000001;
 
-
-// TO DO: STORE Inverse matrix and pass in instead of run every time 
-// TO DO: Clean this up including the preciisons tuff nto at 0
 export function multiply_matrix_and_normal(matrix, normal)
 {
   if (normal.length !== 4 | normal[3] == 1)
@@ -301,6 +304,26 @@ export function multiply_matrix_and_normal(matrix, normal)
   }
 
   const inv_transpose_matrix = transpose_matrix(inverse_matrix(matrix));
+
+  let normal_final = multiply_matrix_and_point(inv_transpose_matrix, normal);
+
+  normal_final[3] = 0;
+
+  normal_final = vectorNorm(normal_final);
+
+  return normal_final;
+}
+
+export function multiply_inverse_transpose_matrix_and_normal(matrix, normal)
+{
+  if (normal.length !== 4 | normal[3] == 1)
+  {
+    console.log("Normal input wrong");
+    console.log("Lenght: " + normal.length);
+    console.log("Is Point?: " + (normal[3] == 1));
+  }
+
+  const inv_transpose_matrix = matrix;
 
   let normal_final = multiply_matrix_and_point(inv_transpose_matrix, normal);
 
@@ -359,7 +382,7 @@ export function inverse_matrix(m)
   return r;
 }
 
-// TO DO: Creates too many new matrixs
+// TO DO: Creates too many new matrixs // This is a path tracing prob fix when used agian
 export function transpose_matrix(m)
 {
   var r = new Float32Array(4*4);

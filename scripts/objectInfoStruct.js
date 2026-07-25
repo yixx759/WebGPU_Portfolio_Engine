@@ -50,8 +50,6 @@ const objectArray = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECT
 const transformArray = new Float32Array(objectArray);
 const indexArray = new Int8Array(objectArray);
 
-
-
 /* Object structure
 
 * Render Info *

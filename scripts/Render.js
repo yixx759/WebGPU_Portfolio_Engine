@@ -7,6 +7,7 @@ import * as BRDF_configs from './BRDF_configs.js';
 import * as Light_Manager from './Light_Manager.js';
 import * as Path_Tracing from './Path_Tracing.js';
 import * as sh_funcs from './SH_Funcs.js'
+import * as player_struct from './Player_struct.js'
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 const DEBUG = true;
@@ -46,7 +47,6 @@ function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
 
   device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
 }
-
 
 /* Object structure
 
@@ -152,8 +152,6 @@ const WALL_6_TEXTURE_INDEX = 3;
 
 let wall_6 = new objectInfo.gameObject(WALL_6_ID, WALL_6_MODEL_INDEX, WALL_6_TEXTURE_INDEX, WALL_6_START_POSITION, WALL_6_START_SCALE, WALL_6_START_ROTATION, helper.ZEROS, BRDF_configs.BASIC_INDEX);
 
-// let playerObject = new objectInfo.gameObject(objectArray, PLAYER_ID, WALL_4_MODEL_INDEX, WALL_4_TEXTURE_INDEX, PLAYER_START_POSITION, PLAYER_START_SCALE, WALL_3_START_ROTATION, ZEROS, BRDF_configs.BASIC_INDEX);
-
 let gameObjectArray = [playerObject, otherObject, wall_1, wall_2, wall_3, wall_4, wall_5, wall_6];
 
 // Test prints
@@ -233,22 +231,32 @@ async function init() {
   const verticies_obj_wall = helper.getVertexBufferFromDecodedObj(decoded_obj_data_wall);
 
   let Model_Array = [verticiesFromObj ,verticiesFromObjB, verticies_obj_wall];
+  let max_verts = -1;
+  for (let i = 0; i < Model_Array.length; i++)
+  {
+    if (Model_Array[i].byteLength > max_verts)
+    {
+      max_verts = Model_Array[i].byteLength;
+    }
+  }
 
-  // TO DO: ADD PLAYER TO SOME SORT OF STRUCT
-  const playerCollider = new Float32Array([1, 2, 1, 0]);
+  if (DEBUG && max_verts == -1)
+  {
+    debugLog("Broke final lenght of max verts: -1");
+  }
 
-  // TO DO: Use biggest model precalculate and look into alighnment for this
+  max_verts = helper.align(max_verts, 4);
+
   const vertexBuffer = device.createBuffer({
-        size: Model_Array[1].byteLength * AMOUNT_OF_OBJECTS, // Should pre calculate max
+        size: max_verts * AMOUNT_OF_OBJECTS, // Should pre calculate max
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       });
 
-  let VERTEX_OFFSET = Model_Array[1].byteLength;
+  let VERTEX_OFFSET = max_verts;
 
   const tmp_first_2 = 2;
   const tmp_first_1 = 1;
 
-  // TO DO: Change me
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
     const vertex_index = gameObjectArray[i].getModelIndex();
 
@@ -257,7 +265,7 @@ async function init() {
       if (!SINGLE_TEST || i < tmp_first_1)
       {
         // TO DO: Get these better include in whatever file type is made
-        gameObjectArray[i].setHalf( makeColliderFromVerts(Model_Array[0]));
+        gameObjectArray[i].setHalf(makeColliderFromVerts(Model_Array[0]));
       }
   }
  
@@ -476,21 +484,19 @@ var worldMatrix = new Float32Array([
   }
 
   let bindGroupArray = [];
-   let bindDebugGroup;
+  let bindDebugGroup;
 
-  // TO DO: This should be ordred by ID not i do me later
-  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ){
-   
+  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
     const bindGroup = device.createBindGroup({
     layout: renderPipeline.getBindGroupLayout(0),
     entries: [
         {binding: 0, resource: {
           buffer: Mats,
-          offset: sizet*i
+          offset: sizet * i
         }},
         {binding: 1, resource: {
           buffer: BRDF_PARAMS,
-          offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES*i
+          offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * i
         }},
     ],
     });
@@ -530,7 +536,6 @@ const green_data = await helper.loadImageData(url_green);
 const tester_data = await helper.loadImageData(url_tester);
 
 // TO DO: Generalize me
-
 const texture_green = device.createTexture({
   label: url_green,
   format: 'rgba8unorm',
@@ -624,7 +629,6 @@ const bindGroupTex = device.createBindGroup({
 const light_intensity = 0;
 const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
 
-// TO DO: SHould this be constant?
 const Directional_Lights = device.createBuffer({
   size:  objectInfo.BYTES_OF_VECTOR3 + objectInfo.BYTES_OF_FLOAT_32, // dir (vec3) + intensity (f32)
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -710,28 +714,27 @@ const Y_ANGLE_CAM_CLAMP = 50 * Math.PI / 180;
 var mouse_X = 0;
 var mouse_Y = 0;
 
-// TO DO: CAPS LOCK FIX
 document.addEventListener('keydown', function(evt) {
-  if (evt.key === 'w') {
+  if (evt.key.toLowerCase() === 'w') {
     debugLog("Up");
     keyZDown = -0.1;
-  } else if (evt.key === 's') {
+  } else if (evt.key.toLowerCase() === 's') {
     debugLog("Down");
     keyZDown = 0.1;
   }
 
-  if (evt.key === 'd') {
+  if (evt.key.toLowerCase() === 'd') {
     debugLog("Right");
     keyXDown = -0.1;
-  } else if (evt.key === 'a') {
+  } else if (evt.key.toLowerCase() === 'a') {
     debugLog("Left");
     keyXDown = 0.1;
   }
 
-  if (evt.key === 'e') {
+  if (evt.key.toLowerCase() === 'e') {
     debugLog("forward");
     keyYDown = 0.1;
-  } else if (evt.key === 'q') {
+  } else if (evt.key.toLowerCase() === 'q') {
     debugLog("down");
     keyYDown = -0.1;
   }
@@ -740,26 +743,26 @@ document.addEventListener('keydown', function(evt) {
 
   if (MOVE_TARGET_TEST)
   {
-    if (evt.key === 'ArrowUp') {
+    if (evt.key.toLowerCase() === 'ArrowUp') {
     debugLog("Debug Up");
     debug_target_keyZDown = -0.1;
-  } else if (evt.key === 'ArrowDown') {
+  } else if (evt.key.toLowerCase() === 'ArrowDown') {
     debugLog("Debug Down");
     debug_target_keyZDown = 0.1;
   }
 
-  if (evt.key === 'ArrowRight') {
+  if (evt.key.toLowerCase() === 'ArrowRight') {
     debugLog("Debug Right");
     debug_target_keyXDown = 0.1;
-  } else if (evt.key === 'ArrowLeft') {
+  } else if (evt.key.toLowerCase() === 'ArrowLeft') {
     debugLog("Debug Left");
     debug_target_keyXDown = -0.1;
   }
 
-  if (evt.key === 'f') {
+  if (evt.key.toLowerCase() === 'f') {
     debugLog("Debug forward");
     debug_target_keyYDown = 0.1;
-  } else if (evt.key === 'h') {
+  } else if (evt.key.toLowerCase() === 'h') {
     debugLog("Debug down");
     debug_target_keyYDown = -0.1;
   }
@@ -769,17 +772,17 @@ document.addEventListener('keydown', function(evt) {
 
 document.addEventListener('keyup', function(evt) {
   
-    if (evt.key === 'w' || evt.key === 's') {
+    if (evt.key.toLowerCase() === 'w' || evt.key.toLowerCase() === 's') {
         debugLog("debug Z stop");
         keyZDown = 0;
       }
 
-    if (evt.key === 'd' || evt.key === 'a') {
+    if (evt.key.toLowerCase() === 'd' || evt.key.toLowerCase() === 'a') {
       debugLog("debug X stop");
       keyXDown = 0;
     }
 
-    if (evt.key === 'e' || evt.key === 'q') {
+    if (evt.key.toLowerCase() === 'e' || evt.key.toLowerCase() === 'q') {
       debugLog("debug Y stop");
       keyYDown = 0;
     }
@@ -788,17 +791,17 @@ document.addEventListener('keyup', function(evt) {
 
   if (MOVE_TARGET_TEST)
       {
-    if (evt.key === 'ArrowUp' || evt.key === 'ArrowDown') {
+    if (evt.key.toLowerCase() === 'ArrowUp' || evt.key.toLowerCase() === 'ArrowDown') {
       debugLog("Z stop");
       debug_target_keyZDown = 0;
     }
 
-    if (evt.key === 'ArrowRight' || evt.key === 'ArrowLeft') {
+    if (evt.key.toLowerCase() === 'ArrowRight' || evt.key.toLowerCase() === 'ArrowLeft') {
       debugLog("X stop");
       debug_target_keyXDown = 0;
     }
 
-    if (evt.key === 'f' || evt.key === 'h') {
+    if (evt.key.toLowerCase() === 'f' || evt.key.toLowerCase() === 'h') {
       debugLog("Y stop");
       debug_target_keyYDown = 0;
     }
@@ -806,21 +809,20 @@ document.addEventListener('keyup', function(evt) {
 
 }, false);
 
-// TO DO:  If rotates over 90 degrees up will distort
 document.addEventListener('mousemove', function(evt) {
     mouse_X = mouse_X + evt.movementX * MOUSE_SPEED_X;
     mouse_Y = Math.max(Math.min(mouse_Y - evt.movementY * MOUSE_SPEED_Y, Y_ANGLE_CAM_CLAMP), -Y_ANGLE_CAM_CLAMP);
 })
 
-// TO DO: Manage me and scratch better
 let tmpCamPos = new Float32Array(4);
 
 if (DEBUG && !PATH_TEST)
 {
   document.addEventListener('click', function(evt) {
     debugLog("clicked")
-    // TO DO: Set magnitude somewhere
-    let dir = helper.vector_mult(look_vector, new Float32Array([10,10,10]));
+
+    const MAG = new Float32Array([10,10,10]);
+    let dir = helper.vector_mult(look_vector, MAG);
     let ray_from_player_forward = new ray(camPos[0], camPos[1], camPos[2], -dir[0], -dir[1], -dir[2]);
 
     let did_hit = false;
@@ -863,29 +865,16 @@ var look_vector = new Float32Array([forward_vector_mat[0] * Math.cos(mouse_Y), M
 
 if (false & PATH_TEST)
 {
-
   const TEST_ORIGIN = new Float32Array([-7.737100124359131,-3.6731858253479004,-20.333486557006836]);
   const TEST_DIR = new Float32Array([0.18422017991542816,0.39131084084510803,-0.9016311764717102]);
 
-  // let verts = Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[2], );
-  
   const MAG = 12.74056736299502;
   // const PATH_DIR = helper.vectorNorm(new Float32Array([-0.5153934702841967,0.3290491710254644,-0.791262417808319]));
   // const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
-  // const PATH_ORIGIN = new Float32Array([4.689762592315674,-2.9941444396972656,-5]);
 
   let res = false;
 
   res =  Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data, dir_light_dir_and_intensity);
-
-  // path_trace_ray(origin, dir, objects,  objectArray, models, texture_data)
-  // res = Path_Tracing.path_trace_ray(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data);
-
-  //res = Path_Tracing.intersect_objects_triangles(verts[0], PATH_ORIGIN, PATH_DIR, verts[1], tester_data["data"], tester_data["width"], tester_data["height"]);
-  
-  // debugLog(res);
-  // newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), true, device, vertexDebugBuffer)
-
   if (res){
     newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
   }
@@ -893,10 +882,19 @@ if (false & PATH_TEST)
   newRayPos(TEST_ORIGIN,  helper.vectorAdd(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device, vertexDebugBuffer)
 }
 
-function render() {
+const playerCollider = new Float32Array([1, 2, 1, 0]);
 
-  // TO DO: Magic numbers
-  Time = Date.now() / 100;
+const player = new player_struct.Player_Stuff(playerObject, playerCollider);
+
+const CONST_TIME_DIV = 100;
+
+// TO DO: Scratch mangaer
+let tmp_pos = new Float32Array(3);
+let tmp_rot = new Float32Array(3);
+let tmp_half = new Float32Array(3);
+
+function render() {
+  Time = Date.now() / CONST_TIME_DIV;
 
   // debugLog("mouse x: " + mouse_X);
   // debugLog("mouse y: " + mouse_Y);
@@ -908,10 +906,8 @@ function render() {
     debug_target_keyZ += debug_target_keyZDown * DEBUG_TARGET_SENSITIVITY;
   }
 
-  // TO DO : dont recreate me
-  forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
+  forward_vector_mat.set([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
   
-  // TO DO: NORMALIZE?
   if (SINGLE_TEST)
   {
     helper.vector_add_cam(camPos, keyXDown, keyZDown);
@@ -923,23 +919,18 @@ function render() {
  
   let OBJECTS_TO_RENDER = SINGLE_TEST ? tmp_first_1 : AMOUNT_OF_OBJECTS;
 
-  // TO DO: This could be better
-
-  {
-  let tmp_pos = new Float32Array(3);
-  let tmp_half = new Float32Array(3);
-
-  for (let i = 0; i < OBJECTS_TO_RENDER; i++)
-  {
-    gameObjectArray[i].getPosition_Into( tmp_pos);
-    gameObjectArray[i].getHalf_Into( tmp_half);
-    if (AABB(tmp_pos, tmp_half, camPos, playerCollider) && !SINGLE_TEST)
+    for (let i = 0; i < OBJECTS_TO_RENDER; i++)
     {
-      helper.vector_assign_cam(camPos, camPosPrev);
+      gameObjectArray[i].getPosition_Into(tmp_pos);
+      gameObjectArray[i].getHalf_Into(tmp_half);
+      
+      if (AABB(tmp_pos, tmp_half, camPos, player.Collider) && !SINGLE_TEST)
+      {
+        helper.vector_assign_cam(camPos, camPosPrev);
+      }
     }
-  }
   
-  }
+
   helper.vector_assign_cam(camPosPrev, camPos);
 
   //TO Do : make new target pos forward vec and use new const.
@@ -960,32 +951,25 @@ function render() {
 
   {
 
-  let tmp_pos = new Float32Array(3);
   let tmp_scale = 0;
-  let tmp_rot = new Float32Array(3);
 
-  // TO DO: Only need to change world
   for(let i = 0; i < OBJECTS_TO_RENDER; i++ )
   {
     if (SINGLE_TEST)
     {
-      debugLog("single HERE")
       gameObjectArray[i].setPosition( camPos);
       gameObjectArray[i].setRotation( new Float32Array([0,keyY,0]));
     }
 
     if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
-      debugLog("HERE")
       gameObjectArray[i].setPosition( new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
       gameObjectArray[i].setRotation( new Float32Array([90,0,0]));
     }
 
-    // TO DO: SHould be some scratch memroy here to pass in
-    // right no createing vec everytime
-    gameObjectArray[i].getPosition_Into( tmp_pos);
+    gameObjectArray[i].getPosition_Into(tmp_pos);
     tmp_scale = gameObjectArray[i].getScale();
-    gameObjectArray[i].getRotation_Into( tmp_rot);
+    gameObjectArray[i].getRotation_Into(tmp_rot);
 
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
@@ -1028,8 +1012,6 @@ function render() {
   passEncoder.setBindGroup(2, lightBindGroup);
   
   // This should be based on object indexs
-  // TO DO: Make these names better
-
   for (let i = 0; i < OBJECTS_TO_RENDER; i++)
   {
     const vert_index = gameObjectArray[i].getModelIndex();

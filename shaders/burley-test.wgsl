@@ -2,6 +2,11 @@ const PI: f32 = 3.141592653589793;
 const ONE_OVER_PI: f32 = 0.31830988618;
 
 const TOTAL_COEFF = 16;
+const COLOR_CHANNELS = 3;
+
+const SH_COEFF_R_OFFSET = 0;
+const SH_COEFF_G_OFFSET = TOTAL_COEFF;
+const SH_COEFF_B_OFFSET = TOTAL_COEFF * 2;
 
 const C: array<f32, 10> = array<f32, 10>(
   sqrt(ONE_OVER_PI) * 0.5,
@@ -60,13 +65,13 @@ fn eval_SH_basis(d : vec3f) -> array<f32, TOTAL_COEFF> {
  return res;
 }
 
-fn eval_SH_rep(coeffs : array<f32, TOTAL_COEFF>, d : vec3f) -> f32
+fn eval_SH_rep(coeffs : array<f32, TOTAL_COEFF * COLOR_CHANNELS>, d : vec3f, offset : i32) -> f32
 {
   var basis = eval_SH_basis(d);
 
   for (var i = 0; i < TOTAL_COEFF; i++)
   {
-    basis[i] = basis[i] * coeffs[i];
+    basis[i] = basis[i] * coeffs[i + offset];
   }
 
   var total : f32 = 0;
@@ -176,6 +181,7 @@ fn vertex_main(@location(0) position: vec3f,
 
 @group(1) @binding(0) var ourSampler: sampler;
 @group(1) @binding(1) var ourTexture: texture_2d<f32>;
+
 // TO DO: Try to get f16 back
 
 // Light Stuff
@@ -196,14 +202,12 @@ const TOTAL_POINT_LIGHT_NUMBER = 2;
 const INVERSE_DENOM_CONST = 0.001;
 
 // TO DO: Maybe Switch to linear fall off after r_max * 0.8
-// TO DO: Add as param
 const R_MAX = 300;
 
 @group(2) @binding(0) var<uniform> dir_light_info: DIR_LIGHT;
 @group(2) @binding(1) var<uniform> point_light_info: array<POINT_LIGHT, TOTAL_POINT_LIGHT_NUMBER>;
 
-// To DO: Magic numbers
-@group(2) @binding(2) var<uniform> sh_coeff: array<f32, TOTAL_COEFF * 3>;
+@group(2) @binding(2) var<uniform> sh_coeff: array<f32, TOTAL_COEFF * COLOR_CHANNELS>;
 
 fn SchlickFresnel(x : f32) -> f32 {
     var xtmp = saturate(1.0f - x);
@@ -239,9 +243,6 @@ struct Light_Info {
  T: vec3f,
  bitangent: vec3f,
 }
-
-// TO DO: MISSING CLAMP
-// TO DO: Remeber div by 0
 
 fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
 {
@@ -291,9 +292,9 @@ fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
   let sheen_colour = mix(vec4f(1.0f), light_info.base_col, params.SHEEN_TINT);
   let sheen = SCHLICK_THETAD * params.SHEEN * sheen_colour;
 
-  // TO DO: Should only have one devide 
-  let overall_spec = ((D_Specular * schlick * g_spec) / (4 * (thetaL) * (ndotv))) ;
-  let overall_clear = ((schlickClear * g_clear * d_clear) * params.CLEARCOAT) / (4 * (thetaL) * (ndotv));
+  let div_4_thetaL_ndotv = (4 * (thetaL) * (ndotv));
+  let overall_spec = ((D_Specular * schlick * g_spec) / div_4_thetaL_ndotv) ;
+  let overall_clear = ((schlickClear * g_clear * d_clear) * params.CLEARCOAT) / div_4_thetaL_ndotv;
 
   return vec4f(saturate((((mix(fd, fss, params.SUBSURFACE) * light_info.base_col + sheen).xyz * (1 - params.METALLIC)) + vec3f(overall_clear) + overall_spec.xyz) * thetaL), 1);
 }
@@ -301,7 +302,6 @@ fn burley_brdf_dir(light_info :Light_Info, light_dir: vec3f) -> vec4f
 @fragment
 fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
 {
-  // To DO: remove reduncant nromalize funcs
   let norm = normalize(fragData.norm);
 
   let T = get_tangent(fragData.position, fragData.texcoord, (norm));
@@ -323,45 +323,27 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
   var final_colour =  saturate(burley_brdf_dir(light_info, light_dir)); // Direction
   final_colour *= dir_light_info.intensity;
 
-// TO DO: Remove me
-// To do: UNROLL
-if(INCLUDE_POINT_LIGHTS) {
+if (INCLUDE_POINT_LIGHTS) {
   for (var i = 0; i < TOTAL_POINT_LIGHT_NUMBER; i++) {
 
     let light_ray = point_light_info[i].pos - fragData.wpos;
     
     light_dir = normalize(light_ray);
     let distance = length(light_ray);
-    // TO DO: This could be square auto
+
     let inverse_square = (point_light_info[i].attenuation * point_light_info[i].attenuation) / ((distance * distance) + INVERSE_DENOM_CONST);
     let window_func = pow(max((1 - pow(point_light_info[i].attenuation / R_MAX, 4)), 0), 2);
 
     let final_atten = window_func * inverse_square;
 
-    //return vec4f((burley_brdf_dir(light_info, light_dir) * final_atten * point_light_info[i].intensity).xyz, 1);
-    // return vec4f(final_colour.xyz, 1);
     final_colour += vec4((burley_brdf_dir(light_info, light_dir).xyz * point_light_info[i].intensity * final_atten).xyz, 0); // Point
     }
   }
 
-// TO DO: Optimze can send mem adress for r g and b
-  var r_coeff : array<f32, TOTAL_COEFF>;
-  var g_coeff : array<f32, TOTAL_COEFF>;
-  var b_coeff : array<f32, TOTAL_COEFF>;
-
-  for (var i = 0; i < TOTAL_COEFF; i++)
-  {
-    r_coeff[i] = sh_coeff[i];
-    g_coeff[i] = sh_coeff[i + TOTAL_COEFF];
-    b_coeff[i] = sh_coeff[i + TOTAL_COEFF * 2];
-  }
-
   // Ambient Light
-  let r_ambient = eval_SH_rep(r_coeff, norm) * ONE_OVER_PI;
-  let g_ambient = eval_SH_rep(g_coeff, norm) * ONE_OVER_PI;
-  let b_ambient = eval_SH_rep(b_coeff, norm) * ONE_OVER_PI;
+  let r_ambient = eval_SH_rep(sh_coeff, norm, SH_COEFF_R_OFFSET) * ONE_OVER_PI;
+  let g_ambient = eval_SH_rep(sh_coeff, norm, SH_COEFF_G_OFFSET) * ONE_OVER_PI;
+  let b_ambient = eval_SH_rep(sh_coeff, norm, SH_COEFF_B_OFFSET) * ONE_OVER_PI;
 
-   // return vec4f(r_ambient, g_ambient, b_ambient, 1);
-// TO DO: Shouldnt have to do this where is 1 being added?;
    return vec4f(final_colour.x + r_ambient, final_colour.y + g_ambient, final_colour.z + b_ambient, 1);
   }
