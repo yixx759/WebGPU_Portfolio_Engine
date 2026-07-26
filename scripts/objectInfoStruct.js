@@ -58,14 +58,15 @@ const indexArray = new Int8Array(objectArray);
 
   * Transform *
   vector3 position
-  float32    scale
+  int8    scale
   vector3 rotation 
 
   * Collision *
   vector3 half
 
+  // TO DO : STORE EAHC ONE HERE??
   * BRDF Parameters *
-  int8    BRDF param index   
+  int8    BRDF param index       
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
