@@ -6,10 +6,11 @@ import * as testFuncs from './testFuncs.js'
 import * as BRDF_configs from './BRDF_configs.js';
 import * as Light_Manager from './Light_Manager.js';
 import * as Path_Tracing from './Path_Tracing.js';
-import * as sh_funcs from './SH_Funcs.js'
-import * as player_struct from './Player_struct.js'
-import * as model_parser from './Model_Parser.js'
-import * as controls from './Controls.js'
+import * as sh_funcs from './SH_Funcs.js';
+import * as player_struct from './Player_struct.js';
+import * as model_parser from './Model_Parser.js';
+import * as controls from './Controls.js';
+import * as tmp_mem from './Temp_Mem.js';
 
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
@@ -24,7 +25,6 @@ const PATH_TEST = false;
 
 const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
 const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
-
 
 // TO DO: Do that roation system casey did a article on research turns and normalized lerp
 // TO DO: Validaiton with max amount of moidels and texture so cant create object
@@ -369,6 +369,7 @@ var worldMatrix = new Float32Array([
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
   {
     let BRDF_index = gameObjectArray[i].getBRDFIndex();
+
     const params = BRDF_configs.BRDF_config[BRDF_index];
     const size = params.length;
     device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
@@ -582,16 +583,12 @@ const CONST_TIME_DIV = 100;
 // TO DO: Add to player?
 let look_vector = new Float32Array([controls.forward_vector_mat[0] * Math.cos(controls.mouse_Y), Math.sin(controls.mouse_Y), controls.forward_vector_mat[2] * Math.cos(controls.mouse_Y)])
 
-// TO DO: Scratch mangaer
-let tmp_pos = new Float32Array(3);
-let tmp_rot = new Float32Array(3);
-let tmp_half = new Float32Array(3);
-
-let tmp_pos = 
+let tmp_pos = tmp_mem.get_temp_memory_vector();
+let tmp_rot = tmp_mem.get_temp_memory_vector();
+let tmp_half = tmp_mem.get_temp_memory_vector();
 
 function render() {
   Time = Date.now() / CONST_TIME_DIV;
-
   
   let OBJECTS_TO_RENDER = SINGLE_TEST ? 1 : AMOUNT_OF_OBJECTS;
 
@@ -607,7 +604,7 @@ function render() {
     var viewMatix = helper.getViewMatrix(look_vector, helper.WORLD_UP_VECTOR, controls.camPos);
   }
 
-  var perMatrix = helper.getPerspectiveMatrix(70, 1,1000);
+  var perMatrix = helper.getPerspectiveMatrix(70, 1, 1000);
 
   {
 
@@ -684,10 +681,6 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
       gameObjectArray[i].setRotation( new Float32Array([90,0,0]));
     }
 
-    gameObjectArray[i].getPosition_Into(tmp_pos);
-    tmp_scale = gameObjectArray[i].getScale();
-    gameObjectArray[i].getRotation_Into(tmp_rot);
-
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
       if (PATH_TEST)
@@ -698,7 +691,9 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
     }
 
     // TO DO: Dirty bit
-    let worldMatrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+    // TO DO: World_Matrix, tmp_pos, tmp_rot add params use temp meory for matrix maybe
+    // or just creat one.
+    let worldMatrix = gameObjectArray[i].get_world_matrix();
     
     device.queue.writeBuffer(Mats, i * sizet + 0, worldMatrix);
     device.queue.writeBuffer(Mats, i * sizet + matrixSize, viewMatix );

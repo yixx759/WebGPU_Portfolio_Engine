@@ -1,3 +1,5 @@
+import * as helper from './helperFuncs.js';
+
 const AMOUNT_OF_OBJECTS = 2 + 6;
 
 // Data type size
@@ -13,6 +15,8 @@ export const BYTES_OF_INT_32 = 32 / 8;
 
 export const BYTES_OF_VECTOR3 = BYTES_OF_FLOAT_32 * 3;
 
+export const BYTES_OF_MATRIX = BYTES_OF_FLOAT_32 * 4 * 4;
+
 const NUMBER_OF_BRDF_PARAMETERS = 11;
 
 const OFFSET_TRANSFROM_POSITION = 0;
@@ -21,7 +25,9 @@ const OFFSET_TRANSFROM_ROTATION = 4;
 
 const OFFSET_INTO_TRANSFROM_HALF = OFFSET_TRANSFROM_ROTATION + 3;
 
-const OFFSET_INTO_TRANSFROM_BRDF = OFFSET_INTO_TRANSFROM_HALF + 3;
+const OFFSET_INTO_TRANSFROM_MATRIX = OFFSET_INTO_TRANSFROM_HALF + 3;
+
+const OFFSET_INTO_TRANSFROM_DIRTY_BIT = OFFSET_INTO_TRANSFROM_MATRIX + 9;
 
 export const VERTEX_INDEX_CUBE = 0;
 export const VERTEX_INDEX_BUNNY = 1;
@@ -30,6 +36,8 @@ export const BYTES_OF_RENDER_INFO = BYTES_OF_INT_8 * 2;
 export const BYTES_OF_TRANSFORM = BYTES_OF_VECTOR3 + BYTES_OF_FLOAT_32 + BYTES_OF_VECTOR3;
 export const BYTES_OF_COLLIDER = BYTES_OF_VECTOR3;
 export const BYTES_OF_BRDF = BYTES_OF_INT_8;
+export const BYTES_OF_DIRTY_BIT = BYTES_OF_INT_8;
+export const BYTES_OF_WORLD_MATRIX = BYTES_OF_MATRIX;
 
 const ALIGNMENT_BYTES_OF_RENDER_INFO = BYTES_OF_RENDER_INFO + (BYTES_OF_FLOAT_32 - BYTES_OF_RENDER_INFO);
 
@@ -39,7 +47,11 @@ const ALIGNMENT_BYTES_OF_TRANSFORM = BYTES_OF_TRANSFORM;
 
 const ALIGNMENT_BYTES_OF_COLLIDER = BYTES_OF_COLLIDER;
 
-export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + BYTES_OF_BRDF;
+const ALIGNMENT_BYTES_OF_MATRIX = BYTES_OF_MATRIX;
+
+const ALIGNMENT_BYTES_OF_DIRTY_BIT = BYTES_OF_DIRTY_BIT + (BYTES_OF_FLOAT_32 - BYTES_OF_DIRTY_BIT);
+
+export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + BYTES_OF_BRDF + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT;
 
 const ALLIGHNMENT_NUMBER = 64
 export const ALIGNMENT_BYTES_OF_OBJECT = (BYTES_OF_OBJECT + ALLIGHNMENT_NUMBER - 1) & ~(ALLIGHNMENT_NUMBER - 1);
@@ -64,9 +76,15 @@ const indexArray = new Int8Array(objectArray);
   * Collision *
   vector3 half
 
+  * WORLD MATRIX *
+  float32[16] world matrix 
+
+  * Dirty Bit*
+  int8 dirty_bit
+
   // TO DO : STORE EAHC ONE HERE??
   * BRDF Parameters *
-  int8    BRDF param index       
+  int8    BRDF param index  
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -77,10 +95,12 @@ export class gameObject
   transformIndex;
   collisionIndex;
   BRDF_Index;
+  Dirty_Bit;
+  Matrix_Index;
  
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(objectID, vertexIndex, textureIndex, position, scale, rotation, half, param_array_index)
+  constructor(objectID, vertexIndex, textureIndex, position, scale, rotation, half, world_matrix, param_array_index)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
@@ -92,7 +112,9 @@ export class gameObject
     this.byteIndex = index;
     this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
     this.collisionIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
-    this.BRDF_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER);
+    this.Matrix_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER);
+    this.BRDF_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT) / 4;
+    this.Dirty_Bit = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX);
     this.ID = objectID;
 
     const renderInfoView = new Uint8Array(objectArray, index);
@@ -120,10 +142,15 @@ export class gameObject
     // Set half
     index += this.setVector3(base_index + OFFSET_INTO_TRANSFROM_HALF, half);
 
-    // Set BRDF TO DO: Fix this
-    renderInfoView[index - this.byteIndex] = param_array_index;
+    // Set Matrix
+    index += this.setMatrix(base_index + OFFSET_INTO_TRANSFROM_MATRIX, world_matrix);
 
-    ++index;
+    // TO DO: order and pack ints correclty
+
+    // Set Dirty Bit
+    index += this.setInt8(index, 1);
+
+    index += this.setInt8(index, param_array_index);
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -211,6 +238,8 @@ export class gameObject
         return -1;
       }
 
+      this.set_Dirty_Bit(1);
+
       return this.setVector3( this.transformIndex, data)
     }
 
@@ -232,6 +261,8 @@ export class gameObject
         console.log("ERROR: Set scale wasnt given float32array");
         return -1;
       }
+
+      this.set_Dirty_Bit(1);
 
       transformArray[this.transformIndex + OFFSET_TRANSFROM_SCALE] = data;
     }
@@ -267,18 +298,39 @@ export class gameObject
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setRotation( data)
+    setRotation(data)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set rotation wasnt given float32array");
         return -1;
       }
 
+      this.set_Dirty_Bit(1);
+
       return this.setVector3( this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
     }
 
+    get_world_matrix(World_Matrix, tmp_pos, tmp_rot)
+    {
+      if (indexArray[this.Dirty_Bit] != 1)
+      {
+        return this.getMatrixInto(World_Matrix);
+      }
+      else
+      {   
+        this.getPosition_Into(tmp_pos);
+        let tmp_scale = this.getScale();
+        this.getRotation_Into(tmp_rot);
+
+        this.set_Dirty_Bit(0);
+
+        // TO DO: Reuse memroy in that func
+        return helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+      }
+    }
+
     // NOTE: Have a view for float32 to pass in.
-    getHalf_Into( halfs)
+    getHalf_Into(halfs)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get half wasnt given float32array");
@@ -290,6 +342,11 @@ export class gameObject
       const z = transformArray[this.collisionIndex + 2]
 
       return halfs.set([x, y, z]);
+    }
+
+    set_Dirty_Bit(data)
+    {
+      return indexArray[this.Dirty_Bit] = data;
     }
 
     // NOTE: Have a view for float32 to pass in.
@@ -370,6 +427,17 @@ export class gameObject
       return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
 
+    getMatrixInto(Matrix)
+    {
+      for (let i = 0; i < 4; i++)
+      {
+        for (let j = 0; j < 4; j++)
+        {
+          Matrix[(i * 4) + j] = transformArray[this.Matrix_Index + (i * 4) + j];
+        }
+      }
+    }
+
     setVector3(offset, data)
     {
       if (!(transformArray instanceof Float32Array)) {
@@ -389,6 +457,29 @@ export class gameObject
       return BYTES_OF_VECTOR3;
     }
 
+    setMatrix(offset, data)
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Set vector3 wasnt given float32array");
+        return -1;
+      }
+
+      if (!(data instanceof Float32Array)) {
+        console.log("ERROR: Set vector3 wasnt given data float32array");
+        return -1;
+      }
+
+      for (let i = 0; i < 4; i++)
+      {
+        for (let j = 0; j < 4; j++)
+        {
+          transformArray[offset + (i * 4) + j] = data[(i * 4) + j];
+        }
+      }
+
+      return BYTES_OF_MATRIX;
+    }
+
     setFloat32( offset, data)
     {
       if (!(transformArray instanceof Float32Array)) {
@@ -399,6 +490,18 @@ export class gameObject
       transformArray[offset] = data;
 
       return BYTES_OF_FLOAT_32;
+    }
+
+    setInt8(offset, data)
+    {
+      if (!(indexArray instanceof Int8Array)) {
+        console.log("ERROR: Set setInt8 wasnt given Int8Array");
+        return -1;
+      }
+
+      indexArray[offset] = data;
+
+      return ALIGNMENT_BYTES_OF_DIRTY_BIT;
     }
 
     set_BRDF_Params( offset, data)
@@ -454,7 +557,6 @@ export class gameObject
 
       return index;
     }
-
 
     // NOTE: Have a view for int8 to pass in.
     getBRDFIndex()

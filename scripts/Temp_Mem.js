@@ -1,6 +1,6 @@
 const MAX_MEMORY = 32;
 
-const MAX_MEMORY_div_3 = 32  / 3;
+const MAX_MEMORY_div_3 = Math.ceil(32  / 3);
 
 const temp_memory = new Float32Array(MAX_MEMORY);
 let mem_index = 0;
@@ -74,9 +74,9 @@ export function set_temp_memory_vector(x, y, z)
     
 }
 
-get_new_temp_memory_vector_array()
+export function get_new_temp_memory_vector_array()
 {
-       if (mem_index + 3 >= MAX_MEMORY)
+    if (mem_index + 3 >= MAX_MEMORY)
     {
         console.log("TEMP OVERLOAD USING TOO MUCH");
     }
@@ -103,19 +103,17 @@ export function get_temp_memory_value(index)
     return temp_memory[index];
 }
 
-export function get_temp_memory_vector(index)
+export function get_temp_memory_vector()
 {
-    if (index < 0)
-    {
-        console.log("SIZE IS TOO SMALL GET TMP MEM VEC");
-    }
 
-    if (index >= MAX_MEMORY_div_3)
+    if (mem_index + 3 >= MAX_MEMORY_div_3)
     {
         console.log("SIZE IS TOO BIG GET TMP MEM VEC");
     }
 
-    return vector_view[index];
+    mem_index = (vec_index + 1) * 3;
+
+    return vector_view[vec_index++];
 }
 
 export function clear_temp_mem()
