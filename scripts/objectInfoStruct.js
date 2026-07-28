@@ -112,7 +112,7 @@ export class gameObject
     this.byteIndex = index;
     this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
     this.collisionIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
-    this.Matrix_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER);
+    this.Matrix_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER) / 4;
     this.BRDF_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT) / 4;
     this.Dirty_Bit = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX);
     this.ID = objectID;
@@ -314,7 +314,8 @@ export class gameObject
     {
       if (indexArray[this.Dirty_Bit] != 1)
       {
-        return this.getMatrixInto(World_Matrix);
+        this.getMatrixInto(World_Matrix);
+        return World_Matrix;
       }
       else
       {   
@@ -324,8 +325,15 @@ export class gameObject
 
         this.set_Dirty_Bit(0);
 
-        // TO DO: Reuse memroy in that func
-        return helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+        this.getMatrixInto(World_Matrix);
+
+       // TO DO: Reuse memroy in that func
+       let new_matrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+
+        this.setMatrix(this.Matrix_Index, new_matrix);
+        this.getMatrixInto(World_Matrix);
+
+        return new_matrix;
       }
     }
 

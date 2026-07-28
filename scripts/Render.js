@@ -608,7 +608,10 @@ function render() {
 
   {
 
-  assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, Mats, matrixSize, sizet);
+
+// TO DO: Put somewhere
+  let tmp_World_Matrix = new Float32Array(4 * 4);
+  assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
 }
 
   const commandEncoder = device.createCommandEncoder();
@@ -663,7 +666,7 @@ function render() {
   requestAnimationFrame(render);
 }
 
-function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, Mats, matrixSize, sizet)
+function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet)
 {
   let tmp_scale = 0;
 
@@ -693,8 +696,9 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
     // TO DO: Dirty bit
     // TO DO: World_Matrix, tmp_pos, tmp_rot add params use temp meory for matrix maybe
     // or just creat one.
-    let worldMatrix = gameObjectArray[i].get_world_matrix();
-    
+    // PRINT INSIDE DIRTY AND OUTSIDE DIRTY Branch
+    let worldMatrix = gameObjectArray[i].get_world_matrix(tmp_World_Matrix, tmp_pos, tmp_rot);
+
     device.queue.writeBuffer(Mats, i * sizet + 0, worldMatrix);
     device.queue.writeBuffer(Mats, i * sizet + matrixSize, viewMatix );
     device.queue.writeBuffer(Mats, i * sizet + matrixSize * 2, perMatrix);
