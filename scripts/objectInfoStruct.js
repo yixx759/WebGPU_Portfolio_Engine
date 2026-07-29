@@ -109,6 +109,8 @@ export class gameObject
   
     let index = objectID * ALIGNMENT_BYTES_OF_OBJECT
   
+
+    // TO DO: GENERALIZE!
     this.byteIndex = index;
     this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
     this.collisionIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;

@@ -62,9 +62,8 @@ const OTHER_OB_INDEX = 1;
 if (TEST) testFuncs.objectTestPrints(gameObjectArray[PLAYER_INDEX], gameObjectArray[OTHER_OB_INDEX]);
 
 // TO DO: Add me to collider stuff?
+// TO DO: Make acc player struct with cam pos and stuff
 const playerCollider = new Float32Array([1, 2, 1, 0]);
-
-const player = new player_struct.Player_Stuff(gameObjectArray[PLAYER_INDEX], playerCollider);
 
 // Vertex and fragment shaders
 const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");
@@ -593,7 +592,7 @@ function render() {
   let OBJECTS_TO_RENDER = SINGLE_TEST ? 1 : AMOUNT_OF_OBJECTS;
 
   // NOTE: CHANGES CAM POS
-  look_vector = controls.move_and_look(gameObjectArray, tmp_pos, tmp_half, player, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST);
+  look_vector = controls.move_and_look(gameObjectArray, tmp_pos, tmp_half, playerCollider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST);
  
   if (SINGLE_TEST)
   {

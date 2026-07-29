@@ -142,7 +142,7 @@ export var camPos = new Float32Array([0,0,10, 1]);
 export var camPosPrev = new Float32Array([0,0,0, 1]);
 export var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 
-export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST)
+export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST)
 {
 // debugLog("mouse x: " + mouse_X);
   // debugLog("mouse y: " + mouse_Y);
@@ -170,7 +170,7 @@ export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player, OBJECT
     gameObjectArray[i].getPosition_Into(tmp_pos);
     gameObjectArray[i].getHalf_Into(tmp_half);
     
-    if (AABB(tmp_pos, tmp_half, camPos, player.Collider) && !SINGLE_TEST)
+    if (AABB(tmp_pos, tmp_half, camPos, player_collider) && !SINGLE_TEST)
     {
       helper.vector_assign_cam(camPos, camPosPrev);
     }
