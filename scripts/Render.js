@@ -17,6 +17,7 @@ const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 export const DEBUG = true;
 const TEST = false;
 const SINGLE_TEST = false;
+export const SAVE_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
 export const MOVE_TARGET_TEST = false;
@@ -51,9 +52,9 @@ function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
   device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
 }
 
-const AMOUNT_OF_OBJECTS = 2 + 6;
+export const AMOUNT_OF_OBJECTS = 2 + 6;
 
-let gameObjectArray = player_struct.Set_Up_Objects();
+export let gameObjectArray = player_struct.Set_Up_Objects();
 
 const PLAYER_INDEX = 0;
 const OTHER_OB_INDEX = 1;
@@ -435,7 +436,6 @@ const sampler = device.createSampler({
   addressModeV: 'repeat',
   magFilter: 'linear',
 });
-
 
 // IF PATH TEST
 //let textures_data = [source_data, sourceF_data, green_data, tester_data];

@@ -1,5 +1,6 @@
 import * as render from './Render.js';
 import * as helper from './helperFuncs.js';
+import * as save_funcs from './Save_Funcs.js'
 import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './colliderFuncs.js'
 
 const canvas = document.querySelector('#gpuCanvas');
@@ -30,6 +31,8 @@ const Y_ANGLE_CAM_CLAMP = 50 * Math.PI / 180;
 
 export var mouse_X = 0;
 export var mouse_Y = 0;
+
+const activeKeys = new Set();
 
 document.addEventListener('keydown', function(evt) {
   if (evt.key.toLowerCase() === 'w') {
@@ -83,6 +86,15 @@ document.addEventListener('keydown', function(evt) {
     render.debugLog("Debug down");
     debug_target_keyYDown = -0.1;
   }
+  }
+
+  if (render.SAVE_CURRENT_STATE)
+  {
+      if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
+      {
+        console.log("Save!");
+        save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, 0);
+      }
   }
 
 }, false);

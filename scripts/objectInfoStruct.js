@@ -109,7 +109,6 @@ export class gameObject
   
     let index = objectID * ALIGNMENT_BYTES_OF_OBJECT
   
-
     // TO DO: GENERALIZE!
     this.byteIndex = index;
     this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
@@ -398,7 +397,7 @@ export class gameObject
       return new Float32Array([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
-    get_min_Into( min_max)
+    get_min_Into(min_max)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
@@ -411,7 +410,7 @@ export class gameObject
       return min_max.min.set([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
-    get_max_Into( min_max)
+    get_max_Into(min_max)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
@@ -435,6 +434,22 @@ export class gameObject
       const pos = this.getPosition(transformArray);
 
       return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
+    }
+
+    getMatrix()
+    {
+      // TO DO: Magic number
+      let Matrix = new Float32Array(16);
+
+      for (let i = 0; i < 4; i++)
+      {
+        for (let j = 0; j < 4; j++)
+        {
+          Matrix[(i * 4) + j] = transformArray[this.Matrix_Index + (i * 4) + j];
+        }
+      }
+
+      return Matrix
     }
 
     getMatrixInto(Matrix)
