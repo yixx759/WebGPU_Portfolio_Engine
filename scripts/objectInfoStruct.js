@@ -241,7 +241,7 @@ export class gameObject
 
       this.set_Dirty_Bit(1);
 
-      return this.setVector3( this.transformIndex, data)
+      return this.setVector3(this.transformIndex, data)
     }
 
     // NOTE: Have a view for float32 to pass in.

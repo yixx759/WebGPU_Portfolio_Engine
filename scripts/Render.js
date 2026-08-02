@@ -11,13 +11,15 @@ import * as player_struct from './Player_struct.js';
 import * as model_parser from './Model_Parser.js';
 import * as controls from './Controls.js';
 import * as tmp_mem from './Temp_Mem.js';
+import * as save_funcs from './Save_Funcs.js';
 
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 export const DEBUG = true;
 const TEST = false;
 const SINGLE_TEST = false;
-export const SAVE_CURRENT_STATE = true;
+export const SAVE_CURRENT_STATE = false;
+export const LOAD_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
 export const MOVE_TARGET_TEST = false;
@@ -54,7 +56,18 @@ function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
 
 export const AMOUNT_OF_OBJECTS = 2 + 6;
 
-export let gameObjectArray = player_struct.Set_Up_Objects();
+export let gameObjectArray = [];
+
+if (LOAD_CURRENT_STATE)
+{
+  await save_funcs.load_file(gameObjectArray);
+}
+else
+{
+  gameObjectArray = player_struct.Set_Up_Objects();
+}
+
+console.log(gameObjectArray);
 
 const PLAYER_INDEX = 0;
 const OTHER_OB_INDEX = 1;
@@ -371,6 +384,7 @@ var worldMatrix = new Float32Array([
     let BRDF_index = gameObjectArray[i].getBRDFIndex();
 
     const params = BRDF_configs.BRDF_config[BRDF_index];
+    
     const size = params.length;
     device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
   }

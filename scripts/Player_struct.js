@@ -26,7 +26,7 @@ export function Set_Up_Objects()
 {
     // Player Defaults
     
-    const PLAYER_START_POSITION = new Float32Array([0, 0, -30.2]);
+    const PLAYER_START_POSITION = new Float32Array([5, 0, -30.2]);
     const PLAYER_START_SCALE = 0.5;
     const PLAYER_START_ROTATION = new Float32Array([180,180,0]);
     
