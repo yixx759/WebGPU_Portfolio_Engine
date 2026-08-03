@@ -76,12 +76,13 @@ function load_matrix_into(matrix, view, offset)
     return matrix;
 }
 
-export function save_file(amount_of_objects, game_object_array, sh_coeffs)
+export function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs)
 {
     let bit_buffer = new ArrayBuffer(
         SIZE_OF_OBJECT_NUMBER +
         SIZE_OF_END_PATTERN +
         SIZE_OF_COEFFS +
+        objectInfo.BYTES_OF_VECTOR3 +
         objectInfo.ALIGNMENT_BYTES_OF_OBJECT * amount_of_objects
     );
 
@@ -96,6 +97,10 @@ export function save_file(amount_of_objects, game_object_array, sh_coeffs)
     let offset = 0;
 
     offset += add_int8(amount_of_objects, view, offset);
+
+    
+    console.log("before load object: ");
+    console.log(offset);
 
     let tmp_go;
 
@@ -128,9 +133,17 @@ export function save_file(amount_of_objects, game_object_array, sh_coeffs)
 
         // OBJECT_BRDF_INDEX
         offset += add_int8(tmp_go.getBRDFIndex(), view, offset);
+        console.log("offset during: ");
+    console.log(offset);
     }
 
+    
+    console.log("offset: ");
+    console.log(offset);
     // TO DO: Player pos do later fix size of thing
+    offset += add_vector3(player_pos, view, offset);
+    console.log("Player pos saved at: ");
+    console.log(player_pos);
 
     // Save SH
 
@@ -149,7 +162,7 @@ export function save_file(amount_of_objects, game_object_array, sh_coeffs)
     a.click();
 }
 
-export async function load_file(game_object_array)
+export async function load_file(game_object_array, cam_pos)
 {
     const response = await fetch("resources/saves/object.bin");
     const buffer = await response.arrayBuffer();
@@ -162,12 +175,25 @@ export async function load_file(game_object_array)
     console.log("Amount: " + amount_of_objects);
     offset += objectInfo.BYTES_OF_INT_8;
 
+    console.log("before load object: ");
+    console.log(offset);
     // Load Objects
-    offset += load_objects(amount_of_objects, game_object_array, offset, view);
+    offset = load_objects(amount_of_objects, game_object_array, offset, view);
+
+    // Load Player Position
+    offset = load_player(cam_pos, offset, view);
 
     // Load functions reverse of save functions
     // appen to game object array
     // later take in SH and Player split into funcs
+}
+
+function load_player(cam_pos, offset, view)
+{
+    load_vector3_into(cam_pos, view, offset);
+    offset += objectInfo.BYTES_OF_VECTOR3;
+
+    return  offset;
 }
 
 function load_objects(amount_of_objects, game_object_array, offset, view)

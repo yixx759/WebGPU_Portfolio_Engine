@@ -18,7 +18,8 @@ const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 export const DEBUG = true;
 const TEST = false;
 const SINGLE_TEST = false;
-export const SAVE_CURRENT_STATE = false;
+
+export const SAVE_CURRENT_STATE = true;
 export const LOAD_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
@@ -60,7 +61,8 @@ export let gameObjectArray = [];
 
 if (LOAD_CURRENT_STATE)
 {
-  await save_funcs.load_file(gameObjectArray);
+  // TO DO: Too much global state modfication. Needs re org.
+  await save_funcs.load_file(gameObjectArray, controls.camPos);
 }
 else
 {
@@ -357,72 +359,72 @@ var worldMatrix = new Float32Array([
   0.0, 0.0, 0.0, 1.0,
   ]);
 
-  worldMatrix = testMAT;
+worldMatrix = testMAT;
 
-  const matrixSize = worldMatrix.byteLength;
-  const matrixAmount = AMOUNT_OF_OBJECTS;
-  const camPosSize = 4 * 4;
+const matrixSize = worldMatrix.byteLength;
+const matrixAmount = AMOUNT_OF_OBJECTS;
+const camPosSize = 4 * 4;
 
-  const roundUp = (v, alignment) => Math.ceil(v / alignment) * alignment;
+const roundUp = (v, alignment) => Math.ceil(v / alignment) * alignment;
 
-  let sizet = roundUp((matrixSize * matrixAmount + camPosSize), device.limits.minUniformBufferOffsetAlignment);
+let sizet = roundUp((matrixSize * matrixAmount + camPosSize), device.limits.minUniformBufferOffsetAlignment);
 
-  const Mats = device.createBuffer({
-    size: sizet * AMOUNT_OF_OBJECTS, 
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+const Mats = device.createBuffer({
+  size: sizet * AMOUNT_OF_OBJECTS, 
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+device.queue.writeBuffer(Mats, 0, worldMatrix, 0, worldMatrix.length);
+
+const BRDF_PARAMS = device.createBuffer({
+  size: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+{
+  let BRDF_index = gameObjectArray[i].getBRDFIndex();
+
+  const params = BRDF_configs.BRDF_config[BRDF_index];
+  
+  const size = params.length;
+  device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
+}
+
+let bindGroupArray = [];
+let bindDebugGroup;
+
+for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
+  const bindGroup = device.createBindGroup({
+  layout: renderPipeline.getBindGroupLayout(0),
+  entries: [
+      {binding: 0, resource: {
+        buffer: Mats,
+        offset: sizet * i
+      }},
+      {binding: 1, resource: {
+        buffer: BRDF_PARAMS,
+        offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * i
+      }},
+  ],
   });
-
-  device.queue.writeBuffer(Mats, 0, worldMatrix, 0, worldMatrix.length);
-
-  const BRDF_PARAMS = device.createBuffer({
-    size: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-
-  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
-  {
-    let BRDF_index = gameObjectArray[i].getBRDFIndex();
-
-    const params = BRDF_configs.BRDF_config[BRDF_index];
-    
-    const size = params.length;
-    device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
-  }
-
-  let bindGroupArray = [];
-  let bindDebugGroup;
-
-  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
-    const bindGroup = device.createBindGroup({
-    layout: renderPipeline.getBindGroupLayout(0),
-    entries: [
-        {binding: 0, resource: {
-          buffer: Mats,
-          offset: sizet * i
-        }},
-        {binding: 1, resource: {
-          buffer: BRDF_PARAMS,
-          offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * i
-        }},
-    ],
-    });
-    bindGroupArray.push(bindGroup);
+  bindGroupArray.push(bindGroup);
 
   if (DEBUG)
   {
-    bindDebugGroup = device.createBindGroup({
-        layout: renderDebugPipeline.getBindGroupLayout(0),
-        entries: [
-            {binding: 0, resource: {
-              buffer: Mats,
-              offset: 0
-            }},
-            {binding: 1, resource: {
-              buffer: BRDF_PARAMS,
-              offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES*i
-            }},
-        ],
-        });
+  bindDebugGroup = device.createBindGroup({
+      layout: renderDebugPipeline.getBindGroupLayout(0),
+      entries: [
+          {binding: 0, resource: {
+            buffer: Mats,
+            offset: 0
+          }},
+          {binding: 1, resource: {
+            buffer: BRDF_PARAMS,
+            offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES*i
+          }},
+      ],
+      });
   }
 }
 
