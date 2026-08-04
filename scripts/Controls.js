@@ -93,7 +93,7 @@ document.addEventListener('keydown', function(evt) {
       if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
       {
         console.log("Save!");
-        save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, 0);
+        save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
       }
   }
 

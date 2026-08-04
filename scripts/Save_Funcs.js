@@ -39,6 +39,17 @@ function add_matrix(values, view, offset)
     return objectInfo.BYTES_OF_MATRIX;
 }
 
+function add_sh_matrix(values, view, offset)
+{
+
+    for (let i = 0; i < 16 * 3; i++)
+    {
+        view.setFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, values[i]);
+    }
+
+    return objectInfo.BYTES_OF_MATRIX * 3;
+}
+
 function load_int8(view, offset)
 {
     // Use get
@@ -76,11 +87,25 @@ function load_matrix_into(matrix, view, offset)
     return matrix;
 }
 
+function load_sh_matrix_into(matrix, view, offset)
+{
+    console.log("into");
+
+    for (let i = 0; i < 16 * 3; i++)
+    {
+        console.log(i);
+        console.log(offset + i * objectInfo.BYTES_OF_FLOAT_32);
+        console.log(view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false));
+        matrix[i] = view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false);
+    }
+
+    return matrix;
+}
+
 export function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs)
 {
     let bit_buffer = new ArrayBuffer(
         SIZE_OF_OBJECT_NUMBER +
-        SIZE_OF_END_PATTERN +
         SIZE_OF_COEFFS +
         objectInfo.BYTES_OF_VECTOR3 +
         objectInfo.ALIGNMENT_BYTES_OF_OBJECT * amount_of_objects
@@ -145,8 +170,14 @@ export function save_file(amount_of_objects, game_object_array, player_pos, sh_c
     console.log("Player pos saved at: ");
     console.log(player_pos);
 
+    // TO DO: Split into own file as probes could be varibale number
+    // TO DO: Probe in editor mode
     // Save SH
 
+    console.log("saved");
+    console.log(sh_coeffs);
+    offset += add_sh_matrix(sh_coeffs, view, offset);
+    
     // Can use save matrix for this x 3
 
 
@@ -162,7 +193,7 @@ export function save_file(amount_of_objects, game_object_array, player_pos, sh_c
     a.click();
 }
 
-export async function load_file(game_object_array, cam_pos)
+export async function load_file(game_object_array, cam_pos, coeffs)
 {
     const response = await fetch("resources/saves/object.bin");
     const buffer = await response.arrayBuffer();
@@ -183,9 +214,22 @@ export async function load_file(game_object_array, cam_pos)
     // Load Player Position
     offset = load_player(cam_pos, offset, view);
 
+    offset = load_sh(coeffs, offset, view);
+    console.log("Coeff");
+    console.log(coeffs);
+
+
     // Load functions reverse of save functions
     // appen to game object array
     // later take in SH and Player split into funcs
+}
+
+function load_sh(coeffs, offset, view)
+{
+    load_sh_matrix_into(coeffs, view, offset);
+    offset += objectInfo.BYTES_OF_MATRIX * 3;
+
+    return offset;
 }
 
 function load_player(cam_pos, offset, view)

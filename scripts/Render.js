@@ -19,7 +19,7 @@ export const DEBUG = true;
 const TEST = false;
 const SINGLE_TEST = false;
 
-export const SAVE_CURRENT_STATE = true;
+export const SAVE_CURRENT_STATE = false;
 export const LOAD_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
@@ -59,10 +59,12 @@ export const AMOUNT_OF_OBJECTS = 2 + 6;
 
 export let gameObjectArray = [];
 
+export let coeffs = new Float32Array(sh_funcs.TOTAL_COEFF * 3);
+
 if (LOAD_CURRENT_STATE)
 {
   // TO DO: Too much global state modfication. Needs re org.
-  await save_funcs.load_file(gameObjectArray, controls.camPos);
+  await save_funcs.load_file(gameObjectArray, controls.camPos, coeffs);
 }
 else
 {
@@ -435,10 +437,10 @@ const url_tester = 'resources/images/uv_test_patchwork.png';
 
 // if (PATH_TEST)
 
-// const source_data = await helper.loadImageData(url);
-// const sourceF_data = await helper.loadImageData(urlF);
-// const green_data = await helper.loadImageData(url_green);
-// const tester_data = await helper.loadImageData(url_tester);
+const source_data = await helper.loadImageData(url);
+const sourceF_data = await helper.loadImageData(urlF);
+const green_data = await helper.loadImageData(url_green);
+const tester_data = await helper.loadImageData(url_tester);
 
 let textures = [];
 
@@ -454,7 +456,7 @@ const sampler = device.createSampler({
 });
 
 // IF PATH TEST
-//let textures_data = [source_data, sourceF_data, green_data, tester_data];
+let textures_data = [source_data, sourceF_data, green_data, tester_data];
 
 let bindGroupTexArray = [];
 
@@ -508,7 +510,11 @@ device.queue.writeBuffer(Point_Lights, 0, Light_Manager.POINT_LIGHT_ARRAY, 0, Li
 
 if (PATH_TEST)
 {
-  const coeffs = Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data, dir_light_dir_and_intensity);
+  debugLog("textures_data");
+  debugLog(textures_data);
+  coeffs = Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray, Model_Array, textures_data, dir_light_dir_and_intensity);
+  debugLog("coeffs:");
+  debugLog(coeffs);
 }
 
 const SH_COEFF = device.createBuffer({
@@ -516,11 +522,11 @@ const SH_COEFF = device.createBuffer({
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-if (PATH_TEST)
-{
+// if (PATH_TEST)
+// {
   device.queue.writeBuffer(SH_COEFF, 0, coeffs, 0, coeffs.length);
   debugLog(coeffs);
-}
+// }
 
 const lightBindGroup = device.createBindGroup({
   layout: renderPipeline.getBindGroupLayout(2),
@@ -701,7 +707,7 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
 
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
-      if (PATH_TEST)
+      if (false & PATH_TEST)
       {
         debugLog(tmp_pos);
         Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[i]);
