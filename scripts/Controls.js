@@ -24,6 +24,8 @@ export var keyYDown = 0;
 export var keyZ = 0;
 export var keyZDown = 0;
 
+const DEBUG_CAM_SPEED  = 2;
+
 const MOUSE_SPEED_X = 0.005;
 const MOUSE_SPEED_Y = 0.005;
 
@@ -34,7 +36,30 @@ export var mouse_Y = 0;
 
 const activeKeys = new Set();
 
+document.addEventListener('keydown', async function(evt) {
+
+  if (render.SAVE_CURRENT_STATE)
+  {
+      if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
+      {
+        console.log("Save!");
+        await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
+      }
+  }
+
+})
+
 document.addEventListener('keydown', function(evt) {
+
+  // if (render.SAVE_CURRENT_STATE)
+  // {
+  //     if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
+  //     {
+  //       console.log("Save!");
+  //       await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
+  //     }
+  // }
+
   if (evt.key.toLowerCase() === 'w') {
     render.debugLog("Up");
     keyZDown = -0.1;
@@ -86,15 +111,6 @@ document.addEventListener('keydown', function(evt) {
     render.debugLog("Debug down");
     debug_target_keyYDown = -0.1;
   }
-  }
-
-  if (render.SAVE_CURRENT_STATE)
-  {
-      if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
-      {
-        console.log("Save!");
-        save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
-      }
   }
 
 }, false);
@@ -153,8 +169,9 @@ canvas.addEventListener("click", async () => {
 export var camPos = new Float32Array([0,0,10, 1]);
 export var camPosPrev = new Float32Array([0,0,0, 1]);
 export var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
+export var debug_forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 
-export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST)
+export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, debug = false)
 {
 // debugLog("mouse x: " + mouse_X);
   // debugLog("mouse y: " + mouse_Y);
@@ -172,21 +189,31 @@ export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collide
   {
     helper.vector_add_cam(camPos, keyXDown, keyZDown);
   }
+  else if (debug)
+  {
+
+    helper.vector_debug_add_cam(camPos, keyZDown * Math.cos(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED,  keyZDown * Math.sin(mouse_Y) * DEBUG_CAM_SPEED, keyZDown * Math.sin(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED);
+    helper.vector_debug_add_cam(camPos, keyXDown * Math.sin(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED, keyZDown * Math.sin(mouse_Y) * DEBUG_CAM_SPEED, -keyZDown * Math.cos(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED);
+  }
   else
   {
     helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3]);
   }
  
-  for (let i = 0; i < OBJECTS_TO_RENDER; i++)
+  if (!debug)
   {
-    gameObjectArray[i].getPosition_Into(tmp_pos);
-    gameObjectArray[i].getHalf_Into(tmp_half);
-    
-    if (AABB(tmp_pos, tmp_half, camPos, player_collider) && !SINGLE_TEST)
+    for (let i = 0; i < OBJECTS_TO_RENDER; i++)
     {
-      helper.vector_assign_cam(camPos, camPosPrev);
+      gameObjectArray[i].getPosition_Into(tmp_pos);
+      gameObjectArray[i].getHalf_Into(tmp_half);
+      
+      if (AABB(tmp_pos, tmp_half, camPos, player_collider) && !SINGLE_TEST)
+      {
+        helper.vector_assign_cam(camPos, camPosPrev);
+      }
     }
   }
+  
   
   helper.vector_assign_cam(camPosPrev, camPos);
 

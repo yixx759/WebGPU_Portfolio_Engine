@@ -188,6 +188,12 @@ export function vector_add_cam(A, X, Z){
   A[2]+=Z;
 }
 
+export function vector_debug_add_cam(A, X, Y, Z){
+  A[0]+=X;
+  A[1]+=Y;
+  A[2]+=Z;
+}
+
 export function vector_assign_cam(A,B){
   A[0]=B[0];
   A[1]=B[1];

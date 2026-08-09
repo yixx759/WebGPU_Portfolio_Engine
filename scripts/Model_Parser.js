@@ -30,7 +30,7 @@ export function get_max_verts(Model_Array)
     }
   }
 
-  if (render.DEBUG && max_verts == -1)
+  if (render.DEBUG_LOGS && max_verts == -1)
   {
     console.log("Broke final lenght of max verts: -1");
   }

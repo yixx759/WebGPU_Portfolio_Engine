@@ -102,7 +102,7 @@ function load_sh_matrix_into(matrix, view, offset)
     return matrix;
 }
 
-export function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs)
+export async function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs)
 {
     let bit_buffer = new ArrayBuffer(
         SIZE_OF_OBJECT_NUMBER +
@@ -180,17 +180,29 @@ export function save_file(amount_of_objects, game_object_array, player_pos, sh_c
     
     // Can use save matrix for this x 3
 
+    const handle = await window.showSaveFilePicker({
+    suggestedName: "object.bin",
+    types: [{
+      description: "Binary file",
+      accept: { "application/octet-stream": [".bin"] }
+    }]
+  });
 
-    const blob = new Blob([bit_buffer], {
-    type: "application/octet-stream"
-    });
+  const writable = await handle.createWritable();
+   await writable.write(bit_buffer);
+   await writable.close();
 
-    const url = URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "object.bin";
-    a.click();
+    // const blob = new Blob([bit_buffer], {
+    // type: "application/octet-stream"
+    // });
+
+    // const url = URL.createObjectURL(blob);
+
+    // const a = document.createElement("a");
+    // a.href = url;
+    // a.download = "object.bin";
+    // a.click();
 }
 
 export async function load_file(game_object_array, cam_pos, coeffs)

@@ -15,11 +15,13 @@ import * as save_funcs from './Save_Funcs.js';
 
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
-export const DEBUG = true;
+export const DEBUG_LOGS = true;
 const TEST = false;
 const SINGLE_TEST = false;
 
-export const SAVE_CURRENT_STATE = false;
+export let DEBUG_MODE = true;
+
+export const SAVE_CURRENT_STATE = true;
 export const LOAD_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
@@ -40,7 +42,7 @@ export function print(string)
 }
 
 export function debugLog(...args) {
-  if (DEBUG) console.log(...args);
+  if (DEBUG_LOGS) console.log(...args);
 }
 
 function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
@@ -88,7 +90,7 @@ const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");
 
 let shaderDebugCode;
 
-if (DEBUG)  shaderDebugCode = await helper.loadShader("./shaders/debug_render.wgsl");
+if (DEBUG_LOGS)  shaderDebugCode = await helper.loadShader("./shaders/debug_render.wgsl");
 
 function errorCheck(whatever)
 {
@@ -121,7 +123,7 @@ async function init() {
 
   let shaderDebugModule;
 
-  if (DEBUG){
+  if (DEBUG_LOGS){
     shaderDebugModule = device.createShaderModule({
     code: shaderDebugCode
   });
@@ -206,7 +208,7 @@ async function init() {
 
   let debugLineVertex;
   
-  if (DEBUG){
+  if (DEBUG_LOGS){
      debugLineVertex = new Float32Array([
       0, 0, 0, 
       0, 0, 0, // Color
@@ -219,7 +221,7 @@ async function init() {
 
   let vertexDebugBuffers;
 
-  if (DEBUG){
+  if (DEBUG_LOGS){
     vertexDebugBuffers = [{
       attributes: [
       {
@@ -297,7 +299,7 @@ async function init() {
 
 let pipelineDebugDescriptor;
 
-if (DEBUG){
+if (DEBUG_LOGS){
  pipelineDebugDescriptor = {
     vertex: {
       module: shaderDebugModule,
@@ -333,7 +335,7 @@ const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
 
 let renderDebugPipeline;
 
-if (DEBUG)
+if (DEBUG_LOGS)
 {
     renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
 }
@@ -412,7 +414,7 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
   });
   bindGroupArray.push(bindGroup);
 
-  if (DEBUG)
+  if (DEBUG_LOGS)
   {
   bindDebugGroup = device.createBindGroup({
       layout: renderDebugPipeline.getBindGroupLayout(0),
@@ -545,7 +547,7 @@ const lightBindGroup = device.createBindGroup({
 
 let tmpCamPos = new Float32Array(4);
 
-if (DEBUG && !PATH_TEST)
+if (DEBUG_LOGS && !PATH_TEST)
 {
   document.addEventListener('click', function(evt) {
     debugLog("clicked")
@@ -614,7 +616,7 @@ function render() {
   let OBJECTS_TO_RENDER = SINGLE_TEST ? 1 : AMOUNT_OF_OBJECTS;
 
   // NOTE: CHANGES CAM POS
-  look_vector = controls.move_and_look(gameObjectArray, tmp_pos, tmp_half, playerCollider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST);
+  look_vector = controls.move_and_look(gameObjectArray, tmp_pos, tmp_half, playerCollider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, DEBUG_MODE);
  
   if (SINGLE_TEST)
   {
@@ -671,7 +673,7 @@ function render() {
     passEncoder.draw(Model_Array[vert_index].length / 8);
   }
 
-  if (DEBUG)
+  if (DEBUG_LOGS)
   {
     passEncoder.setPipeline(renderDebugPipeline);
     passEncoder.setBindGroup(0, bindDebugGroup);
