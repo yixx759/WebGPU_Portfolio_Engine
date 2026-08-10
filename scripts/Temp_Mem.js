@@ -1,6 +1,6 @@
-const MAX_MEMORY = 32;
+const MAX_MEMORY = 64;
 
-const MAX_MEMORY_div_3 = Math.ceil(32  / 3);
+const MAX_MEMORY_div_3 = Math.ceil(MAX_MEMORY / 3);
 
 const temp_memory = new Float32Array(MAX_MEMORY);
 let mem_index = 0;

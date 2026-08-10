@@ -43,7 +43,15 @@ document.addEventListener('keydown', async function(evt) {
       if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
       {
         console.log("Save!");
-        await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
+        if (!render.DEBUG_MODE)
+        {
+          await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
+        }
+        else
+        {
+          console.log(render.tmp_debug_pos);
+          await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, render.tmp_debug_pos, render.coeffs);
+        }
       }
   }
 
@@ -59,6 +67,11 @@ document.addEventListener('keydown', function(evt) {
   //       await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
   //     }
   // }
+
+  if (evt.altKey && evt.key.toLowerCase() === 'v') 
+  {
+    render.switch_debug_mode();
+  }
 
   if (evt.key.toLowerCase() === 'w') {
     render.debugLog("Up");

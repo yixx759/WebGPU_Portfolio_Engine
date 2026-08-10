@@ -19,7 +19,9 @@ export const DEBUG_LOGS = true;
 const TEST = false;
 const SINGLE_TEST = false;
 
-export let DEBUG_MODE = true;
+export var DEBUG_MODE = false;
+export var debug_mode_changed = false;
+export var tmp_debug_pos = tmp_mem.get_temp_memory_vector();
 
 export const SAVE_CURRENT_STATE = true;
 export const LOAD_CURRENT_STATE = true;
@@ -102,7 +104,27 @@ function errorCheck(whatever)
   }
 }
 
+export function switch_debug_mode()
+{
+  if (DEBUG_MODE == false)
+  {
+    DEBUG_MODE = true;
+    debug_mode_changed = true;
+  }
+  else
+  {
+    controls.camPos.set([tmp_debug_pos[0], tmp_debug_pos[1], tmp_debug_pos[2]]);
+    DEBUG_MODE = false;
+  }
+}
+
 async function init() {
+
+  if (DEBUG_MODE && !debug_mode_changed)
+  {
+    debug_mode_changed = true;
+  }
+
   if (!navigator.gpu) {
     throw Error('WebGPU not supported.');
    }
@@ -615,6 +637,13 @@ function render() {
   
   let OBJECTS_TO_RENDER = SINGLE_TEST ? 1 : AMOUNT_OF_OBJECTS;
 
+  if (debug_mode_changed == true)
+  {
+    tmp_debug_pos.set([controls.camPos[0], controls.camPos[1], controls.camPos[2]]);
+
+    debug_mode_changed = false;
+  }
+
   // NOTE: CHANGES CAM POS
   look_vector = controls.move_and_look(gameObjectArray, tmp_pos, tmp_half, playerCollider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, DEBUG_MODE);
  
@@ -630,12 +659,10 @@ function render() {
   var perMatrix = helper.getPerspectiveMatrix(70, 1, 1000);
 
   {
-
-
 // TO DO: Put somewhere
   let tmp_World_Matrix = new Float32Array(4 * 4);
   assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
-}
+  }
 
   const commandEncoder = device.createCommandEncoder();
 

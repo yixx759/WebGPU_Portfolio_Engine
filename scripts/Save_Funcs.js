@@ -93,9 +93,6 @@ function load_sh_matrix_into(matrix, view, offset)
 
     for (let i = 0; i < 16 * 3; i++)
     {
-        console.log(i);
-        console.log(offset + i * objectInfo.BYTES_OF_FLOAT_32);
-        console.log(view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false));
         matrix[i] = view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false);
     }
 
@@ -123,7 +120,6 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
 
     offset += add_int8(amount_of_objects, view, offset);
 
-    
     console.log("before load object: ");
     console.log(offset);
 
