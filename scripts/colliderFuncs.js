@@ -108,12 +108,12 @@ export function ray_AABB_intersection(ray, min, max)
 {
     if (!(min instanceof Float32Array)) {
     console.log("ERROR: min in ray aabb intersect wasnt given float32array");
-        return -1;
+        return false;
     }
 
     if (!(max instanceof Float32Array)) {
     console.log("ERROR:  max in ray aabb intersect wasnt given float32array");
-        return -1;
+        return false;
     }
 
     let t_min = 0;

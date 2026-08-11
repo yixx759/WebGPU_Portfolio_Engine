@@ -12,6 +12,7 @@ import * as model_parser from './Model_Parser.js';
 import * as controls from './Controls.js';
 import * as tmp_mem from './Temp_Mem.js';
 import * as save_funcs from './Save_Funcs.js';
+import * as debug_utils from './Debug_Utils.js';
 
 const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
@@ -19,7 +20,7 @@ export const DEBUG_LOGS = true;
 const TEST = false;
 const SINGLE_TEST = false;
 
-export var DEBUG_MODE = false;
+export var DEBUG_MODE = true;
 export var debug_mode_changed = false;
 export var tmp_debug_pos = tmp_mem.get_temp_memory_vector();
 
@@ -197,7 +198,7 @@ async function init() {
       if (!SINGLE_TEST || i < 1)
       {
         // TO DO: Get these better include in whatever file type is made
-        gameObjectArray[i].setHalf(makeColliderFromVerts(Model_Array[0]));
+        gameObjectArray[i].setHalf(makeColliderFromVerts(Model_Array[vertex_index]));
       }
   }
  
@@ -359,7 +360,7 @@ let renderDebugPipeline;
 
 if (DEBUG_LOGS)
 {
-    renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
+  renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
 }
 
 // Matrixs
@@ -569,33 +570,39 @@ const lightBindGroup = device.createBindGroup({
 
 let tmpCamPos = new Float32Array(4);
 
-if (DEBUG_LOGS && !PATH_TEST)
-{
+
   document.addEventListener('click', function(evt) {
     debugLog("clicked")
 
-    const MAG = new Float32Array([10,10,10]);
-    let dir = helper.vector_mult(look_vector, MAG);
-    let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
-
-    let did_hit = false;
-
-    const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
-
-    for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+    if (DEBUG_MODE)
     {
-      gameObjectArray[i].get_min_Into(min_max);
-      gameObjectArray[i].get_max_Into(min_max);
-
-      if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
-      {
-        did_hit = true;
-      }
+      debug_utils.debug_select_object(gameObjectArray, look_vector);
     }
 
-    newRayPos(controls.camPos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertexDebugBuffer)
+    if (DEBUG_LOGS && !PATH_TEST)
+    {
+      const MAG = 10;
+      let dir = helper.vector_mult_scalar(look_vector, MAG);
+      let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
+
+      let did_hit = false;
+
+      const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
+
+      for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+      {
+        gameObjectArray[i].get_min_Into(min_max);
+        gameObjectArray[i].get_max_Into(min_max);
+
+        if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
+        {
+          did_hit = true;
+        }
+      }
+
+      newRayPos(controls.camPos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertexDebugBuffer);
+    }
   }, false);
-}
 
 // key down enables a bool and key up disables it makes input smooth
 const depthTexture = device.createTexture({
@@ -754,6 +761,32 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
     device.queue.writeBuffer(Mats, i * sizet + matrixSize * 2, perMatrix);
     device.queue.writeBuffer(Mats, i * sizet + matrixSize * 3, controls.camPos);
   }
+}
+
+export function click_object(gameObjectArray, look_vector)
+{
+   const MAG = 10;
+    let dir = helper.vector_mult_scalar(look_vector, MAG);
+    let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
+
+    let did_hit = false;
+
+    const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
+
+    for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+    {
+      gameObjectArray[i].get_min_Into(min_max);
+      gameObjectArray[i].get_max_Into(min_max);
+
+      console.log("Max: " + min_max.max);
+      console.log("Min: " + min_max.min);
+
+      if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
+      {
+        return i;
+      }
+    }
+    return -1;
 }
 
 init();
