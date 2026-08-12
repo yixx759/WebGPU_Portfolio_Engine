@@ -1,5 +1,5 @@
 import { parceObjFile } from './objParser.js';
-import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './colliderFuncs.js'
+import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection, make_vertexs} from './colliderFuncs.js'
 import * as helper from './helperFuncs.js';
 import * as objectInfo from './objectInfoStruct.js'
 import * as testFuncs from './testFuncs.js'
@@ -92,8 +92,10 @@ const playerCollider = new Float32Array([1, 2, 1, 0]);
 const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");
 
 let shaderDebugCode;
+let collider_shaderDebugCode;
 
 if (DEBUG_LOGS)  shaderDebugCode = await helper.loadShader("./shaders/debug_render.wgsl");
+if (DEBUG_MODE)  collider_shaderDebugCode = await helper.loadShader("./shaders/collider_debug_render.wgsl");
 
 function errorCheck(whatever)
 {
@@ -145,13 +147,21 @@ async function init() {
   errorCheck(shaderModule);
 
   let shaderDebugModule;
+  let collider_shaderDebugModule;
 
-  if (DEBUG_LOGS){
+   if (DEBUG_LOGS){
     shaderDebugModule = device.createShaderModule({
     code: shaderDebugCode
   });
 
   errorCheck(shaderDebugCode);
+ 
+  if (DEBUG_MODE){
+    collider_shaderDebugModule = device.createShaderModule({
+    code: collider_shaderDebugCode
+  });
+
+  errorCheck(collider_shaderDebugCode);
   }
 
   // TO DO: Have 2 canvases
@@ -228,6 +238,11 @@ async function init() {
     size: 32*3*2*2, // size of 2 positions which are 3 float32 3s and 2 colors
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
+  
+    const collider_vertexDebugBuffer = device.createBuffer({
+    size: 32*3*8, // size of 2 positions which are 3 float32 3s and 2 colors
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
 
   let debugLineVertex;
   
@@ -240,6 +255,13 @@ async function init() {
     ]);
 
   device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
+  }
+
+  let collider_box_vertex;
+  if (DEBUG_MODE)
+  {
+    collider_box_vertex = make_vertexs(gameObjectArray);
+    device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
   }
 
   let vertexDebugBuffers;
@@ -259,6 +281,22 @@ async function init() {
     }
     ],
       arrayStride: 24,
+      stepMode: 'vertex'
+    }];
+  }
+
+  let collider_vertexDebugBuffers;
+
+  if (DEBUG_LOGS){
+    collider_vertexDebugBuffers = [{
+      attributes: [
+      {
+        shaderLocation: 0, // position
+        offset: 0,
+        format: 'float32x3'
+      }
+    ],
+      arrayStride: 12,
       stepMode: 'vertex'
     }];
 }
@@ -321,6 +359,7 @@ async function init() {
   };
 
 let pipelineDebugDescriptor;
+let collider_pipelineDebugDescriptor;
 
 if (DEBUG_LOGS){
  pipelineDebugDescriptor = {
@@ -352,15 +391,50 @@ if (DEBUG_LOGS){
   };
 }
 
+if (DEBUG_MODE) {
+ collider_pipelineDebugDescriptor = {
+    vertex: {
+      module: collider_shaderDebugModule,
+      entryPoint: 'vertex_main',
+      buffers: collider_vertexDebugBuffers
+    },
+    fragment: {
+      module: collider_shaderDebugModule,
+      entryPoint: 'fragment_main',
+      targets: [{
+        format: navigator.gpu.getPreferredCanvasFormat()
+      }]
+    },
+    primitive: {
+      topology: 'triangle-list'
+    },
+    depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus",
+    },
+    layout: device.createPipelineLayout({
+    bindGroupLayouts: [
+      group0Layout, // for mats
+    ]
+    })
+  };
+}
+
 var Time = Date.now();
 
 const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
 
 let renderDebugPipeline;
+let collider_renderDebugPipeline;
 
 if (DEBUG_LOGS)
 {
   renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
+}
+if (DEBUG_MODE)
+{
+  collider_renderDebugPipeline = device.createRenderPipeline(collider_pipelineDebugDescriptor);
 }
 
 // Matrixs
@@ -714,6 +788,15 @@ function render() {
     passEncoder.setVertexBuffer(0, vertexDebugBuffer, 0, debugLineVertex.byteLength);
     passEncoder.draw(2);
   }
+ 
+  // TO DO: Generalize this
+  if (DEBUG_MODE)
+  {
+    passEncoder.setPipeline(collider_renderDebugPipeline);
+    passEncoder.setBindGroup(0, bindDebugGroup);
+    passEncoder.setVertexBuffer(0, collider_vertexDebugBuffer, 0, collider_box_vertex.byteLength);
+    passEncoder.draw(36);
+  }
   
   passEncoder.end();
   
@@ -721,6 +804,7 @@ function render() {
   requestAnimationFrame(render);
 }
   requestAnimationFrame(render);
+}
 }
 
 function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet)

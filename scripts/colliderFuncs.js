@@ -142,3 +142,45 @@ export function ray_AABB_intersection(ray, min, max)
 
     return t_min < t_max;
 }
+
+export function make_vertexs(gameObjectArray, target = 1)
+{
+    if (target  < 0 || target >= gameObjectArray.length)
+    {
+        console.log("ERROR make vertex: Target for collider isnt valid.");
+    }
+
+    let position = gameObjectArray[target].getPosition();
+    let halfs = gameObjectArray[target].getHalf();
+
+    let px = position[0], py = position[1], pz = position[2];
+    let hx = halfs[0], hy = halfs[1], hz = halfs[2];
+
+    let debugTriangleVertex = new Float32Array([
+        // Front face (+z)
+        px - hx, py + hy, pz + hz,   px - hx, py - hy, pz + hz,   px + hx, py - hy, pz + hz,
+        px - hx, py + hy, pz + hz,   px + hx, py - hy, pz + hz,   px + hx, py + hy, pz + hz,
+
+        // Back face (-z)
+        px - hx, py + hy, pz - hz,   px + hx, py - hy, pz - hz,   px - hx, py - hy, pz - hz,
+        px - hx, py + hy, pz - hz,   px + hx, py + hy, pz - hz,   px + hx, py - hy, pz - hz,
+
+        // Right face (+x)
+        px + hx, py + hy, pz + hz,   px + hx, py - hy, pz + hz,   px + hx, py - hy, pz - hz,
+        px + hx, py + hy, pz + hz,   px + hx, py - hy, pz - hz,   px + hx, py + hy, pz - hz,
+
+        // Left face (-x)
+        px - hx, py + hy, pz + hz,   px - hx, py - hy, pz - hz,   px - hx, py - hy, pz + hz,
+        px - hx, py + hy, pz + hz,   px - hx, py + hy, pz - hz,   px - hx, py - hy, pz - hz,
+
+        // Top face (+y)
+        px - hx, py + hy, pz + hz,   px + hx, py + hy, pz + hz,   px + hx, py + hy, pz - hz,
+        px - hx, py + hy, pz + hz,   px + hx, py + hy, pz - hz,   px - hx, py + hy, pz - hz,
+
+        // Bottom face (-y)
+        px - hx, py - hy, pz + hz,   px + hx, py - hy, pz - hz,   px + hx, py - hy, pz + hz,
+        px - hx, py - hy, pz + hz,   px - hx, py - hy, pz - hz,   px + hx, py - hy, pz - hz,
+    ]);
+
+    return debugTriangleVertex;
+}
