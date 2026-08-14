@@ -143,7 +143,7 @@ export function ray_AABB_intersection(ray, min, max)
     return t_min < t_max;
 }
 
-export function make_vertexs(gameObjectArray, target = 1)
+export function make_vertexs(gameObjectArray, target = 2)
 {
     if (target  < 0 || target >= gameObjectArray.length)
     {

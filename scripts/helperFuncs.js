@@ -48,6 +48,46 @@ export function align(x, align)
   return Math.ceil(x / align) * align;
 }
 
+export function get_rotation_matrix(angleRotX, angleRotY, angleRotZ)
+{
+ // from angle to radians
+
+  angleRotX = angleRotX * Math.PI / 180;
+  angleRotY = angleRotY * Math.PI / 180;
+  angleRotZ = angleRotZ * Math.PI / 180;
+    console.log(angleRotX);
+    console.log(angleRotY);
+    console.log(angleRotZ);
+
+
+  var rotX = new Float32Array([
+    1.0, 0.0, 0.0, 0.0,
+    0.0, Math.cos(angleRotX), -Math.sin(angleRotX), 0.0,
+    0.0, Math.sin(angleRotX), Math.cos(angleRotX), 0.0,
+    0.0, 0.0, 0.0, 1.0,
+    ]);
+
+    var rotY = new Float32Array([
+    Math.cos(angleRotY), 0.0, Math.sin(angleRotY), 0.0,
+    0.0, 1, 0, 0.0,
+    -Math.sin(angleRotY), 0, Math.cos(angleRotY), 0.0,
+    0.0, 0.0, 0.0, 1.0,
+    ]);
+
+    var rotZ = new Float32Array([
+    Math.cos(angleRotZ), -Math.sin(angleRotZ), 0.0, 0.0,
+    Math.sin(angleRotZ), Math.cos(angleRotZ), 0.0,  0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0,
+    ]);
+
+    console.log(rotX);
+    console.log(rotY);
+    console.log(rotZ);
+
+    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotZ,rotY),rotX);
+};
+
 export function getWorldMatrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, scale)
 {
  var transformMatrix = new Float32Array([

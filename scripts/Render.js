@@ -258,6 +258,7 @@ async function init() {
   }
 
   let collider_box_vertex;
+
   if (DEBUG_MODE)
   {
     collider_box_vertex = make_vertexs(gameObjectArray);
@@ -665,8 +666,8 @@ let tmpCamPos = new Float32Array(4);
 
       for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
       {
-        gameObjectArray[i].get_min_Into(min_max);
-        gameObjectArray[i].get_max_Into(min_max);
+        gameObjectArray[i].get_min_Into_Struct(min_max);
+        gameObjectArray[i].get_max_Into_Struct(min_max);
 
         if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
         {
@@ -713,7 +714,20 @@ let tmp_pos = tmp_mem.get_temp_memory_vector();
 let tmp_rot = tmp_mem.get_temp_memory_vector();
 let tmp_half = tmp_mem.get_temp_memory_vector();
 
+let DELETE_ME_2 = false;
+
 function render() {
+
+  if (controls.DELETE_ME & !DELETE_ME_2)
+  {
+    let tmp_min = new Float32Array(3);
+    let tmp_max = new Float32Array(4);
+    let tmp_pos = new Float32Array(4);
+    let tmp_rot = new Float32Array(4);
+    gameObjectArray[2].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
+    delete_me(device, gameObjectArray, collider_vertexDebugBuffer);
+    DELETE_ME_2 = true;
+  }
   Time = Date.now() / CONST_TIME_DIV;
   
   let OBJECTS_TO_RENDER = SINGLE_TEST ? 1 : AMOUNT_OF_OBJECTS;
@@ -859,8 +873,8 @@ export function click_object(gameObjectArray, look_vector)
 
     for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
-      gameObjectArray[i].get_min_Into(min_max);
-      gameObjectArray[i].get_max_Into(min_max);
+      gameObjectArray[i].get_min_Into_Struct(min_max);
+      gameObjectArray[i].get_max_Into_Struct(min_max);
 
       console.log("Max: " + min_max.max);
       console.log("Min: " + min_max.min);
@@ -871,6 +885,12 @@ export function click_object(gameObjectArray, look_vector)
       }
     }
     return -1;
+}
+
+export function delete_me(device, gameObjectArray, collider_vertexDebugBuffer)
+{
+    let collider_box_vertex = make_vertexs(gameObjectArray);
+    device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
 }
 
 init();

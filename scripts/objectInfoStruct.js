@@ -407,10 +407,37 @@ export class gameObject
       const halfs = this.getHalf(transformArray);
       const pos = this.getPosition(transformArray);
 
+      return min_max.set([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
+    }
+
+
+    get_min_Into_Struct(min_max)
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get min wasnt given float32array");
+        return -1;
+      }
+
+      const halfs = this.getHalf(transformArray);
+      const pos = this.getPosition(transformArray);
+
       return min_max.min.set([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
     get_max_Into(min_max)
+    {
+      if (!(transformArray instanceof Float32Array)) {
+        console.log("ERROR: Get min wasnt given float32array");
+        return -1;
+      }
+
+      const halfs = this.getHalf(transformArray);
+      const pos = this.getPosition(transformArray);
+
+       return min_max.set([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
+    }
+
+    get_max_Into_Struct(min_max)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
@@ -434,6 +461,51 @@ export class gameObject
       const pos = this.getPosition(transformArray);
 
       return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
+    }
+
+    update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot)
+    {
+      // PLAN
+
+      // Get max and min (have temp value for this use max min into)
+      // Never mind only need one cuz symetrical
+      console.log("max");
+      this.get_max_Into(tmp_max);
+
+      console.log("Pos");
+      // Rotate these points using javascript rotate function with this object rot
+      
+      //  // Subtract from pos to get back to orgin
+      this.getPosition_Into(tmp_pos);
+
+      console.log("Sub");
+      const max_at_origin = helper.vectorSubtract(tmp_max, tmp_pos);
+
+      const vec4_max_at_origin = new Float32Array([max_at_origin[0], max_at_origin[1], max_at_origin[2], 1]);
+      //  // Rotate 
+      console.log("ROT");
+      this.getRotation_Into(tmp_rot);
+
+      console.log("rot mat");
+      console.log(tmp_rot);
+      const rot_matrix = helper.get_rotation_matrix(tmp_rot[0],tmp_rot[1],tmp_rot[2]);
+      console.log("MultMat");
+      console.log(rot_matrix);
+      const rotated_max = helper.multiply_matrix_and_point(rot_matrix, vec4_max_at_origin);
+
+      console.log("half");
+      console.log(rotated_max);
+      const f32_rotated_max = new Float32Array(rotated_max);
+      // Set half for this object
+      this.setHalf(f32_rotated_max);
+console.log("After ALL");
+      // Temp hot key to trigger collider_box_vertex = make_vertexs(gameObjectArray);
+      // This could be done during object creation if not loaded
+      // Also trigger this with command in debug mode on selected object
+      // Is Collider post scale?
+      // CHECK THIS ISNT OVERWRITTEN ON START UP AND IS SKIPPED ON LOAD.
+      // Should save halfs anyway on laod
+      // Button to enable collider view
     }
 
     getMatrix()
