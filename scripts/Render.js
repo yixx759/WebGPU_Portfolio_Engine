@@ -200,17 +200,26 @@ async function init() {
 
   let VERTEX_OFFSET = max_verts;
 
+  {
+ let tmp_min = new Float32Array(3);
+  let tmp_max = new Float32Array(3);
+  let tmp_pos = new Float32Array(4);
+  let tmp_rot = new Float32Array(4);
+ 
+  
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
     const vertex_index = gameObjectArray[i].getModelIndex();
 
     device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, Model_Array[vertex_index], 0, Model_Array[vertex_index].length);
 
-      if (!SINGLE_TEST || i < 1)
+      if (!LOAD_CURRENT_STATE || !SINGLE_TEST || i < 1)
       {
         // TO DO: Get these better include in whatever file type is made
         gameObjectArray[i].setHalf(makeColliderFromVerts(Model_Array[vertex_index]));
+        gameObjectArray[i].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
       }
   }
+}
  
   const vertexBuffers = [{
     attributes: [
@@ -647,36 +656,36 @@ let tmpCamPos = new Float32Array(4);
 
 
   document.addEventListener('click', function(evt) {
-    debugLog("clicked")
+  debugLog("clicked")
 
-    if (DEBUG_MODE)
+  if (DEBUG_MODE)
+  {
+    debug_utils.debug_select_object(gameObjectArray, look_vector);
+  }
+
+  if (DEBUG_LOGS && !PATH_TEST)
+  {
+    const MAG = 10;
+    let dir = helper.vector_mult_scalar(look_vector, MAG);
+    let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
+
+    let did_hit = false;
+
+    const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
+
+    for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
-      debug_utils.debug_select_object(gameObjectArray, look_vector);
-    }
+      gameObjectArray[i].get_min_Into_Struct(min_max);
+      gameObjectArray[i].get_max_Into_Struct(min_max);
 
-    if (DEBUG_LOGS && !PATH_TEST)
-    {
-      const MAG = 10;
-      let dir = helper.vector_mult_scalar(look_vector, MAG);
-      let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
-
-      let did_hit = false;
-
-      const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
-
-      for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+      if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
       {
-        gameObjectArray[i].get_min_Into_Struct(min_max);
-        gameObjectArray[i].get_max_Into_Struct(min_max);
-
-        if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
-        {
-          did_hit = true;
-        }
+        did_hit = true;
       }
-
-      newRayPos(controls.camPos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertexDebugBuffer);
     }
+
+    newRayPos(controls.camPos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertexDebugBuffer);
+  }
   }, false);
 
 // key down enables a bool and key up disables it makes input smooth
@@ -718,13 +727,13 @@ let DELETE_ME_2 = false;
 
 function render() {
 
-  if (controls.DELETE_ME & !DELETE_ME_2)
+  if (debug_utils.DELETE_ME & !DELETE_ME_2)
   {
     let tmp_min = new Float32Array(3);
     let tmp_max = new Float32Array(4);
     let tmp_pos = new Float32Array(4);
     let tmp_rot = new Float32Array(4);
-    gameObjectArray[2].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
+    gameObjectArray[debug_utils.DEBUG_COLLIDER_OBJECT].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
     delete_me(device, gameObjectArray, collider_vertexDebugBuffer);
     DELETE_ME_2 = true;
   }
@@ -876,8 +885,8 @@ export function click_object(gameObjectArray, look_vector)
       gameObjectArray[i].get_min_Into_Struct(min_max);
       gameObjectArray[i].get_max_Into_Struct(min_max);
 
-      console.log("Max: " + min_max.max);
-      console.log("Min: " + min_max.min);
+      // console.log("Max: " + min_max.max);
+      // console.log("Min: " + min_max.min);
 
       if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
       {

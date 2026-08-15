@@ -498,14 +498,22 @@ export class gameObject
       const f32_rotated_max = new Float32Array(rotated_max);
       // Set half for this object
       this.setHalf(f32_rotated_max);
-console.log("After ALL");
-      // Temp hot key to trigger collider_box_vertex = make_vertexs(gameObjectArray);
-      // This could be done during object creation if not loaded
+      console.log("After ALL");
+
+      // Temp hot key to trigger collider_box_vertex = make_vertexs(gameObjectArray); - done
+      // This could be done during object creation if not loaded - done
+      // DO DEBUG SELECTION RETURN AFTER
+      // Soloution, on roation when Applying changes maube esc key. store orginal positions rot, scale
+      // Undo original roation then apply new opne/.
       // Also trigger this with command in debug mode on selected object
       // Is Collider post scale?
       // CHECK THIS ISNT OVERWRITTEN ON START UP AND IS SKIPPED ON LOAD.
       // Should save halfs anyway on laod
       // Button to enable collider view
+      // Fix player collision and test
+      // If can be fucked just give it a matrix do pos/scale/rot
+      // Also min and max can be flipped min: 12 max -2 if roated weird above might fix
+      // or do full aabb recalc
     }
 
     getMatrix()

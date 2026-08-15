@@ -36,7 +36,7 @@ export var mouse_Y = 0;
 
 const activeKeys = new Set();
 
-export let DELETE_ME = false;
+
 
 document.addEventListener('keydown', async function(evt) {
 
@@ -70,17 +70,6 @@ document.addEventListener('keydown', function(evt) {
   //     }
   // }
 
-  if (render.DEBUG_MODE)
-{
-  if (evt.altKey && evt.key.toLowerCase() == 'u')
-  {
-    // TO DO: This index should be what player select global value in debug utils
-    // TO DO: Put this stuff in debgu utils and should have shortcut toi enable collider view
-    // (tmp_min, tmp_max, tmp_pos, tmp_rot)
-
-    DELETE_ME = true;
-  }
-}
   if (evt.altKey && evt.key.toLowerCase() === 'v') 
   {
     render.switch_debug_mode();

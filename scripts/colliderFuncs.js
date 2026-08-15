@@ -1,4 +1,5 @@
 import {absVectorSubtract, vectorAdd} from "./helperFuncs.js";
+import * as debug_utils from "./Debug_Utils.js";
 
 export function makeColliderFromVerts(vertexs)
 {
@@ -119,14 +120,30 @@ export function ray_AABB_intersection(ray, min, max)
     let t_min = 0;
     let t_max = Infinity;
 
+ 
+
     // TO DO: Optimize look at orignal paper casey had combine with the stack of ors???
     // TO DO: Or could use output T to filter???
 
     let dest = ray.get_ray_dest();
     for (let i = 0; i < DIMENSIONS_FOR_AABB; i++)
     {
+           let min_val = Math.min(min[i], max[i]);
+            let max_val = Math.max(min[i], max[i]);
+            min[i] = min_val;
+            max[i] = max_val;
         if ((ray.get_ray_origin(i) < min[i] && dest[i] < min[i]) || (ray.get_ray_origin(i) > max[i] && dest[i] > max[i]) )
         {
+            //  console.log(`=== Element ${i} ===`);
+            // console.log(`ray.get_ray_origin(${i}):`, ray.get_ray_origin(i));
+            // console.log(`dest[${i}]:`, dest[i]);
+            // console.log(`min[${i}]:`, min[i]);
+            // console.log(`max[${i}]:`, max[i]);
+            // console.log(`---`);
+            // console.log(`ray origin < min:`, ray.get_ray_origin(i) < min[i]);
+            // console.log(`dest < min:`, dest[i] < min[i]);
+            // console.log(`ray origin > max:`, ray.get_ray_origin(i) > max[i]);
+            // console.log(`dest > max:`, dest[i] > max[i]);
             return false;
         }
     }
@@ -143,7 +160,7 @@ export function ray_AABB_intersection(ray, min, max)
     return t_min < t_max;
 }
 
-export function make_vertexs(gameObjectArray, target = 2)
+export function make_vertexs(gameObjectArray, target = debug_utils.DEBUG_COLLIDER_OBJECT)
 {
     if (target  < 0 || target >= gameObjectArray.length)
     {
@@ -151,6 +168,7 @@ export function make_vertexs(gameObjectArray, target = 2)
     }
 
     let position = gameObjectArray[target].getPosition();
+    console.log("pos: " + position);
     let halfs = gameObjectArray[target].getHalf();
 
     let px = position[0], py = position[1], pz = position[2];
