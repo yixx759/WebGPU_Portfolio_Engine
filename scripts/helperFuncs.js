@@ -208,8 +208,16 @@ export function negateVertex(inpVec)
   return vec;
 }
 
-export function vectorAdd(A, B){
-  return new Float32Array([A[0]+B[0], A[1]+B[1],A[2]+B[2], 0]);
+export function vectorAdd(A, B, is_point = false)
+{
+  if (!is_point)
+  {
+    return new Float32Array([A[0]+B[0], A[1]+B[1],A[2]+B[2], 0]);
+  }
+  else
+  {
+    return new Float32Array([A[0]+B[0], A[1]+B[1],A[2]+B[2], 1]);
+  }
 }
 
 export function vector_mult(A, mag_vector){

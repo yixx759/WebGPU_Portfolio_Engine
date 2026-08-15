@@ -2,6 +2,7 @@ import * as render from './Render.js';
 import * as helper from './helperFuncs.js';
 import * as save_funcs from './Save_Funcs.js'
 import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './colliderFuncs.js'
+import * as debug_utils from './Debug_Utils.js'
 
 const canvas = document.querySelector('#gpuCanvas');
 
@@ -70,62 +71,61 @@ document.addEventListener('keydown', function(evt) {
   //     }
   // }
 
-  if (evt.altKey && evt.key.toLowerCase() === 'v') 
+  if (!debug_utils.is_object_selected)
   {
-    render.switch_debug_mode();
-  }
 
-  if (evt.key.toLowerCase() === 'w') {
-    render.debugLog("Up");
-    keyZDown = -0.1;
-  } else if (evt.key.toLowerCase() === 's') {
-    render.debugLog("Down");
-    keyZDown = 0.1;
-  }
+    if (evt.key.toLowerCase() === 'w') {
+      render.debugLog("Up");
+      keyZDown = -0.1;
+    } else if (evt.key.toLowerCase() === 's') {
+      render.debugLog("Down");
+      keyZDown = 0.1;
+    }
 
-  if (evt.key.toLowerCase() === 'd') {
-    render.debugLog("Right");
-    keyXDown = -0.1;
-  } else if (evt.key.toLowerCase() === 'a') {
-    render.debugLog("Left");
-    keyXDown = 0.1;
-  }
+    if (evt.key.toLowerCase() === 'd') {
+      render.debugLog("Right");
+      keyXDown = -0.1;
+    } else if (evt.key.toLowerCase() === 'a') {
+      render.debugLog("Left");
+      keyXDown = 0.1;
+    }
 
-  if (evt.key.toLowerCase() === 'e') {
-    render.debugLog("forward");
-    keyYDown = 0.1;
-  } else if (evt.key.toLowerCase() === 'q') {
-    render.debugLog("down");
-    keyYDown = -0.1;
-  }
+    if (evt.key.toLowerCase() === 'e') {
+      render.debugLog("forward");
+      keyYDown = 0.1;
+    } else if (evt.key.toLowerCase() === 'q') {
+      render.debugLog("down");
+      keyYDown = -0.1;
+    }
 
-  // DEBUG Control
+    // DEBUG Control
 
-  if (render.MOVE_TARGET_TEST)
-  {
-    if (evt.key.toLowerCase() === 'ArrowUp') {
-    render.debugLog("Debug Up");
-    debug_target_keyZDown = -0.1;
-  } else if (evt.key.toLowerCase() === 'ArrowDown') {
-    render.debugLog("Debug Down");
-    debug_target_keyZDown = 0.1;
-  }
+    if (render.MOVE_TARGET_TEST)
+    {
+      if (evt.key.toLowerCase() === 'ArrowUp') {
+      render.debugLog("Debug Up");
+      debug_target_keyZDown = -0.1;
+    } else if (evt.key.toLowerCase() === 'ArrowDown') {
+      render.debugLog("Debug Down");
+      debug_target_keyZDown = 0.1;
+    }
 
-  if (evt.key.toLowerCase() === 'ArrowRight') {
-    render.debugLog("Debug Right");
-    debug_target_keyXDown = 0.1;
-  } else if (evt.key.toLowerCase() === 'ArrowLeft') {
-    render.debugLog("Debug Left");
-    debug_target_keyXDown = -0.1;
-  }
+    if (evt.key.toLowerCase() === 'ArrowRight') {
+      render.debugLog("Debug Right");
+      debug_target_keyXDown = 0.1;
+    } else if (evt.key.toLowerCase() === 'ArrowLeft') {
+      render.debugLog("Debug Left");
+      debug_target_keyXDown = -0.1;
+    }
 
-  if (evt.key.toLowerCase() === 'f') {
-    render.debugLog("Debug forward");
-    debug_target_keyYDown = 0.1;
-  } else if (evt.key.toLowerCase() === 'h') {
-    render.debugLog("Debug down");
-    debug_target_keyYDown = -0.1;
-  }
+    if (evt.key.toLowerCase() === 'f') {
+      render.debugLog("Debug forward");
+      debug_target_keyYDown = 0.1;
+    } else if (evt.key.toLowerCase() === 'h') {
+      render.debugLog("Debug down");
+      debug_target_keyYDown = -0.1;
+    }
+    }
   }
 
 }, false);

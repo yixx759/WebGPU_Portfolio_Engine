@@ -737,6 +737,13 @@ function render() {
     delete_me(device, gameObjectArray, collider_vertexDebugBuffer);
     DELETE_ME_2 = true;
   }
+
+  if (DEBUG_MODE && debug_utils.is_object_selected)
+  {
+    debugLog("Activating Move select");
+    debug_utils.move_selected_object(gameObjectArray);
+  }
+
   Time = Date.now() / CONST_TIME_DIV;
   
   let OBJECTS_TO_RENDER = SINGLE_TEST ? 1 : AMOUNT_OF_OBJECTS;
