@@ -652,15 +652,17 @@ const lightBindGroup = device.createBindGroup({
   ],
   });
 
-let tmpCamPos = new Float32Array(4);
-
+  let tmpCamPos = new Float32Array(4);
 
   document.addEventListener('click', function(evt) {
   debugLog("clicked")
 
   if (DEBUG_MODE)
   {
-    debug_utils.debug_select_object(gameObjectArray, look_vector);
+    if (!debug_utils.is_object_selected)
+    {
+      debug_utils.debug_select_object(gameObjectArray, look_vector, device, collider_vertexDebugBuffer);
+    }
   }
 
   if (DEBUG_LOGS && !PATH_TEST)
@@ -723,19 +725,13 @@ let tmp_pos = tmp_mem.get_temp_memory_vector();
 let tmp_rot = tmp_mem.get_temp_memory_vector();
 let tmp_half = tmp_mem.get_temp_memory_vector();
 
-let DELETE_ME_2 = false;
+
 
 function render() {
 
-  if (debug_utils.DELETE_ME & !DELETE_ME_2)
+  if (debug_utils.trigger_recalculate_collider)
   {
-    let tmp_min = new Float32Array(3);
-    let tmp_max = new Float32Array(4);
-    let tmp_pos = new Float32Array(4);
-    let tmp_rot = new Float32Array(4);
-    gameObjectArray[debug_utils.DEBUG_COLLIDER_OBJECT].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
-    delete_me(device, gameObjectArray, collider_vertexDebugBuffer);
-    DELETE_ME_2 = true;
+    debug_utils.recalculate_collider(gameObjectArray, device, collider_vertexDebugBuffer);
   }
 
   if (DEBUG_MODE && debug_utils.is_object_selected)
@@ -903,9 +899,9 @@ export function click_object(gameObjectArray, look_vector)
     return -1;
 }
 
-export function delete_me(device, gameObjectArray, collider_vertexDebugBuffer)
+export function update_collider_vertex(device, gameObjectArray, collider_vertexDebugBuffer, target)
 {
-    let collider_box_vertex = make_vertexs(gameObjectArray);
+    let collider_box_vertex = make_vertexs(gameObjectArray, target);
     device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
 }
 
