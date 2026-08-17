@@ -7,9 +7,15 @@ export let object_selected = -1;
 export const DEBUG_COLLIDER_OBJECT = 0;
 export let trigger_recalculate_collider = false;
 
+export let SHOW_COLLIDER = false;
+
 let tmp_pos = new Float32Array(3);
 let tmp_rot = new Float32Array(3);
 let tmp_scale = -1;
+
+// If roation is 90 degrees, but colldier already rotated 90
+// This creats a problem doing 180 degrees. needs to undo then do the 90
+let tmp_col_rot = new Float32Array(3); 
 
 export let pos_x_down = 0;
 export let pos_y_down = 0;
@@ -44,10 +50,11 @@ export function recalculate_collider(gameObjectArray, device, collider_vertexDeb
     let tmp_pos = new Float32Array(4);
     let tmp_rot = new Float32Array(4);
 
-    gameObjectArray[object_selected].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
+    gameObjectArray[object_selected].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, tmp_col_rot);
     render.update_collider_vertex(device, gameObjectArray, collider_vertexDebugBuffer, object_selected);
     reset_collider_recalc_trigger();
 
+    gameObjectArray[object_selected].getRotation_Into(tmp_col_rot);
 }
 
 function reset_object_values(selected_game_obj)
@@ -62,6 +69,7 @@ function leave_selection_mode()
     reset_object_values(render.gameObjectArray[object_selected]); 
     object_selected = -1;
     is_object_selected = false;  
+    SHOW_COLLIDER = false;
 }
 
 function save_selection_values(selected_game_obj)
@@ -69,7 +77,7 @@ function save_selection_values(selected_game_obj)
     selected_game_obj.getPosition_Into(tmp_pos);
     selected_game_obj.getRotation_Into(tmp_rot);
     tmp_scale = selected_game_obj.getScale();
-
+    selected_game_obj.getRotation_Into(tmp_col_rot);
 }
 
 export function debug_select_object(gameObjectArray, look_vector, device, collider_vertexDebugBuffer)
@@ -131,6 +139,11 @@ document.addEventListener('keydown', function(evt) {
 
     if (render.DEBUG_MODE && is_object_selected && object_selected != -1)
     {
+        if (evt.altKey && evt.key.toLowerCase() == 'c')
+        {
+            SHOW_COLLIDER = !SHOW_COLLIDER;
+        }
+
         if (evt.altKey && evt.key.toLowerCase() == 'u')
         {
             // TO DO: This index should be what player select global value in debug utils
@@ -140,7 +153,6 @@ document.addEventListener('keydown', function(evt) {
             trigger_recalculate_collider = true;
         }
         
- 
         if (evt.key.toLowerCase() === 'w') {
             pos_z_down = -0.1;
         } else if (evt.key.toLowerCase() === 's') {

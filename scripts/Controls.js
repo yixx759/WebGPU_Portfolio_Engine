@@ -50,14 +50,13 @@ document.addEventListener('keydown', async function(evt) {
         {
           await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
         }
-        else
+        else if (!debug_utils.is_object_selected)
         {
           console.log(render.tmp_debug_pos);
           await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, render.tmp_debug_pos, render.coeffs);
         }
       }
   }
-
 })
 
 document.addEventListener('keydown', function(evt) {
@@ -228,8 +227,7 @@ export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collide
       }
     }
   }
-  
-  
+   
   helper.vector_assign_cam(camPosPrev, camPos);
 
   //TO Do : make new target pos forward vec and use new const.

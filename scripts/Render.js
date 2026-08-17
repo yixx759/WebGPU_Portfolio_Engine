@@ -216,7 +216,7 @@ async function init() {
       {
         // TO DO: Get these better include in whatever file type is made
         gameObjectArray[i].setHalf(makeColliderFromVerts(Model_Array[vertex_index]));
-        gameObjectArray[i].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot);
+        gameObjectArray[i].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS);
       }
   }
 }
@@ -816,7 +816,7 @@ function render() {
   }
  
   // TO DO: Generalize this
-  if (DEBUG_MODE)
+  if (debug_utils.SHOW_COLLIDER)
   {
     passEncoder.setPipeline(collider_renderDebugPipeline);
     passEncoder.setBindGroup(0, bindDebugGroup);

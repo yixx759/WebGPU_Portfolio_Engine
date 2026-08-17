@@ -381,7 +381,7 @@ export class gameObject
         return -1;
       }
 
-      return this.setVector3( this.collisionIndex, data)
+      return this.setVector3(this.collisionIndex, data)
     }
 
     get_min()
@@ -463,16 +463,14 @@ export class gameObject
       return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
 
-    update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot)
+    update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, current_rot)
     {
       // PLAN
 
-      // Get max and min (have temp value for this use max min into)
+     // Get max and min (have temp value for this use max min into)
       // Never mind only need one cuz symetrical
-      console.log("max");
       this.get_max_Into(tmp_max);
 
-      console.log("Pos");
       // Rotate these points using javascript rotate function with this object rot
       
       //  // Subtract from pos to get back to orgin
@@ -482,35 +480,37 @@ export class gameObject
       const max_at_origin = helper.vectorSubtract(tmp_max, tmp_pos);
 
       const vec4_max_at_origin = new Float32Array([max_at_origin[0], max_at_origin[1], max_at_origin[2], 1]);
+      
+      const inv_rot_matrix = helper.get_inv_rotation_matrix(current_rot[0], current_rot[1], current_rot[2]);
+      const vec4_max_origin_no_rot = helper.multiply_matrix_and_point(inv_rot_matrix, vec4_max_at_origin);
+
       //  // Rotate 
-      console.log("ROT");
       this.getRotation_Into(tmp_rot);
 
-      console.log("rot mat");
-      console.log(tmp_rot);
-      const rot_matrix = helper.get_rotation_matrix(tmp_rot[0],tmp_rot[1],tmp_rot[2]);
-      console.log("MultMat");
-      console.log(rot_matrix);
-      const rotated_max = helper.multiply_matrix_and_point(rot_matrix, vec4_max_at_origin);
+      console.log("tmp rot:" + tmp_rot);
+      console.log("cur rot:" + current_rot);
+     
+      const rot_matrix = helper.get_rotation_matrix(tmp_rot[0], tmp_rot[1], tmp_rot[2]);
 
-      console.log("half");
-      console.log(rotated_max);
+      const rotated_max = helper.multiply_matrix_and_point(rot_matrix, vec4_max_origin_no_rot);
+
       const f32_rotated_max = new Float32Array(rotated_max);
       // Set half for this object
       this.setHalf(f32_rotated_max);
-      console.log("After ALL");
 
       // Temp hot key to trigger collider_box_vertex = make_vertexs(gameObjectArray); - done
       // This could be done during object creation if not loaded - done
-      // DO DEBUG SELECTION RETURN AFTER
+      // DO DEBUG SELECTION RETURN AFTER - done
       // Soloution, on roation when Applying changes maube esc key. store orginal positions rot, scale
-      // Undo original roation then apply new opne/.
-      // Also trigger this with command in debug mode on selected object
-      // Is Collider post scale?
-      // CHECK THIS ISNT OVERWRITTEN ON START UP AND IS SKIPPED ON LOAD.
-      // Should save halfs anyway on laod
-      // Button to enable collider view
+      // Undo original roation then apply new opne/. - done
+      // Also trigger this with command in debug mode on selected object - done
+      // Is Collider post scale? - yes need to fix
+      // CHECK THIS ISNT OVERWRITTEN ON START UP AND IS SKIPPED ON LOAD.- done
+      // Should save halfs anyway on laod - done
+      // Button to enable collider view - done
       // Fix player collision and test
+      // Wire frame remove depth new shader
+      // DO LATER
       // If can be fucked just give it a matrix do pos/scale/rot
       // Also min and max can be flipped min: 12 max -2 if roated weird above might fix
       // or do full aabb recalc
