@@ -295,6 +295,18 @@ export function absVectorSubtract(A, B){
   return new Float32Array([Math.abs(A[0]-B[0]), Math.abs(A[1]-B[1]), Math.abs(A[2]-B[2])]);
 }
 
+export function vector_abs_into(A)
+{
+  A[0] = Math.abs(A[0])
+  A[1] = Math.abs(A[1])
+  A[2] = Math.abs(A[2])
+}
+
+export function vector_abs(A)
+{
+  return new Float32Array([Math.abs(A[0]), Math.abs(A[1]), Math.abs(A[2])]);
+}
+
 export function vectorDot(A, B){
   return A[0]*B[0]+ A[1]*B[1] + A[2]*B[2];
 }

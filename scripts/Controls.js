@@ -220,7 +220,7 @@ export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collide
     {
       gameObjectArray[i].getPosition_Into(tmp_pos);
       gameObjectArray[i].getHalf_Into(tmp_half);
-      
+  
       if (AABB(tmp_pos, tmp_half, camPos, player_collider) && !SINGLE_TEST)
       {
         helper.vector_assign_cam(camPos, camPosPrev);

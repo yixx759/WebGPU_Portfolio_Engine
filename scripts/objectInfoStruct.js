@@ -374,12 +374,14 @@ export class gameObject
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setHalf( data)
+    setHalf(data)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set half wasnt given float32array");
         return -1;
       }
+
+      helper.vector_abs_into(data);
 
       return this.setVector3(this.collisionIndex, data)
     }
@@ -508,7 +510,8 @@ export class gameObject
       // CHECK THIS ISNT OVERWRITTEN ON START UP AND IS SKIPPED ON LOAD.- done
       // Should save halfs anyway on laod - done
       // Button to enable collider view - done
-      // Fix player collision and test
+      // Fix player collision and test - done
+      // Do Finance
       // Wire frame remove depth new shader
       // DO LATER
       // If can be fucked just give it a matrix do pos/scale/rot

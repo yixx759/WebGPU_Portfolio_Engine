@@ -17,6 +17,7 @@ export function makeColliderFromVerts(vertexs)
 
 export function AABB(positionA, halfA, positionB, halfB) {
     const diff = absVectorSubtract(positionA, positionB);
+    
     const totalHalfs = vectorAdd(halfA, halfB);
 
     return (diff[0] <= totalHalfs[0]) && (diff[1] <= totalHalfs[1]) && (diff[2] <= totalHalfs[2])

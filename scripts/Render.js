@@ -24,7 +24,7 @@ export var DEBUG_MODE = true;
 export var debug_mode_changed = false;
 export var tmp_debug_pos = tmp_mem.get_temp_memory_vector();
 
-export const SAVE_CURRENT_STATE = true;
+export const SAVE_CURRENT_STATE = false;
 export const LOAD_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
@@ -724,8 +724,6 @@ let look_vector = new Float32Array([controls.forward_vector_mat[0] * Math.cos(co
 let tmp_pos = tmp_mem.get_temp_memory_vector();
 let tmp_rot = tmp_mem.get_temp_memory_vector();
 let tmp_half = tmp_mem.get_temp_memory_vector();
-
-
 
 function render() {
 
