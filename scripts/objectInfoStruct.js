@@ -511,8 +511,7 @@ export class gameObject
       // Should save halfs anyway on laod - done
       // Button to enable collider view - done
       // Fix player collision and test - done
-      // Do Finance
-      // Wire frame remove depth new shader
+      // Wire frame remove depth new shader - done
       // DO LATER
       // If can be fucked just give it a matrix do pos/scale/rot
       // Also min and max can be flipped min: 12 max -2 if roated weird above might fix

@@ -352,7 +352,7 @@ async function init() {
       }]
     },
     primitive: {
-      topology: 'triangle-list'
+      topology: 'triangle-list',
     },
     depthStencil: {
         depthWriteEnabled: true,
@@ -382,14 +382,14 @@ if (DEBUG_LOGS){
       module: shaderDebugModule,
       entryPoint: 'fragment_main',
       targets: [{
-        format: navigator.gpu.getPreferredCanvasFormat()
-      }]
+        format: navigator.gpu.getPreferredCanvasFormat(),
+        }]
     },
     primitive: {
       topology: 'line-list'
     },
     depthStencil: {
-        depthWriteEnabled: true,
+        depthWriteEnabled: false,
         depthCompare: "less",
         format: "depth24plus",
     },
@@ -412,11 +412,25 @@ if (DEBUG_MODE) {
       module: collider_shaderDebugModule,
       entryPoint: 'fragment_main',
       targets: [{
-        format: navigator.gpu.getPreferredCanvasFormat()
+        format: navigator.gpu.getPreferredCanvasFormat(),
+        blend: {
+          color: {
+            srcFactor: 'src-alpha',
+            dstFactor: 'one-minus-src-alpha',
+            operation: 'add',
+          },
+          alpha: {
+            srcFactor: 'one',
+            dstFactor: 'one-minus-src-alpha',
+            operation: 'add',
+          },
+        },
       }]
     },
     primitive: {
-      topology: 'triangle-list'
+      topology: 'triangle-list',
+      frontFace: 'ccw',
+      cullMode: 'none',
     },
     depthStencil: {
         depthWriteEnabled: true,
