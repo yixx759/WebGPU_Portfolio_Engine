@@ -8,5 +8,29 @@
     <h1>WebGPU triangle</h1>
     <canvas id="gpuCanvas" width="800" height="600"></canvas>
     <script type="module" src="scripts/Render.js"> </script>
+    <form name="Debug_Values" style="display:none;">
+      <label for="pos_x">Pos X:</label>
+      <input type="text" id="pos_x" name="pos[]">
+      <label for="pos_y">Pos Y:</label>
+      <input type="text" id="pos_y" name="pos[]">
+      <label for="pos_y">Pos Z:</label>
+      <input type="text" id="pos_z" name="pos[]">
+      <br><br>
+      
+      <label for="rot_x">Rot X:</label>
+      <input type="text" id="rot_x" name="rot[]">
+      <label for="rot_y">Rot Y:</label>
+      <input type="text" id="rot_y" name="rot[]">
+      <label for="rot_y">Rot Z:</label>
+      <input type="text" id="rot_z" name="rot[]">
+      <br><br>
+
+      <label for="scale">Scale:</label>
+      <input type="text" id="scale" name="scale">
+      <br><br>
+
+      <input type="button" onclick="submit_gui_values()" value="Submit">
+    </form>
+  
   </body>
 </html>

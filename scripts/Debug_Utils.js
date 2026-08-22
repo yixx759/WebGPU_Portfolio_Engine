@@ -70,6 +70,8 @@ function leave_selection_mode()
     object_selected = -1;
     is_object_selected = false;  
     SHOW_COLLIDER = false;
+
+    document.Debug_Values.style.display = "none"; 
 }
 
 function save_selection_values(selected_game_obj)
@@ -78,6 +80,86 @@ function save_selection_values(selected_game_obj)
     selected_game_obj.getRotation_Into(tmp_rot);
     tmp_scale = selected_game_obj.getScale();
     selected_game_obj.getRotation_Into(tmp_col_rot);
+    fill_in_html_debug(tmp_pos, tmp_rot, tmp_scale)
+}
+
+function fill_in_html_debug(pos, rot, scale)
+{
+    const pos_inp = document.Debug_Values.elements["pos[]"];
+    const rot_inp = document.Debug_Values.elements["rot[]"];
+    const scale_inp = document.Debug_Values.scale;
+    
+    pos_inp[0].value = pos[0];
+    pos_inp[1].value = pos[1];
+    pos_inp[2].value = pos[2];
+
+    rot_inp[0].value = rot[0];
+    rot_inp[1].value = rot[1];
+    rot_inp[2].value = rot[2];
+
+    scale_inp.value = scale;
+}
+
+function validate_num(num)
+{
+    if (!num.value.trim())
+    {
+        return false;
+    }
+
+    if (isNaN(num.value.trim()))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+function validate_gui_values(pos_inp, rot_inp, scale_inp)
+{
+    for (let i = 0; i < 3; i++)
+    {
+        if (!validate_num(pos_inp[i]))
+        {
+            console.print("Postions " + i + "Breaks");
+            return false;
+        }
+    }   
+
+    for (let i = 0; i < 3; i++)
+    {
+        if (!validate_num(rot_inp[i]))
+        {
+            console.print("Rotations " + i + "Breaks");
+            return false;
+        }
+    }
+
+    if (!validate_num(scale_inp))
+    {
+        console.print("Scale Breaks");
+        return false;
+    }
+
+    return true;
+}
+
+window.submit_gui_values = function()
+{ 
+    const pos_inp = document.Debug_Values.elements["pos[]"];
+    const rot_inp = document.Debug_Values.elements["rot[]"];
+    const scale_inp = document.Debug_Values.scale;
+    
+    if (!validate_gui_values(pos_inp, rot_inp, scale_inp))
+    {
+        return
+    }
+
+    const selected_game_obj = render.gameObjectArray[object_selected];
+
+    selected_game_obj.setPosition(new Float32Array([parseFloat(pos_inp[0].value.trim()), parseFloat(pos_inp[1].value.trim()), parseFloat(pos_inp[2].value.trim())]));
+    selected_game_obj.setRotation(new Float32Array([parseFloat(rot_inp[0].value.trim()), parseFloat(rot_inp[1].value.trim()), parseFloat(rot_inp[2].value.trim())]));
+    selected_game_obj.setScale(parseFloat(scale_inp.value.trim()))
 }
 
 export function debug_select_object(gameObjectArray, look_vector, device, collider_vertexDebugBuffer)
@@ -97,6 +179,9 @@ export function debug_select_object(gameObjectArray, look_vector, device, collid
             save_selection_values(selected_game_obj);
             render.update_collider_vertex(device, gameObjectArray, collider_vertexDebugBuffer, object_selected);
             console.log("Object selected: " + object_selected);
+
+            // TO DO: Need to hide before selction and after selciton left
+            document.Debug_Values.style.display = "block"; 
         }
     }
 }
@@ -126,7 +211,6 @@ export function move_selected_object(gameObjectArray)
 document.addEventListener('keydown', function(evt) {
 
     // Look at TO DO on OB and go back to to do on objec info struct to do
-
 
     if (evt.altKey && evt.key.toLowerCase() === 'v') 
     {

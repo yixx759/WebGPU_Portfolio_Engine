@@ -201,7 +201,8 @@ async function init() {
   let VERTEX_OFFSET = max_verts;
 
   {
- let tmp_min = new Float32Array(3);
+    
+  let tmp_min = new Float32Array(3);
   let tmp_max = new Float32Array(3);
   let tmp_pos = new Float32Array(4);
   let tmp_rot = new Float32Array(4);
@@ -748,7 +749,6 @@ function render() {
 
   if (DEBUG_MODE && debug_utils.is_object_selected)
   {
-    debugLog("Activating Move select");
     debug_utils.move_selected_object(gameObjectArray);
   }
 

@@ -221,6 +221,7 @@ export class gameObject
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get position wasnt given float32array");
+        throw new Error("Something went wrong");
         return -1;
       }
 
@@ -236,6 +237,7 @@ export class gameObject
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set position wasnt given float32array");
+        throw new Error("Something went wrong");
         return -1;
       }
 
@@ -249,6 +251,7 @@ export class gameObject
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get scale wasnt given float32array");
+        throw new Error("Something went wrong");
         return -1;
       }
 
@@ -256,7 +259,7 @@ export class gameObject
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setScale( data)
+    setScale(data)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set scale wasnt given float32array");
@@ -269,7 +272,7 @@ export class gameObject
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getRotation_Into( rot)
+    getRotation_Into(rot)
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Get rotation wasnt given float32array");
@@ -308,7 +311,7 @@ export class gameObject
 
       this.set_Dirty_Bit(1);
 
-      return this.setVector3( this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
+      return this.setVector3(this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
     }
 
     get_world_matrix(World_Matrix, tmp_pos, tmp_rot)
@@ -549,11 +552,13 @@ export class gameObject
     {
       if (!(transformArray instanceof Float32Array)) {
         console.log("ERROR: Set vector3 wasnt given float32array");
+        throw new Error("Something went wrong");
         return -1;
       }
 
       if (!(data instanceof Float32Array)) {
         console.log("ERROR: Set vector3 wasnt given data float32array");
+        throw new Error("Something went wrong");
         return -1;
       }
 
