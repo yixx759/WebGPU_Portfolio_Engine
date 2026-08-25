@@ -37,8 +37,6 @@ export var mouse_Y = 0;
 
 const activeKeys = new Set();
 
-
-
 document.addEventListener('keydown', async function(evt) {
 
   if (render.SAVE_CURRENT_STATE)

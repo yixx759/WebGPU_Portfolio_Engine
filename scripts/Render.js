@@ -60,7 +60,7 @@ function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
   device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
 }
 
-export const AMOUNT_OF_OBJECTS = 2 + 6;
+export let AMOUNT_OF_OBJECTS = 2 + 6;
 
 export let gameObjectArray = [];
 
@@ -69,7 +69,7 @@ export let coeffs = new Float32Array(sh_funcs.TOTAL_COEFF * 3);
 if (LOAD_CURRENT_STATE)
 {
   // TO DO: Too much global state modfication. Needs re org.
-  await save_funcs.load_file(gameObjectArray, controls.camPos, coeffs);
+  AMOUNT_OF_OBJECTS = await save_funcs.load_file(gameObjectArray, controls.camPos, coeffs);
 }
 else
 {
@@ -206,7 +206,6 @@ async function init() {
   let tmp_max = new Float32Array(3);
   let tmp_pos = new Float32Array(4);
   let tmp_rot = new Float32Array(4);
- 
   
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
     const vertex_index = gameObjectArray[i].getModelIndex();

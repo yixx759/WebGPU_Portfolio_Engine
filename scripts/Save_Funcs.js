@@ -99,13 +99,15 @@ function load_sh_matrix_into(matrix, view, offset)
     return matrix;
 }
 
-export async function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs)
+export async function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs, add_object=false, object_to_add=null)
 {
+    add_object_true = add_object ? 1 : 0;
+
     let bit_buffer = new ArrayBuffer(
         SIZE_OF_OBJECT_NUMBER +
         SIZE_OF_COEFFS +
         objectInfo.BYTES_OF_VECTOR3 +
-        objectInfo.ALIGNMENT_BYTES_OF_OBJECT * amount_of_objects
+        objectInfo.ALIGNMENT_BYTES_OF_OBJECT * (amount_of_objects + add_object_true)
     );
 
     let view = new DataView(bit_buffer);
@@ -118,7 +120,7 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
 
     let offset = 0;
 
-    offset += add_int8(amount_of_objects, view, offset);
+    offset += add_int8(amount_of_objects + add_object_true, view, offset);
 
     console.log("before load object: ");
     console.log(offset);
@@ -155,9 +157,41 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         // OBJECT_BRDF_INDEX
         offset += add_int8(tmp_go.getBRDFIndex(), view, offset);
         console.log("offset during: ");
-    console.log(offset);
+        console.log(offset);
     }
 
+    if (add_object)
+    {
+        tmp_go = object_to_add;
+
+        // OBJECT_ID is implied by the order
+
+        // OBJECT_MODEL_INDEX
+        offset += add_int8(tmp_go.getModelIndex(), view, offset);
+
+        // OBJECT_TEXTURE_INDEX
+        offset += add_int8(tmp_go.getTextureIndex(), view, offset);
+
+        // OBJECT_START_POSITION
+        offset += add_vector3(tmp_go.getPosition(), view, offset);
+
+        // OBJECT_START_SCALE
+        offset += add_float32(tmp_go.getScale(), view, offset);
+
+        // OBJECT_START_ROTATION
+        offset += add_vector3(tmp_go.getRotation(), view, offset);
+
+        // OBJECT_HALF
+        offset += add_vector3(tmp_go.getHalf(), view, offset);
+
+        // OBJECT_WORLD_MATRIX
+        offset += add_matrix(tmp_go.getMatrix(), view, offset);
+
+        // OBJECT_BRDF_INDEX
+        offset += add_int8(tmp_go.getBRDFIndex(), view, offset);
+        console.log("offset during: ");
+        console.log(offset);
+    }
     
     console.log("offset: ");
     console.log(offset);
@@ -182,9 +216,9 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
       description: "Binary file",
       accept: { "application/octet-stream": [".bin"] }
     }]
-  });
+    });
 
-  const writable = await handle.createWritable();
+   const writable = await handle.createWritable();
    await writable.write(bit_buffer);
    await writable.close();
 
@@ -230,6 +264,8 @@ export async function load_file(game_object_array, cam_pos, coeffs)
     // Load functions reverse of save functions
     // appen to game object array
     // later take in SH and Player split into funcs
+
+    return amount_of_objects;
 }
 
 function load_sh(coeffs, offset, view)

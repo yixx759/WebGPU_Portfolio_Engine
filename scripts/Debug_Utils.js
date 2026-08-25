@@ -4,6 +4,8 @@ import * as helper from './helperFuncs.js';
 export let is_object_selected = false;
 export let object_selected = -1;
 
+let creating_object = false;
+
 export const DEBUG_COLLIDER_OBJECT = 0;
 export let trigger_recalculate_collider = false;
 
@@ -37,6 +39,13 @@ export let scale_z_down = 0;
 // Test right index first, Then arrow keys to move and rotate adn scale
 // This should happen instead of normal moving, add an if or something
 // When esc be able to move again normally in debug, rember to reset is object when out of debug and out of seleciton into debug
+
+export function create_new_object()
+{
+    // USE AMOUNT_OF_OBJECTS FOR ID
+    // USE VALUES FROM FOURM AND HALF NEEDS CALUCLATED
+    // export func from render
+}
 
 export function reset_collider_recalc_trigger()
 {
@@ -292,7 +301,14 @@ document.addEventListener('keydown', function(evt) {
     {
         console.log("ERROR: INVALID OBJECT SELECTED IN DEBIG OBJECT MOVING");
     }
- 
+    else if (render.DEBUG_MODE)
+    {
+        if (evt.altKey && evt.key.toLowerCase() === 'g')
+        {
+            creating_object = true;
+
+        }
+    }
 });
 
 document.addEventListener('keyup', function(evt) {

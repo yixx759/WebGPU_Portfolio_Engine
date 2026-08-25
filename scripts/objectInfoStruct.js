@@ -100,7 +100,7 @@ export class gameObject
  
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(objectID, vertexIndex, textureIndex, position, scale, rotation, half, world_matrix, param_array_index)
+  constructor(objectID, vertexIndex, y, position, scale, rotation, half, world_matrix, param_array_index)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
