@@ -8,6 +8,7 @@
     <h1>WebGPU triangle</h1>
     <canvas id="gpuCanvas" width="800" height="600"></canvas>
     <script type="module" src="scripts/Render.js"> </script>
+    
     <form name="Debug_Values" style="display:none;">
       <label for="pos_x">Pos X:</label>
       <input type="text" id="pos_x" name="pos[]">
@@ -31,13 +32,14 @@
 
       <input type="button" onclick="submit_gui_values()" value="Submit">
     </form>
+    
     <form name="Create_Object_Values" style="display:none;">
-      <label for="vertex_index">vertex_index:</label>
+      <label for="vertex_index">Vertex index:</label>
       <input type="text" id="vertex_index" name="vertex_index">
       <br><br>
       
-      <label for="texture_index">texture_index:</label>
-      <input type="text" id="testure_index" name="testure_index">
+      <label for="texture_index">Texture index:</label>
+      <input type="text" id="texture_index" name="texture_index">
       <br><br>
       
       <label for="pos_x">Pos X:</label>
@@ -60,7 +62,11 @@
       <input type="text" id="scale" name="scale">
       <br><br>
 
-      <input type="button" onclick="submit_gui_values()" value="Submit">
+      <label for="BRDF_index">BRDF Index:</label>
+      <input type="text" id="BRDF_index" name="BRDF_index">
+      <br><br>
+
+      <input type="button" onclick="create_new_object()" value="Submit">
     </form>
 
   </body>

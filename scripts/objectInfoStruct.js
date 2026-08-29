@@ -1,7 +1,5 @@
 import * as helper from './helperFuncs.js';
 
-const AMOUNT_OF_OBJECTS = 2 + 6;
-
 // Data type size
 // refrence: https://www.w3schools.com/js/js_datatypes.asp
 
@@ -58,9 +56,16 @@ export const ALIGNMENT_BYTES_OF_OBJECT = (BYTES_OF_OBJECT + ALLIGHNMENT_NUMBER -
 
 export const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
 
-const objectArray = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
-const transformArray = new Float32Array(objectArray);
-const indexArray = new Int8Array(objectArray);
+let objectArray;
+let transformArray;
+let indexArray;
+
+export function init_object_arrays(AMOUNT_OF_OBJECTS)
+{
+  objectArray = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
+  transformArray = new Float32Array(objectArray);
+  indexArray = new Int8Array(objectArray);
+}
 
 /* Object structure
 
@@ -100,7 +105,7 @@ export class gameObject
  
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(objectID, vertexIndex, y, position, scale, rotation, half, world_matrix, param_array_index)
+  constructor(objectID, vertexIndex, textureIndex, position, scale, rotation, half, world_matrix, param_array_index)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
@@ -122,6 +127,9 @@ export class gameObject
     
     // Set vertexIndex
     renderInfoView[0] = vertexIndex;
+
+    console.log("set")
+    console.log(renderInfoView[0])
 
     // Set textureIndex
     renderInfoView[1] = textureIndex;

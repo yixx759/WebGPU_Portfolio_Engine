@@ -101,7 +101,7 @@ function load_sh_matrix_into(matrix, view, offset)
 
 export async function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs, add_object=false, object_to_add=null)
 {
-    add_object_true = add_object ? 1 : 0;
+    let add_object_true = add_object ? 1 : 0;
 
     let bit_buffer = new ArrayBuffer(
         SIZE_OF_OBJECT_NUMBER +
@@ -129,8 +129,12 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
 
     for (let i = 0; i < amount_of_objects; i++)
     {
+        console.log(i);
+        console.log(game_object_array);
         tmp_go = game_object_array[i];
 
+        console.log(tmp_go);
+        console.log(tmp_go.getModelIndex());
         // OBJECT_ID is implied by the order
 
         // OBJECT_MODEL_INDEX
@@ -245,6 +249,9 @@ export async function load_file(game_object_array, cam_pos, coeffs)
 
     // Load how many objects
     const amount_of_objects = load_int8(view, offset);
+    
+    objectInfo.init_object_arrays(amount_of_objects +  1);
+
     console.log("Amount: " + amount_of_objects);
     offset += objectInfo.BYTES_OF_INT_8;
 

@@ -1,10 +1,13 @@
 import * as render from './Render.js';
+import { save_file } from './Save_Funcs.js';
 import * as helper from './helperFuncs.js';
+import * as controls from './Controls.js';
+import * as objectInfo from './objectInfoStruct.js'
 
 export let is_object_selected = false;
 export let object_selected = -1;
 
-let creating_object = false;
+export let creating_object = false;
 
 export const DEBUG_COLLIDER_OBJECT = 0;
 export let trigger_recalculate_collider = false;
@@ -40,11 +43,28 @@ export let scale_z_down = 0;
 // This should happen instead of normal moving, add an if or something
 // When esc be able to move again normally in debug, rember to reset is object when out of debug and out of seleciton into debug
 
-export function create_new_object()
+window.create_new_object = function()
 {
+    const pos_inp = document.Create_Object_Values.elements["pos[]"];
+    const rot_inp = document.Create_Object_Values.elements["rot[]"];
+
+    tmp_pos = new Float32Array([parseFloat(pos_inp[0].value), parseFloat(pos_inp[1].value), parseFloat(pos_inp[2].value)])
+    tmp_rot = new Float32Array([parseFloat(rot_inp[0].value), parseFloat(rot_inp[1].value), parseFloat(rot_inp[2].value)])
+    
     // USE AMOUNT_OF_OBJECTS FOR ID
+    let tmp_object = new objectInfo.gameObject(render.AMOUNT_OF_OBJECTS, parseInt(document.Create_Object_Values.vertex_index.value.trim()), parseInt(document.Create_Object_Values.texture_index.value.trim()), tmp_pos, parseFloat(document.Create_Object_Values.scale.value.trim()), tmp_rot, helper.ZEROS, helper.ZEROS_MATRIX, parseInt(document.Create_Object_Values.BRDF_index.value.trim()));
     // USE VALUES FROM FOURM AND HALF NEEDS CALUCLATED
     // export func from render
+    // OVERWRTIE AMOUT OF OBJECTS ON SAVE
+    console.log("Scale: " + document.Create_Object_Values.scale.value)
+    console.log("Scale: " + document.Create_Object_Values.scale.value.trim())
+    console.log("Scale: " + parseFloat(document.Create_Object_Values.scale.value.trim()))
+    render.get_object_half(tmp_object);
+
+    save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, controls.camPos, render.coeffs, true, tmp_object);
+
+    creating_object = false;
+    document.Create_Object_Values.style.display = "none"; 
 }
 
 export function reset_collider_recalc_trigger()
@@ -223,6 +243,8 @@ document.addEventListener('keydown', function(evt) {
 
     if (evt.altKey && evt.key.toLowerCase() === 'v') 
     {
+        creating_object = false;
+
         if (is_object_selected)
         {
             leave_selection_mode();
@@ -230,7 +252,7 @@ document.addEventListener('keydown', function(evt) {
         render.switch_debug_mode();
     }
 
-    if (render.DEBUG_MODE && is_object_selected && object_selected != -1)
+    if (render.DEBUG_MODE && is_object_selected && object_selected != -1 && !creating_object)
     {
         if (evt.altKey && evt.key.toLowerCase() == 'c')
         {
@@ -301,19 +323,19 @@ document.addEventListener('keydown', function(evt) {
     {
         console.log("ERROR: INVALID OBJECT SELECTED IN DEBIG OBJECT MOVING");
     }
-    else if (render.DEBUG_MODE)
+    else if (render.DEBUG_MODE && !creating_object)
     {
         if (evt.altKey && evt.key.toLowerCase() === 'g')
         {
             creating_object = true;
-
+            document.Create_Object_Values.style.display = "block"; 
         }
     }
 });
 
 document.addEventListener('keyup', function(evt) {
   
-    if (render.DEBUG_MODE && is_object_selected && object_selected != -1)
+    if (render.DEBUG_MODE && is_object_selected && object_selected != -1 && creating_object)
     {
         if (evt.key.toLowerCase() === 'w' || evt.key.toLowerCase() === 's') {  
             pos_z_down = 0;

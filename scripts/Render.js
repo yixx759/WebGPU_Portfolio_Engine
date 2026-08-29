@@ -64,6 +64,8 @@ export let AMOUNT_OF_OBJECTS = 2 + 6;
 
 export let gameObjectArray = [];
 
+let Model_Array = [];
+
 export let coeffs = new Float32Array(sh_funcs.TOTAL_COEFF * 3);
 
 if (LOAD_CURRENT_STATE)
@@ -73,6 +75,7 @@ if (LOAD_CURRENT_STATE)
 }
 else
 {
+  objectInfo.init_object_arrays(AMOUNT_OF_OBJECTS + 1) 
   gameObjectArray = player_struct.Set_Up_Objects();
 }
 
@@ -185,7 +188,6 @@ async function init() {
   let view1 = tex.createView(); 
   errorCheck(view1);
 
-  let Model_Array = [];
 
   const MODEL_CUBE_INDEX = await model_parser.add_model_to_array('resources/models/cube.obj', Model_Array);
   const MODEL_BUNNY_INDEX = await model_parser.add_model_to_array('resources/models/Bunny.obj', Model_Array);
@@ -209,7 +211,7 @@ async function init() {
   
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
     const vertex_index = gameObjectArray[i].getModelIndex();
-
+    console.log("Vertex indes: " + vertex_index)
     device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, Model_Array[vertex_index], 0, Model_Array[vertex_index].length);
 
       if (!LOAD_CURRENT_STATE || !SINGLE_TEST || i < 1)
@@ -511,7 +513,7 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
   let BRDF_index = gameObjectArray[i].getBRDFIndex();
 
   const params = BRDF_configs.BRDF_config[BRDF_index];
-  
+  console.log("Index: " + BRDF_index)
   const size = params.length;
   device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
 }
@@ -673,7 +675,7 @@ const lightBindGroup = device.createBindGroup({
 
   if (DEBUG_MODE)
   {
-    if (!debug_utils.is_object_selected)
+    if (!debug_utils.is_object_selected && !debug_utils.creating_object)
     {
       debug_utils.debug_select_object(gameObjectArray, look_vector, device, collider_vertexDebugBuffer);
     }
@@ -779,7 +781,7 @@ function render() {
   {
 // TO DO: Put somewhere
   let tmp_World_Matrix = new Float32Array(4 * 4);
-  assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
+    assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
   }
 
   const commandEncoder = device.createCommandEncoder();
@@ -915,5 +917,22 @@ export function update_collider_vertex(device, gameObjectArray, collider_vertexD
     let collider_box_vertex = make_vertexs(gameObjectArray, target);
     device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
 }
+
+export function get_object_half(game_object)
+{
+  const vertex_index = game_object.getModelIndex();
+
+  let tmp_min = new Float32Array(3);
+  let tmp_max = new Float32Array(3);
+  let tmp_pos = new Float32Array(4);
+  let tmp_rot = new Float32Array(4);
+
+  console.log(vertex_index);
+  console.log(Model_Array[vertex_index]);
+  
+  game_object.setHalf(makeColliderFromVerts(Model_Array[vertex_index]));
+  game_object.update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS); 
+}
+
 
 init();
