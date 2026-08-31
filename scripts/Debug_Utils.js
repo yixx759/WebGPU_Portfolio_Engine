@@ -1,8 +1,8 @@
 import * as render from './Render.js';
 import { save_file } from './Save_Funcs.js';
-import * as helper from './helperFuncs.js';
+import * as helper from './Helper_Funcs.js';
 import * as controls from './Controls.js';
-import * as objectInfo from './objectInfoStruct.js'
+import * as objectInfo from './Object_Info_Struct.js'
 
 export let is_object_selected = false;
 export let object_selected = -1;
@@ -50,18 +50,17 @@ window.create_new_object = function()
 
     tmp_pos = new Float32Array([parseFloat(pos_inp[0].value), parseFloat(pos_inp[1].value), parseFloat(pos_inp[2].value)])
     tmp_rot = new Float32Array([parseFloat(rot_inp[0].value), parseFloat(rot_inp[1].value), parseFloat(rot_inp[2].value)])
-    
+
     // USE AMOUNT_OF_OBJECTS FOR ID
     let tmp_object = new objectInfo.gameObject(render.AMOUNT_OF_OBJECTS, parseInt(document.Create_Object_Values.vertex_index.value.trim()), parseInt(document.Create_Object_Values.texture_index.value.trim()), tmp_pos, parseFloat(document.Create_Object_Values.scale.value.trim()), tmp_rot, helper.ZEROS, helper.ZEROS_MATRIX, parseInt(document.Create_Object_Values.BRDF_index.value.trim()));
+
+    console.log(tmp_object.get_BRDF_index())
     // USE VALUES FROM FOURM AND HALF NEEDS CALUCLATED
     // export func from render
     // OVERWRTIE AMOUT OF OBJECTS ON SAVE
-    console.log("Scale: " + document.Create_Object_Values.scale.value)
-    console.log("Scale: " + document.Create_Object_Values.scale.value.trim())
-    console.log("Scale: " + parseFloat(document.Create_Object_Values.scale.value.trim()))
     render.get_object_half(tmp_object);
 
-    save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, controls.camPos, render.coeffs, true, tmp_object);
+    save_file(render.AMOUNT_OF_OBJECTS, render.game_object_array, controls.cam_pos, render.coeffs, true, tmp_object);
 
     creating_object = false;
     document.Create_Object_Values.style.display = "none"; 
@@ -72,30 +71,30 @@ export function reset_collider_recalc_trigger()
     trigger_recalculate_collider = false;
 }
 
-export function recalculate_collider(gameObjectArray, device, collider_vertexDebugBuffer)
+export function recalculate_collider(game_object_array, device, collider_vertexDebugBuffer)
 {
     let tmp_min = new Float32Array(3);
     let tmp_max = new Float32Array(4);
     let tmp_pos = new Float32Array(4);
     let tmp_rot = new Float32Array(4);
 
-    gameObjectArray[object_selected].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, tmp_col_rot);
-    render.update_collider_vertex(device, gameObjectArray, collider_vertexDebugBuffer, object_selected);
+    game_object_array[object_selected].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, tmp_col_rot);
+    render.update_collider_vertex(device, game_object_array, collider_vertexDebugBuffer, object_selected);
     reset_collider_recalc_trigger();
 
-    gameObjectArray[object_selected].getRotation_Into(tmp_col_rot);
+    game_object_array[object_selected].getRotation_Into(tmp_col_rot);
 }
 
 function reset_object_values(selected_game_obj)
 {
-    selected_game_obj.setPosition(tmp_pos);
-    selected_game_obj.setRotation(tmp_rot);
+    selected_game_obj.set_position(tmp_pos);
+    selected_game_obj.set_rotation(tmp_rot);
     selected_game_obj.setScale(tmp_scale);
 }
 
 function leave_selection_mode()
 {
-    reset_object_values(render.gameObjectArray[object_selected]); 
+    reset_object_values(render.game_object_array[object_selected]); 
     object_selected = -1;
     is_object_selected = false;  
     SHOW_COLLIDER = false;
@@ -105,7 +104,7 @@ function leave_selection_mode()
 
 function save_selection_values(selected_game_obj)
 {
-    selected_game_obj.getPosition_Into(tmp_pos);
+    selected_game_obj.get_position_Into(tmp_pos);
     selected_game_obj.getRotation_Into(tmp_rot);
     tmp_scale = selected_game_obj.getScale();
     selected_game_obj.getRotation_Into(tmp_col_rot);
@@ -184,19 +183,19 @@ window.submit_gui_values = function()
         return
     }
 
-    const selected_game_obj = render.gameObjectArray[object_selected];
+    const selected_game_obj = render.game_object_array[object_selected];
 
-    selected_game_obj.setPosition(new Float32Array([parseFloat(pos_inp[0].value.trim()), parseFloat(pos_inp[1].value.trim()), parseFloat(pos_inp[2].value.trim())]));
-    selected_game_obj.setRotation(new Float32Array([parseFloat(rot_inp[0].value.trim()), parseFloat(rot_inp[1].value.trim()), parseFloat(rot_inp[2].value.trim())]));
+    selected_game_obj.set_position(new Float32Array([parseFloat(pos_inp[0].value.trim()), parseFloat(pos_inp[1].value.trim()), parseFloat(pos_inp[2].value.trim())]));
+    selected_game_obj.set_rotation(new Float32Array([parseFloat(rot_inp[0].value.trim()), parseFloat(rot_inp[1].value.trim()), parseFloat(rot_inp[2].value.trim())]));
     selected_game_obj.setScale(parseFloat(scale_inp.value.trim()))
 }
 
-export function debug_select_object(gameObjectArray, look_vector, device, collider_vertexDebugBuffer)
+export function debug_select_object(game_object_array, look_vector, device, collider_vertexDebugBuffer)
 {
     if (!render.DEBUG_MODE) {console.log("Debug select ERROR: not in debug")}
 
     if (!is_object_selected){
-        let object_index = render.click_object(gameObjectArray, look_vector);
+        let object_index = render.click_object(game_object_array, look_vector);
         
         if (object_index != -1)
         {
@@ -204,9 +203,9 @@ export function debug_select_object(gameObjectArray, look_vector, device, collid
             object_selected = object_index;
 
             // TO DO: Should save pos / rot / scale
-            const selected_game_obj = gameObjectArray[object_index];
+            const selected_game_obj = game_object_array[object_index];
             save_selection_values(selected_game_obj);
-            render.update_collider_vertex(device, gameObjectArray, collider_vertexDebugBuffer, object_selected);
+            render.update_collider_vertex(device, game_object_array, collider_vertexDebugBuffer, object_selected);
             console.log("Object selected: " + object_selected);
 
             // TO DO: Need to hide before selction and after selciton left
@@ -219,21 +218,21 @@ let selected_tmp_pos = new Float32Array(4);
 let selected_tmp_rot = new Float32Array(4);
 let selected_tmp_scale = -1;
 
-export function move_selected_object(gameObjectArray)
+export function move_selected_object(game_object_array)
 {
     if (render.DEBUG_MODE && is_object_selected && object_selected != -1)
     {
-        const selected_game_object = gameObjectArray[object_selected];
+        const selected_game_object = game_object_array[object_selected];
         
-        selected_game_object.getPosition_Into(selected_tmp_pos);
+        selected_game_object.get_position_Into(selected_tmp_pos);
         selected_game_object.getRotation_Into(selected_tmp_rot);
         selected_tmp_scale = selected_game_object.getScale();
 
-        selected_tmp_pos = helper.vectorAdd(selected_tmp_pos, new Float32Array([pos_x_down, pos_y_down, pos_z_down]), true);
-        selected_tmp_rot = helper.vectorAdd(selected_tmp_rot, new Float32Array([rot_x_down * 2, rot_y_down * 2, rot_z_down * 2]), true);
+        selected_tmp_pos = helper.vector_add(selected_tmp_pos, new Float32Array([pos_x_down, pos_y_down, pos_z_down]), true);
+        selected_tmp_rot = helper.vector_add(selected_tmp_rot, new Float32Array([rot_x_down * 2, rot_y_down * 2, rot_z_down * 2]), true);
 
-        selected_game_object.setPosition(selected_tmp_pos);
-        selected_game_object.setRotation(selected_tmp_rot);
+        selected_game_object.set_position(selected_tmp_pos);
+        selected_game_object.set_rotation(selected_tmp_rot);
     }
 }
 
@@ -316,7 +315,7 @@ document.addEventListener('keydown', function(evt) {
     
         if (evt.altKey && evt.key.toLowerCase() === 'j')
         {
-            save_selection_values(render.gameObjectArray[object_selected]);
+            save_selection_values(render.game_object_array[object_selected]);
         }
     }
     else if (render.DEBUG_MODE && is_object_selected && object_selected == -1)
@@ -335,7 +334,7 @@ document.addEventListener('keydown', function(evt) {
 
 document.addEventListener('keyup', function(evt) {
   
-    if (render.DEBUG_MODE && is_object_selected && object_selected != -1 && creating_object)
+    if (render.DEBUG_MODE && is_object_selected && object_selected != -1 && !creating_object)
     {
         if (evt.key.toLowerCase() === 'w' || evt.key.toLowerCase() === 's') {  
             pos_z_down = 0;

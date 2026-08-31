@@ -1,5 +1,5 @@
-import * as helper from './helperFuncs.js'
-import * as objectInfo from './objectInfoStruct.js';
+import * as helper from './Helper_Funcs.js'
+import * as objectInfo from './Object_Info_Struct.js';
 
 const DEBUG = true;
 
@@ -47,13 +47,13 @@ const R_MAX = 300;
 
 export function lambertian(N, L)
 {
-    return Math.max(helper.vectorDot(N, L), 0);
+    return Math.max(helper.vector_dot(N, L), 0);
 }
 
 export function point_light_illuminate(light_pos, surface_pos, atten, intensity, normal, debug = false)
 {
     // let light_ray = point_light_info[i].pos - fragData.wpos;
-    const light_ray = helper.vectorSubtract(light_pos, surface_pos);
+    const light_ray = helper.vector_subtract(light_pos, surface_pos);
 
     if (debug)
     {
@@ -61,7 +61,7 @@ export function point_light_illuminate(light_pos, surface_pos, atten, intensity,
     }
     
     // light_dir = normalize(light_ray);
-    const light_dir = helper.vectorNorm(light_ray);
+    const light_dir = helper.vector_norm(light_ray);
 
     if (debug)
     {
@@ -106,7 +106,7 @@ export function point_light_illuminate(light_pos, surface_pos, atten, intensity,
     {
         console.log("light_dir: " + light_dir);
         console.log("normal: " + normal);
-        console.log("dot: " + helper.vectorDot(normal, light_dir));
+        console.log("dot: " + helper.vector_dot(normal, light_dir));
         console.log("lambert: " + lambertian(normal, light_dir));
     }
 

@@ -1,5 +1,5 @@
 // FROM: https://gpfault.net/posts/sph.html
-import * as objectInfo from './objectInfoStruct.js'
+import * as objectInfo from './Object_Info_Struct.js'
 
 
 // Having these constants makes writing down the basis functions easier.

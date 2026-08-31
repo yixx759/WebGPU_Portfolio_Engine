@@ -2,7 +2,7 @@ struct MATS {
   World : mat4x4f,
   View : mat4x4f,
   Pers : mat4x4f,
-  camPos : vec4f,
+  cam_pos : vec4f,
 }
 
 struct VertexOut {

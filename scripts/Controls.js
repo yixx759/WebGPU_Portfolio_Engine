@@ -1,7 +1,7 @@
 import * as render from './Render.js';
-import * as helper from './helperFuncs.js';
+import * as helper from './Helper_Funcs.js';
 import * as save_funcs from './Save_Funcs.js'
-import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './colliderFuncs.js'
+import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection} from './Collider_Funcs.js'
 import * as debug_utils from './Debug_Utils.js'
 
 const canvas = document.querySelector('#gpuCanvas');
@@ -35,8 +35,6 @@ const Y_ANGLE_CAM_CLAMP = 50 * Math.PI / 180;
 export var mouse_X = 0;
 export var mouse_Y = 0;
 
-const activeKeys = new Set();
-
 document.addEventListener('keydown', async function(evt) {
 
   if (render.SAVE_CURRENT_STATE)
@@ -46,12 +44,12 @@ document.addEventListener('keydown', async function(evt) {
         console.log("Save!");
         if (!render.DEBUG_MODE)
         {
-          await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
+          await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.game_object_array, cam_pos, render.coeffs);
         }
         else if (!debug_utils.is_object_selected)
         {
           console.log(render.tmp_debug_pos);
-          await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, render.tmp_debug_pos, render.coeffs);
+          await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.game_object_array, render.tmp_debug_pos, render.coeffs);
         }
       }
   }
@@ -64,7 +62,7 @@ document.addEventListener('keydown', function(evt) {
   //     if (evt.ctrlKey && evt.key.toLowerCase() == 'm')
   //     {
   //       console.log("Save!");
-  //       await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.gameObjectArray, camPos, render.coeffs);
+  //       await save_funcs.save_file(render.AMOUNT_OF_OBJECTS, render.game_object_array, cam_pos, render.coeffs);
   //     }
   // }
 
@@ -178,12 +176,12 @@ canvas.addEventListener("click", async () => {
 });
 
 // Put up here to avoid re allocation
-export var camPos = new Float32Array([0,0,10, 1]);
-export var camPosPrev = new Float32Array([0,0,0, 1]);
+export var cam_pos = new Float32Array([0,0,10, 1]);
+export var cam_pos_prev = new Float32Array([0,0,0, 1]);
 export var forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 export var debug_forward_vector_mat = new Float32Array([Math.cos(mouse_X), -Math.sin(mouse_X), Math.sin(mouse_X), Math.cos(mouse_X)]);
 
-export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, debug = false)
+export function move_and_look(game_object_array, tmp_pos, tmp_half, player_collider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, debug = false)
 {
 // debugLog("mouse x: " + mouse_X);
   // debugLog("mouse y: " + mouse_Y);
@@ -199,34 +197,34 @@ export function move_and_look(gameObjectArray, tmp_pos, tmp_half, player_collide
 
   if (SINGLE_TEST)
   {
-    helper.vector_add_cam(camPos, keyXDown, keyZDown);
+    helper.vector_add_cam(cam_pos, keyXDown, keyZDown);
   }
   else if (debug)
   {
 
-    helper.vector_debug_add_cam(camPos, keyZDown * Math.cos(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED,  keyZDown * Math.sin(mouse_Y) * DEBUG_CAM_SPEED, keyZDown * Math.sin(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED);
-    helper.vector_debug_add_cam(camPos, keyXDown * Math.sin(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED, keyZDown * Math.sin(mouse_Y) * DEBUG_CAM_SPEED, -keyZDown * Math.cos(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED);
+    helper.vector_debug_add_cam(cam_pos, keyZDown * Math.cos(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED,  keyZDown * Math.sin(mouse_Y) * DEBUG_CAM_SPEED, keyZDown * Math.sin(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED);
+    helper.vector_debug_add_cam(cam_pos, keyXDown * Math.sin(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED, keyZDown * Math.sin(mouse_Y) * DEBUG_CAM_SPEED, -keyZDown * Math.cos(mouse_X) * Math.cos(mouse_Y) * DEBUG_CAM_SPEED);
   }
   else
   {
-    helper.vector_add_cam(camPos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3]);
+    helper.vector_add_cam(cam_pos, keyZDown * forward_vector_mat[0] + keyXDown * forward_vector_mat[1], keyZDown * forward_vector_mat[2] + keyXDown * forward_vector_mat[3]);
   }
  
   if (!debug)
   {
     for (let i = 0; i < OBJECTS_TO_RENDER; i++)
     {
-      gameObjectArray[i].getPosition_Into(tmp_pos);
-      gameObjectArray[i].getHalf_Into(tmp_half);
+      game_object_array[i].get_position_Into(tmp_pos);
+      game_object_array[i].get_half_Into(tmp_half);
   
-      if (AABB(tmp_pos, tmp_half, camPos, player_collider) && !SINGLE_TEST)
+      if (AABB(tmp_pos, tmp_half, cam_pos, player_collider) && !SINGLE_TEST)
       {
-        helper.vector_assign_cam(camPos, camPosPrev);
+        helper.vector_assign_cam(cam_pos, cam_pos_prev);
       }
     }
   }
    
-  helper.vector_assign_cam(camPosPrev, camPos);
+  helper.vector_assign_cam(cam_pos_prev, cam_pos);
 
   //TO Do : make new target pos forward vec and use new const.
   // First xz vector = cos(mouseX) , 0  ,sin(mouseX)

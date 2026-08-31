@@ -1,6 +1,6 @@
-import * as objectInfo from './objectInfoStruct.js'
-import * as helper from './helperFuncs.js'
-import * as BRDF_configs from './BRDF_configs.js';
+import * as objectInfo from './Object_Info_Struct.js'
+import * as helper from './Helper_Funcs.js'
+import * as BRDF_configs from './BRDF_Configs.js';
 
 /* Player structure
 

@@ -1,5 +1,5 @@
-import { parceObjFile } from './objParser.js';
-import * as helper from './helperFuncs.js';
+import { parceObjFile } from './Obj_Parser.js';
+import * as helper from './Helper_Funcs.js';
 import * as render from './Render.js';
 
 
@@ -9,7 +9,7 @@ export async function add_model_to_array(model_name, Model_Array)
 {
     const Decoded_Obj_Data = await parceObjFile(model_name);
 
-    const Verticies_From_Obj = helper.getVertexBufferFromDecodedObj(Decoded_Obj_Data);
+    const Verticies_From_Obj = helper.get_vertex_buffer_from_decoded_obj(Decoded_Obj_Data);
 
     Model_Array.push(Verticies_From_Obj);
     ++size_of_array;
@@ -43,7 +43,7 @@ export function get_max_verts(Model_Array)
 
 export async function add_texture(device, file_name, texture_array)
 {
-    const source = await helper.loadImageBitmap(file_name);
+    const source = await helper.load_image_bitmap(file_name);
 
     const texture = device.createTexture({
     label: file_name,

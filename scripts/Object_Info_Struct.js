@@ -1,4 +1,4 @@
-import * as helper from './helperFuncs.js';
+import * as helper from './Helper_Funcs.js';
 
 // Data type size
 // refrence: https://www.w3schools.com/js/js_datatypes.asp
@@ -56,15 +56,17 @@ export const ALIGNMENT_BYTES_OF_OBJECT = (BYTES_OF_OBJECT + ALLIGHNMENT_NUMBER -
 
 export const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
 
-let objectArray;
-let transformArray;
-let indexArray;
+let object_array;
+let transform_array;
+let index_array;
 
 export function init_object_arrays(AMOUNT_OF_OBJECTS)
 {
-  objectArray = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
-  transformArray = new Float32Array(objectArray);
-  indexArray = new Int8Array(objectArray);
+  object_array = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
+  transform_array = new Float32Array(object_array);
+  index_array = new Int8Array(object_array);
+
+  console.log("Last Index: " + index_array.length)
 }
 
 /* Object structure
@@ -96,128 +98,128 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
 export class gameObject
 {
   ID;
-  byteIndex;
-  transformIndex;
-  collisionIndex;
-  BRDF_Index;
-  Dirty_Bit;
-  Matrix_Index;
+  byte_index;
+  transform_index;
+  collision_index;
+  BRDF_index;
+  dirty_bit;
+  matrix_index;
  
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(objectID, vertexIndex, textureIndex, position, scale, rotation, half, world_matrix, param_array_index)
+  constructor(object_id, vertex_index, texture_index, position, scale, rotation, half, world_matrix, param_array_index)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
 
     // TO DO: Is adding to byte array done in parraleel for diff parts check
   
-    let index = objectID * ALIGNMENT_BYTES_OF_OBJECT
+    let index = object_id * ALIGNMENT_BYTES_OF_OBJECT
   
     // TO DO: GENERALIZE!
-    this.byteIndex = index;
-    this.transformIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
-    this.collisionIndex = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
-    this.Matrix_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER) / 4;
-    this.BRDF_Index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT) / 4;
-    this.Dirty_Bit = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX);
-    this.ID = objectID;
+    this.byte_index = index;
+    this.transform_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
+    this.collision_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
+    this.matrix_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER) / 4;
+    this.BRDF_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT);
+    this.dirty_bit = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX);
+    this.ID = object_id;
 
-    const renderInfoView = new Uint8Array(objectArray, index);
+    const renderInfoView = new Uint8Array(object_array, index);
     
     // Set vertexIndex
-    renderInfoView[0] = vertexIndex;
+    renderInfoView[0] = vertex_index;
 
     console.log("set")
     console.log(renderInfoView[0])
 
     // Set textureIndex
-    renderInfoView[1] = textureIndex;
+    renderInfoView[1] = texture_index;
 
     // Offset into Transform
     index += ALIGNMENT_BYTES_OF_RENDER_INFO;
     const base_index = index / BYTES_OF_FLOAT_32;
     
     // Set position
-    index += this.setVector3(base_index + OFFSET_TRANSFROM_POSITION, position);
+    index += this.set_vector3(base_index + OFFSET_TRANSFROM_POSITION, position);
     
     // Set scale
-    transformArray[base_index + OFFSET_TRANSFROM_SCALE] = scale;
+    transform_array[base_index + OFFSET_TRANSFROM_SCALE] = scale;
     index += BYTES_OF_FLOAT_32;
 
     // Set rotation
-    index += this.setVector3(base_index + OFFSET_TRANSFROM_ROTATION, rotation);
+    index += this.set_vector3(base_index + OFFSET_TRANSFROM_ROTATION, rotation);
 
     // Set half
-    index += this.setVector3(base_index + OFFSET_INTO_TRANSFROM_HALF, half);
+    index += this.set_vector3(base_index + OFFSET_INTO_TRANSFROM_HALF, half);
 
     // Set Matrix
-    index += this.setMatrix(base_index + OFFSET_INTO_TRANSFROM_MATRIX, world_matrix);
+    index += this.set_matrix(base_index + OFFSET_INTO_TRANSFROM_MATRIX, world_matrix);
 
     // TO DO: order and pack ints correclty
 
     // Set Dirty Bit
-    index += this.setInt8(index, 1);
+    index += this.set_int8(index, 1);
 
-    index += this.setInt8(index, param_array_index);
+    index += this.set_int8(index, param_array_index);
   }
 
     // NOTE: Have a view for int8 to pass in.
-    getModelIndex()
+    get_model_index()
     {
-      if (!(indexArray instanceof Int8Array)) {
+      if (!(index_array instanceof Int8Array)) {
         console.log("ERROR: Get model index wasnt given int8array");
         return -1;
       }
 
-      return indexArray[this.byteIndex];
+      return index_array[this.byte_index];
     }
 
     // NOTE: Have a view for int8 to pass in.
-    getTextureIndex()
+    get_texture_index()
     {
-      if (!(indexArray instanceof Int8Array)) {
+      if (!(index_array instanceof Int8Array)) {
         console.log("ERROR: Get texture index wasnt given int8array");
         return -1;
       }
 
-      return indexArray[this.byteIndex + 1];
+      return index_array[this.byte_index + 1];
     }
 
     // NOTE: Have a view for int8 to pass in.
-    setModelIndex(data)
+    set_model_index(data)
     {
-      if (!(indexArray instanceof Int8Array)) {
+      if (!(index_array instanceof Int8Array)) {
         console.log("ERROR: Set model index wasnt given int8array");
         return -1;
       }
 
-      indexArray[this.byteIndex] = data
+      index_array[this.byte_index] = data
     }
 
     // NOTE: Have a view for int8 to pass in.
-    setTextureIndex(data)
+    set_texture_index(data)
     {
-      if (!(indexArray instanceof Int8Array)) {
+      if (!(index_array instanceof Int8Array)) {
         console.log("ERROR: Set texture index wasnt given int8array");
         return -1;
       }
 
-      indexArray[this.byteIndex + 1] = data;
+      index_array[this.byte_index + 1] = data;
     }
 
      // NOTE: Have a view for float32 to pass in.
-    getPosition_Into(pos)
+    get_position_into(pos)
     {
 
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get position wasnt given float32array");
         return -1;
       }
 
-      const x = transformArray[this.transformIndex]
-      const y = transformArray[this.transformIndex + 1]
-      const z = transformArray[this.transformIndex + 2]
+      const x = transform_array[this.transform_index]
+      const y = transform_array[this.transform_index + 1]
+      const z = transform_array[this.transform_index + 2]
 
       pos.set([x, y, z]);
 
@@ -225,253 +227,253 @@ export class gameObject
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getPosition()
+    get_position()
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get position wasnt given float32array");
         throw new Error("Something went wrong");
         return -1;
       }
 
-      const x = transformArray[this.transformIndex]
-      const y = transformArray[this.transformIndex + 1]
-      const z = transformArray[this.transformIndex + 2]
+      const x = transform_array[this.transform_index]
+      const y = transform_array[this.transform_index + 1]
+      const z = transform_array[this.transform_index + 2]
 
       return new Float32Array([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setPosition(data)
+    set_position(data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set position wasnt given float32array");
         throw new Error("Something went wrong");
         return -1;
       }
 
-      this.set_Dirty_Bit(1);
+      this.set_dirty_bit(1);
 
-      return this.setVector3(this.transformIndex, data)
+      return this.set_vector3(this.transform_index, data)
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getScale()
+    get_scale()
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get scale wasnt given float32array");
         throw new Error("Something went wrong");
         return -1;
       }
 
-      return transformArray[this.transformIndex + OFFSET_TRANSFROM_SCALE];
+      return transform_array[this.transform_index + OFFSET_TRANSFROM_SCALE];
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setScale(data)
+    set_scale(data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set scale wasnt given float32array");
         return -1;
       }
 
-      this.set_Dirty_Bit(1);
+      this.set_dirty_bit(1);
 
-      transformArray[this.transformIndex + OFFSET_TRANSFROM_SCALE] = data;
+      transform_array[this.transform_index + OFFSET_TRANSFROM_SCALE] = data;
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getRotation_Into(rot)
+    get_rotation_into(rot)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get rotation wasnt given float32array");
         return -1;
       }
 
-      const x = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION]
-      const y = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 1]
-      const z = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 2]
+      const x = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION]
+      const y = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 1]
+      const z = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 2]
 
       return rot.set([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getRotation()
+    get_rotation()
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get rotation wasnt given float32array");
         return -1;
       }
 
-      const x = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION]
-      const y = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 1]
-      const z = transformArray[this.transformIndex + OFFSET_TRANSFROM_ROTATION + 2]
+      const x = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION]
+      const y = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 1]
+      const z = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 2]
 
       return new Float32Array([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setRotation(data)
+    set_rotation(data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set rotation wasnt given float32array");
         return -1;
       }
 
-      this.set_Dirty_Bit(1);
+      this.set_dirty_bit(1);
 
-      return this.setVector3(this.transformIndex + OFFSET_TRANSFROM_ROTATION, data)
+      return this.set_vector3(this.transform_index + OFFSET_TRANSFROM_ROTATION, data)
     }
 
     get_world_matrix(World_Matrix, tmp_pos, tmp_rot)
     {
-      if (indexArray[this.Dirty_Bit] != 1)
+      if (index_array[this.dirty_bit] != 1)
       {
-        this.getMatrixInto(World_Matrix);
+        this.get_matrix_into(World_Matrix);
         return World_Matrix;
       }
       else
       {   
-        this.getPosition_Into(tmp_pos);
-        let tmp_scale = this.getScale();
-        this.getRotation_Into(tmp_rot);
+        this.get_position_into(tmp_pos);
+        let tmp_scale = this.get_scale();
+        this.get_rotation_into(tmp_rot);
 
-        this.set_Dirty_Bit(0);
+        this.set_dirty_bit(0);
 
-        this.getMatrixInto(World_Matrix);
+        this.get_matrix_into(World_Matrix);
 
        // TO DO: Reuse memroy in that func
-       let new_matrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+       let new_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
 
-        this.setMatrix(this.Matrix_Index, new_matrix);
-        this.getMatrixInto(World_Matrix);
+        this.set_matrix(this.matrix_index, new_matrix);
+        this.get_matrix_into(World_Matrix);
 
         return new_matrix;
       }
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getHalf_Into(halfs)
+    get_half_into(halfs)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get half wasnt given float32array");
         return -1;
       }
 
-      const x = transformArray[this.collisionIndex]
-      const y = transformArray[this.collisionIndex + 1]
-      const z = transformArray[this.collisionIndex + 2]
+      const x = transform_array[this.collision_index]
+      const y = transform_array[this.collision_index + 1]
+      const z = transform_array[this.collision_index + 2]
 
       return halfs.set([x, y, z]);
     }
 
-    set_Dirty_Bit(data)
+    set_dirty_bit(data)
     {
-      return indexArray[this.Dirty_Bit] = data;
+      return index_array[this.dirty_bit] = data;
     }
 
     // NOTE: Have a view for float32 to pass in.
-    getHalf()
+    get_half()
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get half wasnt given float32array");
         return -1;
       }
 
-      const x = transformArray[this.collisionIndex]
-      const y = transformArray[this.collisionIndex + 1]
-      const z = transformArray[this.collisionIndex + 2]
+      const x = transform_array[this.collision_index]
+      const y = transform_array[this.collision_index + 1]
+      const z = transform_array[this.collision_index + 2]
 
       return new Float32Array([x, y, z]);
     }
 
     // NOTE: Have a view for float32 to pass in.
-    setHalf(data)
+    set_half(data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set half wasnt given float32array");
         return -1;
       }
 
       helper.vector_abs_into(data);
 
-      return this.setVector3(this.collisionIndex, data)
+      return this.set_vector3(this.collision_index, data)
     }
 
     get_min()
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(transformArray);
-      const pos = this.getPosition(transformArray);
+      const halfs = this.get_half(transform_array);
+      const pos = this.get_position(transform_array);
 
       return new Float32Array([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
-    get_min_Into(min_max)
+    get_min_into(min_max)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(transformArray);
-      const pos = this.getPosition(transformArray);
+      const halfs = this.get_half(transform_array);
+      const pos = this.get_position(transform_array);
 
       return min_max.set([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
 
-    get_min_Into_Struct(min_max)
+    get_min_into_struct(min_max)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(transformArray);
-      const pos = this.getPosition(transformArray);
+      const halfs = this.get_half(transform_array);
+      const pos = this.get_position(transform_array);
 
       return min_max.min.set([pos[0] - halfs[0], pos[1] - halfs[1], pos[2] - halfs[2]]);
     }
 
-    get_max_Into(min_max)
+    get_max_into(min_max)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(transformArray);
-      const pos = this.getPosition(transformArray);
+      const halfs = this.get_half(transform_array);
+      const pos = this.get_position(transform_array);
 
        return min_max.set([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
 
-    get_max_Into_Struct(min_max)
+    get_max_into_struct(min_max)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(transformArray);
-      const pos = this.getPosition(transformArray);
+      const halfs = this.get_half(transform_array);
+      const pos = this.get_position(transform_array);
 
        return min_max.max.set([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
 
     get_max()
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Get min wasnt given float32array");
         return -1;
       }
 
-      const halfs = this.getHalf(transformArray);
-      const pos = this.getPosition(transformArray);
+      const halfs = this.get_half(transform_array);
+      const pos = this.get_position(transform_array);
 
       return new Float32Array([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
@@ -482,15 +484,15 @@ export class gameObject
 
      // Get max and min (have temp value for this use max min into)
       // Never mind only need one cuz symetrical
-      this.get_max_Into(tmp_max);
+      this.get_max_into(tmp_max);
 
       // Rotate these points using javascript rotate function with this object rot
       
       //  // Subtract from pos to get back to orgin
-      this.getPosition_Into(tmp_pos);
+      this.get_position_into(tmp_pos);
 
       console.log("Sub");
-      const max_at_origin = helper.vectorSubtract(tmp_max, tmp_pos);
+      const max_at_origin = helper.vector_subtract(tmp_max, tmp_pos);
 
       const vec4_max_at_origin = new Float32Array([max_at_origin[0], max_at_origin[1], max_at_origin[2], 1]);
       
@@ -498,7 +500,7 @@ export class gameObject
       const vec4_max_origin_no_rot = helper.multiply_matrix_and_point(inv_rot_matrix, vec4_max_at_origin);
 
       //  // Rotate 
-      this.getRotation_Into(tmp_rot);
+      this.get_rotation_into(tmp_rot);
 
       console.log("tmp rot:" + tmp_rot);
       console.log("cur rot:" + current_rot);
@@ -509,9 +511,9 @@ export class gameObject
 
       const f32_rotated_max = new Float32Array(rotated_max);
       // Set half for this object
-      this.setHalf(f32_rotated_max);
+      this.set_half(f32_rotated_max);
 
-      // Temp hot key to trigger collider_box_vertex = make_vertexs(gameObjectArray); - done
+      // Temp hot key to trigger collider_box_vertex = make_vertexs(game_object_array); - done
       // This could be done during object creation if not loaded - done
       // DO DEBUG SELECTION RETURN AFTER - done
       // Soloution, on roation when Applying changes maube esc key. store orginal positions rot, scale
@@ -529,7 +531,7 @@ export class gameObject
       // or do full aabb recalc
     }
 
-    getMatrix()
+    get_matrix()
     {
       // TO DO: Magic number
       let Matrix = new Float32Array(16);
@@ -538,27 +540,27 @@ export class gameObject
       {
         for (let j = 0; j < 4; j++)
         {
-          Matrix[(i * 4) + j] = transformArray[this.Matrix_Index + (i * 4) + j];
+          Matrix[(i * 4) + j] = transform_array[this.matrix_index + (i * 4) + j];
         }
       }
 
       return Matrix
     }
 
-    getMatrixInto(Matrix)
+    get_matrix_into(Matrix)
     {
       for (let i = 0; i < 4; i++)
       {
         for (let j = 0; j < 4; j++)
         {
-          Matrix[(i * 4) + j] = transformArray[this.Matrix_Index + (i * 4) + j];
+          Matrix[(i * 4) + j] = transform_array[this.matrix_index + (i * 4) + j];
         }
       }
     }
 
-    setVector3(offset, data)
+    set_vector3(offset, data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set vector3 wasnt given float32array");
         throw new Error("Something went wrong");
         return -1;
@@ -570,16 +572,16 @@ export class gameObject
         return -1;
       }
 
-      transformArray[offset] = data[0];
-      transformArray[offset + 1] = data[1];
-      transformArray[offset + 2] = data[2];
+      transform_array[offset] = data[0];
+      transform_array[offset + 1] = data[1];
+      transform_array[offset + 2] = data[2];
 
       return BYTES_OF_VECTOR3;
     }
 
-    setMatrix(offset, data)
+    set_matrix(offset, data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set vector3 wasnt given float32array");
         return -1;
       }
@@ -593,40 +595,40 @@ export class gameObject
       {
         for (let j = 0; j < 4; j++)
         {
-          transformArray[offset + (i * 4) + j] = data[(i * 4) + j];
+          transform_array[offset + (i * 4) + j] = data[(i * 4) + j];
         }
       }
 
       return BYTES_OF_MATRIX;
     }
 
-    setFloat32( offset, data)
+    set_float32( offset, data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set Float32 wasnt given float32array");
         return -1;
       }
 
-      transformArray[offset] = data;
+      transform_array[offset] = data;
 
       return BYTES_OF_FLOAT_32;
     }
 
-    setInt8(offset, data)
+    set_int8(offset, data)
     {
-      if (!(indexArray instanceof Int8Array)) {
+      if (!(index_array instanceof Int8Array)) {
         console.log("ERROR: Set setInt8 wasnt given Int8Array");
         return -1;
       }
 
-      indexArray[offset] = data;
+      index_array[offset] = data;
 
       return ALIGNMENT_BYTES_OF_DIRTY_BIT;
     }
 
-    set_BRDF_Params( offset, data)
+    set_BRDF_params( offset, data)
     {
-      if (!(transformArray instanceof Float32Array)) {
+      if (!(transform_array instanceof Float32Array)) {
         console.log("ERROR: Set BRDF Params wasnt given float32array");
         return -1;
       }
@@ -642,51 +644,51 @@ export class gameObject
       let base_index = 0;
 
      // ROUGHNESS
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // ROUGHNESS_SQUARED
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SUBSURFACE
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // ANISOTROPIC
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // CLEARCOAT
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // CLEARCOAT_GLOSS
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SPECULAR
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SPECULAR_TINT
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // METALLIC
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SHEEN
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
       // SHEEN_TINT
-      index += setFloat32( offset + base_index, param_array[base_index]);
+      index += set_float32( offset + base_index, param_array[base_index]);
       ++base_index;
 
       return index;
     }
 
     // NOTE: Have a view for int8 to pass in.
-    getBRDFIndex()
+    get_BRDF_index()
     {
-      if (!(indexArray instanceof Int8Array)) {
+      if (!(index_array instanceof Int8Array)) {
         console.log("ERROR: Get BRDF index wasnt given int8array");
         return -1;
       }
 
-      return indexArray[this.BRDF_Index];
+      return index_array[this.BRDF_index];
     }
     
 }

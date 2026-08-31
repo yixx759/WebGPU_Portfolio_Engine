@@ -1,4 +1,4 @@
-import * as helper from './helperFuncs.js'
+import * as helper from './Helper_Funcs.js'
 import * as light_manager from './Light_Manager.js'
 import * as sh_funcs from './SH_Funcs.js'
 
@@ -72,7 +72,7 @@ export function PATH_TRACE(origin, dir, objects,   models, texture_data, directi
                 const sample_on_hemisphere = random_sample_hemi_sphere(nu_normal, r1);
                 const tmp_indirect_lighting = indirect(nu_normal, 0, nu_origin, sample_on_hemisphere, objects, models, texture_data, directional_array);
                 
-                indirect_lighting = helper.vectorAdd(indirect_lighting, helper.vector_mult_scalar(tmp_indirect_lighting, r1));
+                indirect_lighting = helper.vector_add(indirect_lighting, helper.vector_mult_scalar(tmp_indirect_lighting, r1));
 
                 // if (indirect_lighting[0] === helper.ZEROS[0] && 
                 //     indirect_lighting[1] === helper.ZEROS[1] &&
@@ -166,15 +166,15 @@ export function direct_light(origin, dir, objects,   models, texture_data, direc
         // cpompared with length of vector from hit origin to actual light
         // If longer to hit light then thesrse somehting between light and origin
 
-        const to_light = helper.vectorSubtract(light_point, origin_from_ray); 
+        const to_light = helper.vector_subtract(light_point, origin_from_ray); 
         const length_to_light = helper.vector_mag(to_light);  
-        const dir_to_light = helper.vectorNorm(to_light);  
+        const dir_to_light = helper.vector_norm(to_light);  
 
-        const nu_origin = helper.vectorAdd(origin_from_ray, helper.vector_mult_scalar(norm_from_ray, OFFSET_FROM_TRIANGLE_FACE));
+        const nu_origin = helper.vector_add(origin_from_ray, helper.vector_mult_scalar(norm_from_ray, OFFSET_FROM_TRIANGLE_FACE));
 
         const vis = vis_check(nu_origin, dir_to_light, objects,   models, texture_data, res[INDEX_RES_VERTEX_INDEX], res[INDEX_RES_OBJECT_INDEX]) > length_to_light ? 1 : 0;
    
-        direct_lighting = helper.vectorAdd(direct_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)), vis));
+        direct_lighting = helper.vector_add(direct_lighting, helper.vector_mult_scalar(helper.vector_mult_scalar(colour_from_ray, light_manager.point_light_illuminate(light_point, res[INDEX_RES_NU_ORIGIN], atten, intensity, norm_from_ray)), vis));
 
     //    if (i == 0 && vis == 0)
     //    {
@@ -190,7 +190,7 @@ export function direct_light(origin, dir, objects,   models, texture_data, direc
     //         console.log("og dir: " + dir);
 
     //         console.log(object_from_ray);
-    //         let tmp_verts = transform_vertexs(models[objects[object_from_ray].getModelIndex()], objects[object_from_ray], );
+    //         let tmp_verts = transform_vertexs(models[objects[object_from_ray].get_model_index()], objects[object_from_ray], );
             
     //         console.log("og result verts: " + tmp_verts[0][index_from_ray * 3 + 0] + " : " + tmp_verts[0][index_from_ray * 3 + 1] + " : " + tmp_verts[0][index_from_ray * 3 + 2]);
             
@@ -242,7 +242,7 @@ export function indirect(norm, depth, origin, dir, objects,   models, texture_da
     if (depth >= MAX_DEPTH) return helper.ZEROS;
     
     // console.log("Before: " + origin);
-    origin = helper.vectorAdd(origin, helper.vector_mult_scalar(norm, OFFSET_FROM_TRIANGLE_FACE));
+    origin = helper.vector_add(origin, helper.vector_mult_scalar(norm, OFFSET_FROM_TRIANGLE_FACE));
 
    // console.log("After: " + origin);
 
@@ -267,7 +267,7 @@ export function indirect(norm, depth, origin, dir, objects,   models, texture_da
         const indirect_light_tmp = indirect(nu_normal, depth + 1, nu_origin, sample_on_hemisphere, objects,   models, texture_data, directional_array);
 
         // Multiply r1
-        indirect_light = helper.vectorAdd(indirect_light, helper.vector_mult_scalar(indirect_light_tmp, r1));
+        indirect_light = helper.vector_add(indirect_light, helper.vector_mult_scalar(indirect_light_tmp, r1));
     }
 
     indirect_light = helper.vector_div_scalar(indirect_light, (MAX_SAMPLES_PER_BOUNCE));
@@ -279,7 +279,7 @@ export function indirect(norm, depth, origin, dir, objects,   models, texture_da
 
     direct_lighting = helper.vector_mult_scalar(direct_lighting, helper.ONE_OVER_PI);
 
-    return helper.vectorAdd(direct_lighting, indirect_light);
+    return helper.vector_add(direct_lighting, indirect_light);
 }
 
 // Func take in normal light dir, color for direcitonal
@@ -311,14 +311,14 @@ export function random_sample_hemi_sphere(normal, r1)
 
     if (Math.abs(normal[0]) > Math.abs(normal[1]))
     {
-       tangent = helper.vectorNorm([normal[2], 0, -normal[0]]);
+       tangent = helper.vector_norm([normal[2], 0, -normal[0]]);
     }
     else
     {
-        tangent = helper.vectorNorm([0, -normal[2], normal[1]]);
+        tangent = helper.vector_norm([0, -normal[2], normal[1]]);
     }
 
-    const bitangent = helper.vectorCross(normal, tangent);
+    const bitangent = helper.vector_cross(normal, tangent);
 
     const sample = new Float32Array([
     dir[0] * tangent[0]   + dir[1] * normal[0] + dir[2] * bitangent[0],
@@ -346,10 +346,10 @@ export function transform_vertexs(vertex_info, game_object, )
     let norm_verts_index = 0;
 
     // Make world matrix for verts
-    let tmp_pos = game_object.getPosition();
+    let tmp_pos = game_object.get_position();
     let tmp_scale = game_object.getScale();
     let tmp_rot = game_object.getRotation();
-    let world_matrix = helper.getWorldMatrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+    let world_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
 
     // THIS WAS CHANGED RECENTLY
     const inverse_trans_world_matrix = helper.transpose_matrix(helper.inverse_matrix(world_matrix));
@@ -409,20 +409,20 @@ export function path_trace_ray(origin, dir, objects,  models, texture_data)
    //  console.log("Path trace!");
     for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
     {
-        let verts = transform_vertexs(models[objects[i].getModelIndex()], objects[i], );
+        let verts = transform_vertexs(models[objects[i].get_model_index()], objects[i], );
         // TO DO: Print index
-        const tex_data = texture_data[objects[i].getTextureIndex()];
+        const tex_data = texture_data[objects[i].get_texture_index()];
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
 
         const tmp_T_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX];
         // console.log("Before intersection");
         // console.log("T: " +tmp_T_near);
-        // console.log("positon of object: " + objects[i].getPosition());
+        // console.log("positon of object: " + objects[i].get_position());
         
         if (res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_RESULT_INDEX] && (t_near == -1 || (tmp_T_near < t_near)))
         {
             // console.log("Intersect");
-            // console.log("positon of object: " + objects[i].getPosition());
+            // console.log("positon of object: " + objects[i].get_position());
 
             // console.log("current  tnear: " + t_near);
             
@@ -460,9 +460,9 @@ export function path_trace_ray_debug(origin, dir, objects,   models, texture_dat
    
     for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
     {
-        let verts = transform_vertexs(models[objects[i].getModelIndex()], objects[i], );
+        let verts = transform_vertexs(models[objects[i].get_model_index()], objects[i], );
         // TO DO: Print index
-        const tex_data = texture_data[objects[i].getTextureIndex()];
+        const tex_data = texture_data[objects[i].get_texture_index()];
         let res = intersect_objects_triangles_debug(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2]);
 
         const tmp_T_near = res[INDEX_RES_INTERSECT_INFO][CONST_RESULT_STRUCT_T_INDEX];
@@ -498,9 +498,9 @@ export function vis_check(origin, dir, objects,   models, texture_data, vertex_s
     for (let i = CONST_START_OBJECT_INDEX; i < objects.length; i++)
     {
     // Can just do second one
-        let verts = transform_vertexs(models[objects[i].getModelIndex()], objects[i], );
+        let verts = transform_vertexs(models[objects[i].get_model_index()], objects[i], );
         // TO DO: Print index
-        const tex_data = texture_data[objects[i].getTextureIndex()];
+        const tex_data = texture_data[objects[i].get_texture_index()];
       
         let res = intersect_objects_triangles(verts[0], origin, dir, verts[1], tex_data["data"], tex_data["width"], tex_data["height"], verts[2], vertex_skip_index, object_skip_index, i);
 
@@ -570,7 +570,7 @@ export function intersect_objects_triangles(vertexs, origin, dir, texs, texture,
         // Find new orign and dir create ray, maybe intersect agains with ray tri
 
        // console.log("Final Indesx: " + final_index);
-       const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
+       const nu_origin = helper.vector_add(origin, helper.vector_mult_scalar(dir, t_near));
        const nu_dir = helper.vector_reflect(dir, final_norm);
      
         return [final_res, nu_origin, nu_dir, final_colour, final_norm, final_index];
@@ -628,7 +628,7 @@ export function intersect_objects_triangles_debug(vertexs, origin, dir, texs, te
         // Find new orign and dir create ray, maybe intersect agains with ray tri
 
        // console.log("Final Indesx: " + final_index);
-       const nu_origin = helper.vectorAdd(origin, helper.vector_mult_scalar(dir, t_near));
+       const nu_origin = helper.vector_add(origin, helper.vector_mult_scalar(dir, t_near));
        const nu_dir = helper.vector_reflect(dir, final_norm);
      
         return [final_res, nu_origin, nu_dir, final_colour, final_norm, final_index];
@@ -683,11 +683,11 @@ const CONST_FALSE_RESULT = [false, -1, -1, -1];
 // https://github.com/scratchapixel/scratchapixel-code/blob/main/global-illumination-path-tracing/indirectdiffuse.cpp#L274
 export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 {
-    let V_0_to_V_1 = helper.vectorSubtract(vec_1, vec_0);
-    let V_0_to_V_2 = helper.vectorSubtract(vec_2, vec_0);
+    let V_0_to_V_1 = helper.vector_subtract(vec_1, vec_0);
+    let V_0_to_V_2 = helper.vector_subtract(vec_2, vec_0);
 
-    let p_vec = helper.vectorCross(dir ,V_0_to_V_2);
-    let determinent = helper.vectorDot(V_0_to_V_1, p_vec);
+    let p_vec = helper.vector_cross(dir ,V_0_to_V_2);
+    let determinent = helper.vector_dot(V_0_to_V_1, p_vec);
 
     if (Math.abs(determinent) < CONST_SMALL_NUMBER) return CONST_FALSE_RESULT;
 
@@ -697,11 +697,11 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 
 //     Vec3f tvec = orig - v0;
 
-    let t_vec = helper.vectorSubtract(origin, vec_0);
+    let t_vec = helper.vector_subtract(origin, vec_0);
 
 //     u = tvec.dotProduct(pvec) * invDet;
     
-    let u = helper.vectorDot(t_vec, p_vec) * inverse_determinent;
+    let u = helper.vector_dot(t_vec, p_vec) * inverse_determinent;
 
 //     if (u < 0 || u > 1) return false;
 
@@ -709,11 +709,11 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
 
 //     Vec3f qvec = tvec.crossProduct(v0v1);
 
-    let q_vec = helper.vectorCross(t_vec, V_0_to_V_1);
+    let q_vec = helper.vector_cross(t_vec, V_0_to_V_1);
 
 //     v = dir.dotProduct(qvec) * invDet;
 
-    let v = helper.vectorDot(dir, q_vec) * inverse_determinent;
+    let v = helper.vector_dot(dir, q_vec) * inverse_determinent;
 
 //     if (v < 0 || u + v > 1) return false;
 
@@ -721,7 +721,7 @@ export function ray_triangle_intersection(origin, dir, vec_0, vec_1, vec_2)
     
 //    t = v0v2.dotProduct(qvec) * invDet;
 
-    let t = helper.vectorDot(V_0_to_V_2, q_vec) * inverse_determinent;
+    let t = helper.vector_dot(V_0_to_V_2, q_vec) * inverse_determinent;
     
 //     return (t > 0) ? true : false;
 

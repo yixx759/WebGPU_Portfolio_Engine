@@ -1,11 +1,11 @@
-import { parceObjFile } from './objParser.js';
-import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection, make_vertexs} from './colliderFuncs.js'
-import * as helper from './helperFuncs.js';
-import * as objectInfo from './objectInfoStruct.js'
-import * as testFuncs from './testFuncs.js'
-import * as BRDF_configs from './BRDF_configs.js';
-import * as Light_Manager from './Light_Manager.js';
-import * as Path_Tracing from './Path_Tracing.js';
+import { parceObjFile } from './Obj_Parser.js';
+import { makeColliderFromVerts, AABB, ray, ray_AABB_intersection, make_vertexs} from './Collider_Funcs.js'
+import * as helper from './Helper_Funcs.js';
+import * as object_info from './Object_Info_Struct.js'
+import * as test_funcs from './Test_Funcs.js'
+import * as BRDF_configs from './BRDF_Configs.js';
+import * as light_manager from './Light_Manager.js';
+import * as path_tracing from './Path_Tracing.js';
 import * as sh_funcs from './SH_Funcs.js';
 import * as player_struct from './Player_struct.js';
 import * as model_parser from './Model_Parser.js';
@@ -14,7 +14,7 @@ import * as tmp_mem from './Temp_Mem.js';
 import * as save_funcs from './Save_Funcs.js';
 import * as debug_utils from './Debug_Utils.js';
 
-const clearColor = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
+const clear_color = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
 export const DEBUG_LOGS = true;
 const TEST = false;
@@ -24,7 +24,7 @@ export var DEBUG_MODE = true;
 export var debug_mode_changed = false;
 export var tmp_debug_pos = tmp_mem.get_temp_memory_vector();
 
-export const SAVE_CURRENT_STATE = false;
+export const SAVE_CURRENT_STATE = true;
 export const LOAD_CURRENT_STATE = true;
 
 const TARGET_INDEX = 2;
@@ -33,7 +33,7 @@ export const MOVE_TARGET_TEST = false;
 const PATH_TEST = false;
 
 const PATH_ORIGIN = new Float32Array([0,0,-12.2]);
-const PATH_DIR = helper.vectorNorm(new Float32Array([0.37, 0.6, -1]));
+const PATH_DIR = helper.vector_norm(new Float32Array([0.37, 0.6, -1]));
 
 // TO DO: Do that roation system casey did a article on research turns and normalized lerp
 // TO DO: Validaiton with max amount of moidels and texture so cant create object
@@ -48,57 +48,57 @@ export function debugLog(...args) {
   if (DEBUG_LOGS) console.log(...args);
 }
 
-function newRayPos(pos1, pos2, colour_red_enabled, device, vertexDebugBuffer)
+function new_ray_pos(pos1, pos2, colour_red_enabled, device, vertex_debug_buffer)
 {
-  const debugLineVertex = new Float32Array([
+  const debug_line_vertex = new Float32Array([
     pos1[0], pos1[1], pos1[2],
     (colour_red_enabled ? 1 : 0), 0, 0,
     pos2[0], pos2[1], pos2[2],
     (colour_red_enabled ? 1 : 0), 0, 0
   ]);
 
-  device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
+  device.queue.writeBuffer(vertex_debug_buffer, 0, debug_line_vertex, 0, debug_line_vertex.length);
 }
 
 export let AMOUNT_OF_OBJECTS = 2 + 6;
 
-export let gameObjectArray = [];
+export let game_object_array = [];
 
-let Model_Array = [];
+let model_array = [];
 
 export let coeffs = new Float32Array(sh_funcs.TOTAL_COEFF * 3);
 
 if (LOAD_CURRENT_STATE)
 {
   // TO DO: Too much global state modfication. Needs re org.
-  AMOUNT_OF_OBJECTS = await save_funcs.load_file(gameObjectArray, controls.camPos, coeffs);
+  AMOUNT_OF_OBJECTS = await save_funcs.load_file(game_object_array, controls.cam_pos, coeffs);
 }
 else
 {
-  objectInfo.init_object_arrays(AMOUNT_OF_OBJECTS + 1) 
-  gameObjectArray = player_struct.Set_Up_Objects();
+  object_info.init_object_arrays(AMOUNT_OF_OBJECTS + 1) 
+  game_object_array = player_struct.Set_Up_Objects();
 }
 
-console.log(gameObjectArray);
+console.log(game_object_array);
 
 const PLAYER_INDEX = 0;
 const OTHER_OB_INDEX = 1;
 
 // Test prints
-if (TEST) testFuncs.objectTestPrints(gameObjectArray[PLAYER_INDEX], gameObjectArray[OTHER_OB_INDEX]);
+if (TEST) test_funcs.objectTestPrints(game_object_array[PLAYER_INDEX], game_object_array[OTHER_OB_INDEX]);
 
 // TO DO: Add me to collider stuff?
 // TO DO: Make acc player struct with cam pos and stuff
-const playerCollider = new Float32Array([1, 2, 1, 0]);
+const player_collider = new Float32Array([1, 2, 1, 0]);
 
 // Vertex and fragment shaders
-const shaderCode = await helper.loadShader("./shaders/burley-test.wgsl");
+const shader_code = await helper.load_shader("./shaders/burley-test.wgsl");
 
-let shaderDebugCode;
-let collider_shaderDebugCode;
+let shader_debug_code;
+let collider_shader_debug_code;
 
-if (DEBUG_LOGS)  shaderDebugCode = await helper.loadShader("./shaders/debug_render.wgsl");
-if (DEBUG_MODE)  collider_shaderDebugCode = await helper.loadShader("./shaders/collider_debug_render.wgsl");
+if (DEBUG_LOGS)  shader_debug_code = await helper.load_shader("./shaders/debug_render.wgsl");
+if (DEBUG_MODE)  collider_shader_debug_code = await helper.load_shader("./shaders/collider_debug_render.wgsl");
 
 function errorCheck(whatever)
 {
@@ -119,7 +119,7 @@ export function switch_debug_mode()
   }
   else
   {
-    controls.camPos.set([tmp_debug_pos[0], tmp_debug_pos[1], tmp_debug_pos[2]]);
+    controls.cam_pos.set([tmp_debug_pos[0], tmp_debug_pos[1], tmp_debug_pos[2]]);
     DEBUG_MODE = false;
   }
 }
@@ -144,27 +144,27 @@ async function init() {
   errorCheck(device);
 
   const shaderModule = device.createShaderModule({
-    code: shaderCode
+    code: shader_code
   });
 
   errorCheck(shaderModule);
 
-  let shaderDebugModule;
-  let collider_shaderDebugModule;
+  let shader_debug_module;
+  let collider_shader_debug_module;
 
    if (DEBUG_LOGS){
-    shaderDebugModule = device.createShaderModule({
-    code: shaderDebugCode
+    shader_debug_module = device.createShaderModule({
+    code: shader_debug_code
   });
 
-  errorCheck(shaderDebugCode);
+  errorCheck(shader_debug_code);
  
   if (DEBUG_MODE){
-    collider_shaderDebugModule = device.createShaderModule({
-    code: collider_shaderDebugCode
+    collider_shader_debug_module = device.createShaderModule({
+    code: collider_shader_debug_code
   });
 
-  errorCheck(collider_shaderDebugCode);
+  errorCheck(collider_shader_debug_code);
   }
 
   // TO DO: Have 2 canvases
@@ -189,11 +189,11 @@ async function init() {
   errorCheck(view1);
 
 
-  const MODEL_CUBE_INDEX = await model_parser.add_model_to_array('resources/models/cube.obj', Model_Array);
-  const MODEL_BUNNY_INDEX = await model_parser.add_model_to_array('resources/models/Bunny.obj', Model_Array);
-  const MODEL_WALL_INDEX = await model_parser.add_model_to_array('resources/models/wall.obj', Model_Array);
+  const MODEL_CUBE_INDEX = await model_parser.add_model_to_array('resources/models/cube.obj', model_array);
+  const MODEL_BUNNY_INDEX = await model_parser.add_model_to_array('resources/models/Bunny.obj', model_array);
+  const MODEL_WALL_INDEX = await model_parser.add_model_to_array('resources/models/wall.obj', model_array);
 
-  let max_verts = model_parser.get_max_verts(Model_Array);
+  let max_verts = model_parser.get_max_verts(model_array);
 
   const vertexBuffer = device.createBuffer({
         size: max_verts * AMOUNT_OF_OBJECTS, 
@@ -210,20 +210,20 @@ async function init() {
   let tmp_rot = new Float32Array(4);
   
   for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
-    const vertex_index = gameObjectArray[i].getModelIndex();
+    const vertex_index = game_object_array[i].get_model_index();
     console.log("Vertex indes: " + vertex_index)
-    device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, Model_Array[vertex_index], 0, Model_Array[vertex_index].length);
+    device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, model_array[vertex_index], 0, model_array[vertex_index].length);
 
       if (!LOAD_CURRENT_STATE || !SINGLE_TEST || i < 1)
       {
         // TO DO: Get these better include in whatever file type is made
-        gameObjectArray[i].setHalf(makeColliderFromVerts(Model_Array[vertex_index]));
-        gameObjectArray[i].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS);
+        game_object_array[i].set_half(makeColliderFromVerts(model_array[vertex_index]));
+        game_object_array[i].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS);
       }
   }
 }
  
-  const vertexBuffers = [{
+  const vertex_buffers = [{
     attributes: [
     {
       shaderLocation: 0, // position
@@ -245,41 +245,41 @@ async function init() {
     stepMode: 'vertex'
   }];
 
-  const vertexDebugBuffer = device.createBuffer({
+  const vertex_debug_buffer = device.createBuffer({
     size: 32*3*2*2, // size of 2 positions which are 3 float32 3s and 2 colors
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
   
-    const collider_vertexDebugBuffer = device.createBuffer({
+    const collider_vertex_debug_buffer = device.createBuffer({
     size: 32*3*8, // size of 2 positions which are 3 float32 3s and 2 colors
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
 
-  let debugLineVertex;
+  let debug_line_vertex;
   
   if (DEBUG_LOGS){
-     debugLineVertex = new Float32Array([
+     debug_line_vertex = new Float32Array([
       0, 0, 0, 
       0, 0, 0, // Color
       5, 0, 0,
       1, 0, 0,// Color
     ]);
 
-  device.queue.writeBuffer(vertexDebugBuffer, 0, debugLineVertex, 0, debugLineVertex.length);
+  device.queue.writeBuffer(vertex_debug_buffer, 0, debug_line_vertex, 0, debug_line_vertex.length);
   }
 
   let collider_box_vertex;
 
   if (DEBUG_MODE)
   {
-    collider_box_vertex = make_vertexs(gameObjectArray);
-    device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
+    collider_box_vertex = make_vertexs(game_object_array);
+    device.queue.writeBuffer(collider_vertex_debug_buffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
   }
 
-  let vertexDebugBuffers;
+  let vertex_debug_buffers;
 
   if (DEBUG_LOGS){
-    vertexDebugBuffers = [{
+    vertex_debug_buffers = [{
       attributes: [
       {
         shaderLocation: 0, // position
@@ -297,10 +297,10 @@ async function init() {
     }];
   }
 
-  let collider_vertexDebugBuffers;
+  let collider_vertex_debug_buffers;
 
   if (DEBUG_LOGS){
-    collider_vertexDebugBuffers = [{
+    collider_vertex_debug_buffers = [{
       attributes: [
       {
         shaderLocation: 0, // position
@@ -344,7 +344,7 @@ async function init() {
     vertex: {
       module: shaderModule,
       entryPoint: 'vertex_main',
-      buffers: vertexBuffers
+      buffers: vertex_buffers
     },
     fragment: {
       module: shaderModule,
@@ -376,12 +376,12 @@ let collider_pipelineDebugDescriptor;
 if (DEBUG_LOGS){
  pipelineDebugDescriptor = {
     vertex: {
-      module: shaderDebugModule,
+      module: shader_debug_module,
       entryPoint: 'vertex_main',
-      buffers: vertexDebugBuffers
+      buffers: vertex_debug_buffers
     },
     fragment: {
-      module: shaderDebugModule,
+      module: shader_debug_module,
       entryPoint: 'fragment_main',
       targets: [{
         format: navigator.gpu.getPreferredCanvasFormat(),
@@ -406,12 +406,12 @@ if (DEBUG_LOGS){
 if (DEBUG_MODE) {
  collider_pipelineDebugDescriptor = {
     vertex: {
-      module: collider_shaderDebugModule,
+      module: collider_shader_debug_module,
       entryPoint: 'vertex_main',
-      buffers: collider_vertexDebugBuffers
+      buffers: collider_vertex_debug_buffers
     },
     fragment: {
-      module: collider_shaderDebugModule,
+      module: collider_shader_debug_module,
       entryPoint: 'fragment_main',
       targets: [{
         format: navigator.gpu.getPreferredCanvasFormat(),
@@ -490,11 +490,11 @@ worldMatrix = testMAT;
 
 const matrixSize = worldMatrix.byteLength;
 const matrixAmount = AMOUNT_OF_OBJECTS;
-const camPosSize = 4 * 4;
+const cam_pos_size = 4 * 4;
 
 const roundUp = (v, alignment) => Math.ceil(v / alignment) * alignment;
 
-let sizet = roundUp((matrixSize * matrixAmount + camPosSize), device.limits.minUniformBufferOffsetAlignment);
+let sizet = roundUp((matrixSize * matrixAmount + cam_pos_size), device.limits.minUniformBufferOffsetAlignment);
 
 const Mats = device.createBuffer({
   size: sizet * AMOUNT_OF_OBJECTS, 
@@ -504,18 +504,18 @@ const Mats = device.createBuffer({
 device.queue.writeBuffer(Mats, 0, worldMatrix, 0, worldMatrix.length);
 
 const BRDF_PARAMS = device.createBuffer({
-  size: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
+  size: object_info.SIZE_OF_BRDF_PARAMS_BYTES * AMOUNT_OF_OBJECTS, 
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
 for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
 {
-  let BRDF_index = gameObjectArray[i].getBRDFIndex();
+  let BRDF_index = game_object_array[i].get_BRDF_index();
 
   const params = BRDF_configs.BRDF_config[BRDF_index];
   console.log("Index: " + BRDF_index)
   const size = params.length;
-  device.queue.writeBuffer(BRDF_PARAMS, i * objectInfo.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
+  device.queue.writeBuffer(BRDF_PARAMS, i * object_info.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
 }
 
 let bindGroupArray = [];
@@ -531,7 +531,7 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
       }},
       {binding: 1, resource: {
         buffer: BRDF_PARAMS,
-        offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES * i
+        offset: object_info.SIZE_OF_BRDF_PARAMS_BYTES * i
       }},
   ],
   });
@@ -548,7 +548,7 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
           }},
           {binding: 1, resource: {
             buffer: BRDF_PARAMS,
-            offset: objectInfo.SIZE_OF_BRDF_PARAMS_BYTES*i
+            offset: object_info.SIZE_OF_BRDF_PARAMS_BYTES*i
           }},
       ],
       });
@@ -562,10 +562,10 @@ const url_tester = 'resources/images/uv_test_patchwork.png';
 
 // if (PATH_TEST)
 
-const source_data = await helper.loadImageData(url);
-const sourceF_data = await helper.loadImageData(urlF);
-const green_data = await helper.loadImageData(url_green);
-const tester_data = await helper.loadImageData(url_tester);
+const source_data = await helper.load_image_data(url);
+const sourceF_data = await helper.load_image_data(urlF);
+const green_data = await helper.load_image_data(url_green);
+const tester_data = await helper.load_image_data(url_tester);
 
 let textures = [];
 
@@ -608,7 +608,7 @@ const light_intensity = 0;
 const dir_light_dir_and_intensity = new Float32Array([0, 0, 1, light_intensity]);
 
 const Directional_Lights = device.createBuffer({
-  size:  objectInfo.BYTES_OF_VECTOR3 + objectInfo.BYTES_OF_FLOAT_32, // dir (vec3) + intensity (f32)
+  size:  object_info.BYTES_OF_VECTOR3 + object_info.BYTES_OF_FLOAT_32, // dir (vec3) + intensity (f32)
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
@@ -621,29 +621,29 @@ device.queue.writeBuffer(Directional_Lights, 0, dir_light_dir_and_intensity, 0, 
 // }
 
 // Light 1
-Light_Manager.add_new_light(0,0,-12.2, 1, 2);
+light_manager.add_new_light(0,0,-12.2, 1, 2);
 
 // Light 2 
-Light_Manager.add_new_light(12, -2, -5, 0, 2);
+light_manager.add_new_light(12, -2, -5, 0, 2);
 
 const Point_Lights = device.createBuffer({
-  size:  Light_Manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * Light_Manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
+  size:  light_manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * light_manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-device.queue.writeBuffer(Point_Lights, 0, Light_Manager.POINT_LIGHT_ARRAY, 0, Light_Manager.POINT_LIGHT_ARRAY.length);
+device.queue.writeBuffer(Point_Lights, 0, light_manager.POINT_LIGHT_ARRAY, 0, light_manager.POINT_LIGHT_ARRAY.length);
 
 if (PATH_TEST)
 {
   debugLog("textures_data");
   debugLog(textures_data);
-  coeffs = Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray, Model_Array, textures_data, dir_light_dir_and_intensity);
+  coeffs = path_tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, game_object_array, model_array, textures_data, dir_light_dir_and_intensity);
   debugLog("coeffs:");
   debugLog(coeffs);
 }
 
 const SH_COEFF = device.createBuffer({
-  size:  3 * sh_funcs.TOTAL_COEFF * objectInfo.BYTES_OF_FLOAT_32, 
+  size:  3 * sh_funcs.TOTAL_COEFF * object_info.BYTES_OF_FLOAT_32, 
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
@@ -668,7 +668,7 @@ const lightBindGroup = device.createBindGroup({
   ],
   });
 
-  let tmpCamPos = new Float32Array(4);
+  let tmp_cam_pos = new Float32Array(4);
 
   document.addEventListener('click', function(evt) {
   debugLog("clicked")
@@ -677,7 +677,7 @@ const lightBindGroup = device.createBindGroup({
   {
     if (!debug_utils.is_object_selected && !debug_utils.creating_object)
     {
-      debug_utils.debug_select_object(gameObjectArray, look_vector, device, collider_vertexDebugBuffer);
+      debug_utils.debug_select_object(game_object_array, look_vector, device, collider_vertex_debug_buffer);
     }
   }
 
@@ -685,24 +685,35 @@ const lightBindGroup = device.createBindGroup({
   {
     const MAG = 10;
     let dir = helper.vector_mult_scalar(look_vector, MAG);
-    let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
+    let ray_from_player_forward = new ray(controls.cam_pos[0], controls.cam_pos[1], controls.cam_pos[2], -dir[0], -dir[1], -dir[2]);
 
     let did_hit = false;
 
     const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
+    console.log("AMOUNT OF OBJS: " + AMOUNT_OF_OBJECTS);
+
+    console.log("game_object_array[11]: " + game_object_array[10].get_position());
 
     for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
-      gameObjectArray[i].get_min_Into_Struct(min_max);
-      gameObjectArray[i].get_max_Into_Struct(min_max);
+      game_object_array[i].get_min_Into_Struct(min_max);
+      game_object_array[i].get_max_Into_Struct(min_max);
+
+      if (i == (AMOUNT_OF_OBJECTS - 1))
+      {
+        console.log("i: " + i);
+        console.log("min: " + min_max.min);
+        console.log("max: " + min_max.max);
+      }
 
       if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
       {
+        console.log("Hit");
         did_hit = true;
       }
     }
 
-    newRayPos(controls.camPos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertexDebugBuffer);
+    new_ray_pos(controls.cam_pos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertex_debug_buffer);
   }
   }, false);
 
@@ -724,12 +735,12 @@ if (false & PATH_TEST)
 
   let res = false;
 
-  res =  Path_Tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, gameObjectArray,   Model_Array, textures_data, dir_light_dir_and_intensity);
+  res =  path_tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, game_object_array,   model_array, textures_data, dir_light_dir_and_intensity);
   if (res){
-    newRayPos(PATH_ORIGIN, helper.vectorAdd(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertexDebugBuffer)
+    new_ray_pos(PATH_ORIGIN, helper.vector_add(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertex_debug_buffer)
   }
 
-  newRayPos(TEST_ORIGIN,  helper.vectorAdd(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device, vertexDebugBuffer)
+  new_ray_pos(TEST_ORIGIN,  helper.vector_add(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device, vertex_debug_buffer)
 }
 
 const CONST_TIME_DIV = 100;
@@ -745,12 +756,12 @@ function render() {
 
   if (debug_utils.trigger_recalculate_collider)
   {
-    debug_utils.recalculate_collider(gameObjectArray, device, collider_vertexDebugBuffer);
+    debug_utils.recalculate_collider(game_object_array, device, collider_vertex_debug_buffer);
   }
 
   if (DEBUG_MODE && debug_utils.is_object_selected)
   {
-    debug_utils.move_selected_object(gameObjectArray);
+    debug_utils.move_selected_object(game_object_array);
   }
 
   Time = Date.now() / CONST_TIME_DIV;
@@ -759,36 +770,36 @@ function render() {
 
   if (debug_mode_changed == true)
   {
-    tmp_debug_pos.set([controls.camPos[0], controls.camPos[1], controls.camPos[2]]);
+    tmp_debug_pos.set([controls.cam_pos[0], controls.cam_pos[1], controls.cam_pos[2]]);
 
     debug_mode_changed = false;
   }
 
   // NOTE: CHANGES CAM POS
-  look_vector = controls.move_and_look(gameObjectArray, tmp_pos, tmp_half, playerCollider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, DEBUG_MODE);
+  look_vector = controls.move_and_look(game_object_array, tmp_pos, tmp_half, player_collider, OBJECTS_TO_RENDER, MOVE_TARGET_TEST, SINGLE_TEST, DEBUG_MODE);
  
   if (SINGLE_TEST)
   {
-    var viewMatix = helper.getViewMatrix(look_vector, helper.WORLD_UP_VECTOR, new Float32Array([0,0,0]));
+    var viewMatix = helper.get_view_matrix(look_vector, helper.WORLD_UP_VECTOR, new Float32Array([0,0,0]));
   }
   else
   {
-    var viewMatix = helper.getViewMatrix(look_vector, helper.WORLD_UP_VECTOR, controls.camPos);
+    var viewMatix = helper.get_view_matrix(look_vector, helper.WORLD_UP_VECTOR, controls.cam_pos);
   }
 
-  var perMatrix = helper.getPerspectiveMatrix(70, 1, 1000);
+  var perMatrix = helper.get_perspective_matrix(70, 1, 1000);
 
   {
 // TO DO: Put somewhere
   let tmp_World_Matrix = new Float32Array(4 * 4);
-    assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
+    assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_object_array, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
   }
 
   const commandEncoder = device.createCommandEncoder();
 
   const renderPassDescriptor = {
     colorAttachments: [{
-      clearValue: clearColor,
+      clearValue: clear_color,
       loadOp: 'clear',
       storeOp: 'store',
       view: context.getCurrentTexture().createView(),
@@ -810,21 +821,21 @@ function render() {
   // This should be based on object indexs
   for (let i = 0; i < OBJECTS_TO_RENDER; i++)
   {
-    const vert_index = gameObjectArray[i].getModelIndex();
-    const tex_index = gameObjectArray[i].getTextureIndex();
-    const id = gameObjectArray[i].ID;
+    const vert_index = game_object_array[i].get_model_index();
+    const tex_index = game_object_array[i].get_texture_index();
+    const id = game_object_array[i].ID;
 
     passEncoder.setBindGroup(0, bindGroupArray[id]);
     passEncoder.setBindGroup(1, bindGroupTexArray[tex_index]);
-    passEncoder.setVertexBuffer(0, vertexBuffer, VERTEX_OFFSET * id, Model_Array[vert_index].byteLength);
-    passEncoder.draw(Model_Array[vert_index].length / 8);
+    passEncoder.setVertexBuffer(0, vertexBuffer, VERTEX_OFFSET * id, model_array[vert_index].byteLength);
+    passEncoder.draw(model_array[vert_index].length / 8);
   }
 
   if (DEBUG_LOGS)
   {
     passEncoder.setPipeline(renderDebugPipeline);
     passEncoder.setBindGroup(0, bindDebugGroup);
-    passEncoder.setVertexBuffer(0, vertexDebugBuffer, 0, debugLineVertex.byteLength);
+    passEncoder.setVertexBuffer(0, vertex_debug_buffer, 0, debug_line_vertex.byteLength);
     passEncoder.draw(2);
   }
  
@@ -833,7 +844,7 @@ function render() {
   {
     passEncoder.setPipeline(collider_renderDebugPipeline);
     passEncoder.setBindGroup(0, bindDebugGroup);
-    passEncoder.setVertexBuffer(0, collider_vertexDebugBuffer, 0, collider_box_vertex.byteLength);
+    passEncoder.setVertexBuffer(0, collider_vertex_debug_buffer, 0, collider_box_vertex.byteLength);
     passEncoder.draw(36);
   }
   
@@ -846,7 +857,7 @@ function render() {
 }
 }
 
-function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObjectArray, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet)
+function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_object_array, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet)
 {
   let tmp_scale = 0;
 
@@ -854,14 +865,14 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
   {
     if (SINGLE_TEST)
     {
-      gameObjectArray[i].setPosition(controls.camPos);
-      gameObjectArray[i].setRotation( new Float32Array([0,controls.keyY,0]));
+      game_object_array[i].set_position(controls.cam_pos);
+      game_object_array[i].set_rotation( new Float32Array([0,controls.keyY,0]));
     }
 
     if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
-      gameObjectArray[i].setPosition( new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
-      gameObjectArray[i].setRotation( new Float32Array([90,0,0]));
+      game_object_array[i].set_position( new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
+      game_object_array[i].set_rotation( new Float32Array([90,0,0]));
     }
 
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
@@ -869,7 +880,7 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
       if (false & PATH_TEST)
       {
         debugLog(tmp_pos);
-        Path_Tracing.transform_vertexs(verticies_obj_wall, gameObjectArray[i]);
+        path_tracing.transform_vertexs(verticies_obj_wall, game_object_array[i]);
       }
     }
 
@@ -877,20 +888,20 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, gameObj
     // TO DO: World_Matrix, tmp_pos, tmp_rot add params use temp meory for matrix maybe
     // or just creat one.
     // PRINT INSIDE DIRTY AND OUTSIDE DIRTY Branch
-    let worldMatrix = gameObjectArray[i].get_world_matrix(tmp_World_Matrix, tmp_pos, tmp_rot);
+    let worldMatrix = game_object_array[i].get_world_matrix(tmp_World_Matrix, tmp_pos, tmp_rot);
 
     device.queue.writeBuffer(Mats, i * sizet + 0, worldMatrix);
     device.queue.writeBuffer(Mats, i * sizet + matrixSize, viewMatix );
     device.queue.writeBuffer(Mats, i * sizet + matrixSize * 2, perMatrix);
-    device.queue.writeBuffer(Mats, i * sizet + matrixSize * 3, controls.camPos);
+    device.queue.writeBuffer(Mats, i * sizet + matrixSize * 3, controls.cam_pos);
   }
 }
 
-export function click_object(gameObjectArray, look_vector)
+export function click_object(game_object_array, look_vector)
 {
    const MAG = 10;
     let dir = helper.vector_mult_scalar(look_vector, MAG);
-    let ray_from_player_forward = new ray(controls.camPos[0], controls.camPos[1], controls.camPos[2], -dir[0], -dir[1], -dir[2]);
+    let ray_from_player_forward = new ray(controls.cam_pos[0], controls.cam_pos[1], controls.cam_pos[2], -dir[0], -dir[1], -dir[2]);
 
     let did_hit = false;
 
@@ -898,8 +909,8 @@ export function click_object(gameObjectArray, look_vector)
 
     for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
-      gameObjectArray[i].get_min_Into_Struct(min_max);
-      gameObjectArray[i].get_max_Into_Struct(min_max);
+      game_object_array[i].get_min_into_struct(min_max);
+      game_object_array[i].get_max_into_struct(min_max);
 
       // console.log("Max: " + min_max.max);
       // console.log("Min: " + min_max.min);
@@ -912,15 +923,15 @@ export function click_object(gameObjectArray, look_vector)
     return -1;
 }
 
-export function update_collider_vertex(device, gameObjectArray, collider_vertexDebugBuffer, target)
+export function update_collider_vertex(device, game_object_array, collider_vertexDebugBuffer, target)
 {
-    let collider_box_vertex = make_vertexs(gameObjectArray, target);
+    let collider_box_vertex = make_vertexs(game_object_array, target);
     device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
 }
 
 export function get_object_half(game_object)
 {
-  const vertex_index = game_object.getModelIndex();
+  const vertex_index = game_object.get_model_index();
 
   let tmp_min = new Float32Array(3);
   let tmp_max = new Float32Array(3);
@@ -928,9 +939,9 @@ export function get_object_half(game_object)
   let tmp_rot = new Float32Array(4);
 
   console.log(vertex_index);
-  console.log(Model_Array[vertex_index]);
+  console.log(model_array[vertex_index]);
   
-  game_object.setHalf(makeColliderFromVerts(Model_Array[vertex_index]));
+  game_object.set_half(makeColliderFromVerts(model_array[vertex_index]));
   game_object.update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS); 
 }
 

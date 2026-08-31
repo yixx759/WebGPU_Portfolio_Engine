@@ -1,4 +1,4 @@
-import * as objectInfo from './objectInfoStruct.js'
+import * as objectInfo from './Object_Info_Struct.js'
 
 const SIZE_OF_OBJECT_NUMBER = objectInfo.BYTES_OF_INT_8;
 const SIZE_OF_END_PATTERN = objectInfo.BYTES_OF_INT_8;
@@ -134,17 +134,17 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         tmp_go = game_object_array[i];
 
         console.log(tmp_go);
-        console.log(tmp_go.getModelIndex());
+        console.log(tmp_go.get_model_index());
         // OBJECT_ID is implied by the order
 
         // OBJECT_MODEL_INDEX
-        offset += add_int8(tmp_go.getModelIndex(), view, offset);
+        offset += add_int8(tmp_go.get_model_index(), view, offset);
 
         // OBJECT_TEXTURE_INDEX
-        offset += add_int8(tmp_go.getTextureIndex(), view, offset);
+        offset += add_int8(tmp_go.get_texture_index(), view, offset);
 
         // OBJECT_START_POSITION
-        offset += add_vector3(tmp_go.getPosition(), view, offset);
+        offset += add_vector3(tmp_go.get_position(), view, offset);
 
         // OBJECT_START_SCALE
         offset += add_float32(tmp_go.getScale(), view, offset);
@@ -153,31 +153,36 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_vector3(tmp_go.getRotation(), view, offset);
 
         // OBJECT_HALF
-        offset += add_vector3(tmp_go.getHalf(), view, offset);
+        offset += add_vector3(tmp_go.get_half(), view, offset);
 
         // OBJECT_WORLD_MATRIX
         offset += add_matrix(tmp_go.getMatrix(), view, offset);
 
         // OBJECT_BRDF_INDEX
-        offset += add_int8(tmp_go.getBRDFIndex(), view, offset);
+        offset += add_int8(tmp_go.get_BRDF_index(), view, offset);
         console.log("offset during: ");
         console.log(offset);
     }
 
     if (add_object)
     {
+        console.log(object_to_add);
+        console.log(game_object_array);
         tmp_go = object_to_add;
+
+        console.log(tmp_go);
+        console.log(tmp_go.get_model_index());
 
         // OBJECT_ID is implied by the order
 
         // OBJECT_MODEL_INDEX
-        offset += add_int8(tmp_go.getModelIndex(), view, offset);
+        offset += add_int8(tmp_go.get_model_index(), view, offset);
 
         // OBJECT_TEXTURE_INDEX
-        offset += add_int8(tmp_go.getTextureIndex(), view, offset);
+        offset += add_int8(tmp_go.get_texture_index(), view, offset);
 
         // OBJECT_START_POSITION
-        offset += add_vector3(tmp_go.getPosition(), view, offset);
+        offset += add_vector3(tmp_go.get_position(), view, offset);
 
         // OBJECT_START_SCALE
         offset += add_float32(tmp_go.getScale(), view, offset);
@@ -186,13 +191,14 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_vector3(tmp_go.getRotation(), view, offset);
 
         // OBJECT_HALF
-        offset += add_vector3(tmp_go.getHalf(), view, offset);
+        offset += add_vector3(tmp_go.get_half(), view, offset);
 
         // OBJECT_WORLD_MATRIX
         offset += add_matrix(tmp_go.getMatrix(), view, offset);
 
+        console.log("BRDF: " + tmp_go.get_BRDF_index());
         // OBJECT_BRDF_INDEX
-        offset += add_int8(tmp_go.getBRDFIndex(), view, offset);
+        offset += add_int8(tmp_go.get_BRDF_index(), view, offset);
         console.log("offset during: ");
         console.log(offset);
     }
@@ -266,7 +272,6 @@ export async function load_file(game_object_array, cam_pos, coeffs)
     offset = load_sh(coeffs, offset, view);
     console.log("Coeff");
     console.log(coeffs);
-
 
     // Load functions reverse of save functions
     // appen to game object array

@@ -1,5 +1,5 @@
 import { debugLog } from './Render.js'
-import * as testFuncs from './testFuncs.js'
+import * as test_funcs from './Test_Funcs.js'
 
 export const BIG_NUMBER = 10 ** 1000;
 
@@ -19,23 +19,23 @@ const TEST_FUNCS = false;
 
 if (TEST_FUNCS)
 {
-  testFuncs.vectorTestPrints();
+  test_funcs.vectorTestPrints();
 }
 
-export function multiplyFloat32Matrices(A, B) {
+export function multiply_float32_matrices(A, B) {
   
-  const numRows = 4;
-  const numCols = 4;
+  const num_rows = 4;
+  const num_cols = 4;
 
-    let C = new Float32Array(numRows * numCols);
+    let C = new Float32Array(num_rows * num_cols);
     
-    for (let i = 0; i < numRows; i++) {
-        for (let j = 0; j < numCols; j++) {
+    for (let i = 0; i < num_rows; i++) {
+        for (let j = 0; j < num_cols; j++) {
             let sum = 0.0;
-            for (let k = 0; k < numCols; k++) {
-                sum += A[i * numCols + k] * B[k * numCols + j];
+            for (let k = 0; k < num_cols; k++) {
+                sum += A[i * num_cols + k] * B[k * num_cols + j];
             }
-            C[i * numCols + j] = sum;
+            C[i * num_cols + j] = sum;
         }
     }
     
@@ -81,7 +81,7 @@ export function get_rotation_matrix(angleRotX, angleRotY, angleRotZ)
     console.log(rotY);
     console.log(rotZ);
 
-    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotZ,rotY),rotX);
+    return multiply_float32_matrices(multiply_float32_matrices(rotZ,rotY),rotX);
 };
 
 export function get_inv_rotation_matrix(angleRotX, angleRotY, angleRotZ)
@@ -117,10 +117,10 @@ export function get_inv_rotation_matrix(angleRotX, angleRotY, angleRotZ)
     console.log(rotY);
     console.log(rotZ);
 
-    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotX,rotY),rotZ);
+    return multiply_float32_matrices(multiply_float32_matrices(rotX,rotY),rotZ);
 };
 
-export function getWorldMatrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, scale)
+export function get_world_matrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, scale)
 {
  var transformMatrix = new Float32Array([
     1,0,0,0,
@@ -164,13 +164,13 @@ export function getWorldMatrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, s
     0.0, 0.0, 0.0, 1.0,
     ]);
 
-    let rotationMatrix = multiplyFloat32Matrices(multiplyFloat32Matrices(rotZ,rotY),rotX);
+    let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotZ,rotY),rotX);
 
-    return multiplyFloat32Matrices(multiplyFloat32Matrices(scaleMatrix, rotationMatrix), transformMatrix);
+    return multiply_float32_matrices(multiply_float32_matrices(scaleMatrix, rotationMatrix), transformMatrix);
 
 };
 
-export function getWorldMatrixArray(position, angleRotation, scale)
+export function get_world_matrix_array(position, angleRotation, scale)
 {
  var transformMatrix = new Float32Array([
     1,0,0,0,
@@ -214,9 +214,9 @@ export function getWorldMatrixArray(position, angleRotation, scale)
     0.0, 0.0, 0.0, 1.0,
     ]);
 
-    let rotationMatrix = multiplyFloat32Matrices(multiplyFloat32Matrices(rotZ,rotY),rotX);
+    let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotZ,rotY),rotX);
 
-    return multiplyFloat32Matrices(multiplyFloat32Matrices(rotationMatrix,transformMatrix),scaleMatrix);
+    return multiply_float32_matrices(multiply_float32_matrices(rotationMatrix,transformMatrix),scaleMatrix);
 };
 
 export function vector_3_equality(A, B)
@@ -229,8 +229,7 @@ export function vector_4_equality(A, B)
     return ((A[0] == B[0]) && (A[1] == B[1]) && (A[2] == B[2]) && (A[3] == B[3]));
 }
 
-
-export function negateVertex(inpVec)
+export function negate_vertex(inpVec)
 {
   let vec = new Float32Array([...inpVec]);
 
@@ -240,7 +239,7 @@ export function negateVertex(inpVec)
   return vec;
 }
 
-export function vectorAdd(A, B, is_point = false)
+export function vector_add(A, B, is_point = false)
 {
   if (!is_point)
   {
@@ -283,15 +282,15 @@ export function vector_assign_cam(A,B){
 }
 
 
-export function vectorAdd_NonFloat(A, B){
+export function vector_add_non_float(A, B){
   return new [A[0]+B[0], A[1]+B[1],A[2]+B[2], 0];
 }
 
-export function vectorSubtract(A, B){
+export function vector_subtract(A, B){
   return new Float32Array([A[0]-B[0], A[1]-B[1],A[2]-B[2]]);
 }
 
-export function absVectorSubtract(A, B){
+export function abs_vector_subtract(A, B){
   return new Float32Array([Math.abs(A[0]-B[0]), Math.abs(A[1]-B[1]), Math.abs(A[2]-B[2])]);
 }
 
@@ -307,11 +306,11 @@ export function vector_abs(A)
   return new Float32Array([Math.abs(A[0]), Math.abs(A[1]), Math.abs(A[2])]);
 }
 
-export function vectorDot(A, B){
+export function vector_dot(A, B){
   return A[0]*B[0]+ A[1]*B[1] + A[2]*B[2];
 }
 
-export function vectorCross(A, B){
+export function vector_cross(A, B){
   return [A[1]*B[2] - A[2]*B[1], A[2]*B[0] - A[0]*B[2] ,A[0]*B[1] - A[1]*B[0]];
 }
 
@@ -319,28 +318,28 @@ export function vector_mag(A){
   return Math.sqrt(A[0]*A[0] + A[1]*A[1] + A[2]*A[2]);
 }
 
-export function vectorNorm(A){
+export function vector_norm(A){
   const mag = vector_mag(A);
   return [A[0]/mag, A[1]/mag, A[2]/mag];
 }
 
 export function vector_reflect(V, N)
 {
-  const V_d_N = vectorDot(V, N) * 2;
+  const V_d_N = vector_dot(V, N) * 2;
   const R = vector_mult_scalar(N, V_d_N);
 
   // \(\vec{R} = \vec{V} - 2(\vec{V} \cdot \vec{N})\vec{N}\)
-  return vectorSubtract(V, R);
+  return vector_subtract(V, R);
 }
 
-export function applyWorldToCollider(vec, matrix)
+export function apply_world_to_collider(vec, matrix)
 {
   return [vec[0]+matrix[12],vec[0]+matrix[13],vec[0]+matrix[14], 0]; 
 }
 
-export function getViewMatrix(forward, up, camPos){
-    const right = vectorCross(up,forward);
-    const nuUp = vectorCross(right, forward);
+export function get_view_matrix(forward, up, cam_pos){
+    const right = vector_cross(up,forward);
+    const nuUp = vector_cross(right, forward);
 
     // debugLog("Forward vec:" + forward)
 
@@ -348,7 +347,7 @@ export function getViewMatrix(forward, up, camPos){
     right[0] , nuUp[0], forward[0], 0,
     right[1] , nuUp[1], forward[1], 0,
     right[2] , nuUp[2], forward[2], 0,
-    -vectorDot(right, camPos) , -vectorDot(nuUp, camPos), -vectorDot(forward, camPos), 1,
+    -vector_dot(right, cam_pos) , -vector_dot(nuUp, cam_pos), -vector_dot(forward, cam_pos), 1,
     ])
 
   return view;
@@ -413,7 +412,7 @@ export function multiply_matrix_and_normal(matrix, normal)
 
   normal_final[3] = 0;
 
-  normal_final = vectorNorm(normal_final);
+  normal_final = vector_norm(normal_final);
 
   return normal_final;
 }
@@ -433,12 +432,12 @@ export function multiply_inverse_transpose_matrix_and_normal(matrix, normal)
 
   normal_final[3] = 0;
 
-  normal_final = vectorNorm(normal_final);
+  normal_final = vector_norm(normal_final);
 
   return normal_final;
 }
 
-export function getPerspectiveMatrix(FOV, n, f){
+export function get_perspective_matrix(FOV, n, f){
     const S = 1 / Math.tan((FOV/2) * (Math.PI / 180));
 
     const fn = ((f) / (n-f)); 
@@ -498,7 +497,7 @@ export function transpose_matrix(m)
   return r;
 }
 
-export function getVertexBufferFromDecodedObj(decodedObj) {
+export function get_vertex_buffer_from_decoded_obj(decodedObj) {
   const vertexPositionBuffer = decodedObj[0];
   const textureCoordBuffer = decodedObj[1];
   const normalBuffer = decodedObj[2];
@@ -594,13 +593,13 @@ export function getVertexBufferFromDecodedObj(decodedObj) {
   return outputVertexBuffer;
 }
 
-export async function loadImageBitmap(url) {
+export async function load_image_bitmap(url) {
   const res = await fetch(url);
   const blob = await res.blob();
   return await createImageBitmap(blob, { colorSpaceConversion: 'none' });
 }
 
-export async function loadImageData(url) {
+export async function load_image_data(url) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -613,7 +612,7 @@ export async function loadImageData(url) {
   });
 }
 
-export async function loadShader(url) {
+export async function load_shader(url) {
     const response = await fetch(url);
     return await response.text();
 }

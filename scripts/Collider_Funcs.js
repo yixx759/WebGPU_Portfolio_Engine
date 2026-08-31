@@ -1,4 +1,4 @@
-import {absVectorSubtract, vectorAdd} from "./helperFuncs.js";
+import {abs_vector_subtract, vector_add} from "./Helper_Funcs.js";
 import * as debug_utils from "./Debug_Utils.js";
 
 export function makeColliderFromVerts(vertexs)
@@ -16,9 +16,9 @@ export function makeColliderFromVerts(vertexs)
 }
 
 export function AABB(positionA, halfA, positionB, halfB) {
-    const diff = absVectorSubtract(positionA, positionB);
+    const diff = abs_vector_subtract(positionA, positionB);
     
-    const totalHalfs = vectorAdd(halfA, halfB);
+    const totalHalfs = vector_add(halfA, halfB);
 
     return (diff[0] <= totalHalfs[0]) && (diff[1] <= totalHalfs[1]) && (diff[2] <= totalHalfs[2])
 }
@@ -103,25 +103,27 @@ export class ray
 
 const DIMENSIONS_FOR_AABB = 3;
 
+const EPSILON = 1e-4
+
 // Can be improved https://tavianator.com/2022/ray_box_boundary.html
 // TO DO: to get real distance from T direction in ray has to be normalize. restruct to dir mag.
 
 export function ray_AABB_intersection(ray, min, max)
 {
+    console.log("In ray aabb inersection");
+
     if (!(min instanceof Float32Array)) {
-    console.log("ERROR: min in ray aabb intersect wasnt given float32array");
+        console.log("ERROR: min in ray aabb intersect wasnt given float32array");
         return false;
     }
 
     if (!(max instanceof Float32Array)) {
-    console.log("ERROR:  max in ray aabb intersect wasnt given float32array");
+        console.log("ERROR:  max in ray aabb intersect wasnt given float32array");
         return false;
     }
 
-    let t_min = 0;
+    let t_min = -Infinity;
     let t_max = Infinity;
-
- 
 
     // TO DO: Optimize look at orignal paper casey had combine with the stack of ors???
     // TO DO: Or could use output T to filter???
@@ -129,12 +131,20 @@ export function ray_AABB_intersection(ray, min, max)
     let dest = ray.get_ray_dest();
     for (let i = 0; i < DIMENSIONS_FOR_AABB; i++)
     {
-           let min_val = Math.min(min[i], max[i]);
-            let max_val = Math.max(min[i], max[i]);
-            min[i] = min_val;
-            max[i] = max_val;
+        let min_val = Math.min(min[i], max[i]);
+        let max_val = Math.max(min[i], max[i]);
+        min[i] = min_val;
+        max[i] = max_val;
+
+        if (max[i] - min[i] < EPSILON)
+        {
+            max[i] += EPSILON;
+            min[i] -= EPSILON;
+        }
+
         if ((ray.get_ray_origin(i) < min[i] && dest[i] < min[i]) || (ray.get_ray_origin(i) > max[i] && dest[i] > max[i]) )
         {
+            console.log("First out");
             //  console.log(`=== Element ${i} ===`);
             // console.log(`ray.get_ray_origin(${i}):`, ray.get_ray_origin(i));
             // console.log(`dest[${i}]:`, dest[i]);
@@ -149,28 +159,40 @@ export function ray_AABB_intersection(ray, min, max)
         }
     }
 
+    console.log("Middle of func")
+
     for (let i = 0; i < DIMENSIONS_FOR_AABB; i++)
     {
+
+        console.log("Min: " + min[i]);
+        console.log("Max: " + max[i]);
+        console.log("ray orgin: " + ray.get_ray_origin(i));
         let t1 = (min[i] - ray.get_ray_origin(i)) * ray.get_ray_inv_dir(i);
         let t2 = (max[i] - ray.get_ray_origin(i)) * ray.get_ray_inv_dir(i);
 
+        console.log(Math.max(t_min, Math.min(t1, t2)));
+        console.log(Math.min(t_max, Math.max(t1, t2)));
+
         t_min = Math.max(t_min, Math.min(t1, t2));
         t_max = Math.min(t_max, Math.max(t1, t2));
+        console.log("tmin: " + t_min);
+        console.log("tmax: " + t_max);
     }
 
+    console.log("END OF FUNC: " + (t_min < t_max));
     return t_min < t_max;
 }
 
-export function make_vertexs(gameObjectArray, target = debug_utils.DEBUG_COLLIDER_OBJECT)
+export function make_vertexs(game_object_array, target = debug_utils.DEBUG_COLLIDER_OBJECT)
 {
-    if (target  < 0 || target >= gameObjectArray.length)
+    if (target  < 0 || target >= game_object_array.length)
     {
         console.log("ERROR make vertex: Target for collider isnt valid.");
     }
 
-    let position = gameObjectArray[target].getPosition();
+    let position = game_object_array[target].get_position();
     console.log("pos: " + position);
-    let halfs = gameObjectArray[target].getHalf();
+    let halfs = game_object_array[target].get_half();
 
     let px = position[0], py = position[1], pz = position[2];
     let hx = halfs[0], hy = halfs[1], hz = halfs[2];

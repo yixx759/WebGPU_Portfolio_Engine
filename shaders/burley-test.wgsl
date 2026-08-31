@@ -89,7 +89,7 @@ struct MATS {
   World : mat4x4f,
   View : mat4x4f,
   Pers : mat4x4f,
-  camPos : vec4f,
+  cam_pos : vec4f,
 }
 
 struct PARAM {
@@ -307,7 +307,7 @@ fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
   let T = get_tangent(fragData.position, fragData.texcoord, (norm));
   let bitangent = cross(norm, T);
 
-  let view = normalize(vec3f(mats.camPos.xyz) - fragData.wpos);
+  let view = normalize(vec3f(mats.cam_pos.xyz) - fragData.wpos);
   let texcoord = vec2f(fragData.texcoord.x, fragData.texcoord.y);
 
   // from point to light not light to point
