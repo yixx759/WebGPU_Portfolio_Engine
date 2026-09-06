@@ -12,61 +12,110 @@ export const BYTES_OF_INT_16 = 16 / 8;
 export const BYTES_OF_INT_32 = 32 / 8;
 
 export const BYTES_OF_VECTOR3 = BYTES_OF_FLOAT_32 * 3;
-
 export const BYTES_OF_MATRIX = BYTES_OF_FLOAT_32 * 4 * 4;
 
-const NUMBER_OF_BRDF_PARAMETERS = 11;
-
-const OFFSET_TRANSFROM_POSITION = 0;
 const OFFSET_TRANSFROM_SCALE = 3;
 const OFFSET_TRANSFROM_ROTATION = 4;
-
-const OFFSET_INTO_TRANSFROM_HALF = OFFSET_TRANSFROM_ROTATION + 3;
-
-const OFFSET_INTO_TRANSFROM_MATRIX = OFFSET_INTO_TRANSFROM_HALF + 3;
-
-const OFFSET_INTO_TRANSFROM_DIRTY_BIT = OFFSET_INTO_TRANSFROM_MATRIX + 9;
 
 export const VERTEX_INDEX_CUBE = 0;
 export const VERTEX_INDEX_BUNNY = 1;
 
-export const BYTES_OF_RENDER_INFO = BYTES_OF_INT_8 * 2;
-export const BYTES_OF_TRANSFORM = BYTES_OF_VECTOR3 + BYTES_OF_FLOAT_32 + BYTES_OF_VECTOR3;
-export const BYTES_OF_COLLIDER = BYTES_OF_VECTOR3;
-export const BYTES_OF_BRDF = BYTES_OF_INT_8;
-export const BYTES_OF_DIRTY_BIT = BYTES_OF_INT_8;
-export const BYTES_OF_WORLD_MATRIX = BYTES_OF_MATRIX;
+const ALIGHNMENT_NUMBER = 64
 
-const ALIGNMENT_BYTES_OF_RENDER_INFO = BYTES_OF_RENDER_INFO + (BYTES_OF_FLOAT_32 - BYTES_OF_RENDER_INFO);
-
-// aligned = (used + block_size - 1) & ~(block_size - 1)
-// Since it uses same data type it will be allighned
-const ALIGNMENT_BYTES_OF_TRANSFORM = BYTES_OF_TRANSFORM;
-
-const ALIGNMENT_BYTES_OF_COLLIDER = BYTES_OF_COLLIDER;
-
-const ALIGNMENT_BYTES_OF_MATRIX = BYTES_OF_MATRIX;
-
-const ALIGNMENT_BYTES_OF_DIRTY_BIT = BYTES_OF_DIRTY_BIT + (BYTES_OF_FLOAT_32 - BYTES_OF_DIRTY_BIT);
-
-export const BYTES_OF_OBJECT = ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + BYTES_OF_BRDF + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT;
-
-const ALLIGHNMENT_NUMBER = 64
-export const ALIGNMENT_BYTES_OF_OBJECT = (BYTES_OF_OBJECT + ALLIGHNMENT_NUMBER - 1) & ~(ALLIGHNMENT_NUMBER - 1);
-
+export let ALIGNMENT_BYTES_OF_OBJECT = -1;
 export const SIZE_OF_BRDF_PARAMS_BYTES = 256; // 11 * objectInfo.BYTES_OF_FLOAT_32;
 
 let object_array;
 let transform_array;
 let index_array;
 
+const AMOUNT_OF_ELEMENTS = 9;
+let OFFSET_INTO_ELEMENT = new Int16Array(AMOUNT_OF_ELEMENTS);
+
+function add_int8_element(index)
+{
+  index = helper.align(index + BYTES_OF_INT_8, BYTES_OF_FLOAT_32)
+
+  return index
+}
+
+function add_float32_element(index)
+{
+  index = index + BYTES_OF_FLOAT_32
+
+  return index
+}
+
+function add_vector3_element(index)
+{
+  index = helper.align(index + BYTES_OF_VECTOR3, BYTES_OF_FLOAT_32)
+
+  return index
+}
+
+function add_matrix_element(index)
+{
+  index = helper.align(index + BYTES_OF_MATRIX, BYTES_OF_FLOAT_32)
+
+  return index
+}
+
+let INDEX_OFFSET_INTO_VERTEX_INDEX = 0;
+let INDEX_OFFSET_INTO_TEXTURE_INDEX = 1;
+let INDEX_OFFSET_INTO_POSITION = 2;
+let INDEX_OFFSET_INTO_SCALE = 3;
+let INDEX_OFFSET_INTO_ROTATION = 4;
+let INDEX_OFFSET_INTO_HALF = 5;
+let INDEX_OFFSET_INTO_MATRIX = 6;
+let INDEX_OFFSET_INTO_DIRTY_BIT = 7;
+let INDEX_OFFSET_INTO_BRDF_PARAMS = 8;
+
 export function init_object_arrays(AMOUNT_OF_OBJECTS)
 {
+  let prev = 0;
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VERTEX_INDEX] = prev;
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_TEXTURE_INDEX] = add_int8_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_TEXTURE_INDEX];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_POSITION] = add_int8_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_POSITION];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_SCALE] = add_vector3_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_SCALE];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_ROTATION] = add_float32_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_ROTATION];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_HALF] = add_vector3_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_HALF];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_MATRIX] = add_vector3_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_MATRIX];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_DIRTY_BIT] = add_matrix_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_DIRTY_BIT];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS] = add_int8_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS];
+
+  ALIGNMENT_BYTES_OF_OBJECT = helper.align(prev, ALIGHNMENT_NUMBER);
+
   object_array = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
   transform_array = new Float32Array(object_array);
   index_array = new Int8Array(object_array);
 
   console.log("Last Index: " + index_array.length)
+}
+
+function get_float32_index(base_index, element_index)
+{
+  return (OFFSET_INTO_ELEMENT[element_index] + base_index) / 4;
+}
+
+function get_int8_index(base_index, element_index)
+{
+  return (OFFSET_INTO_ELEMENT[element_index] + base_index)
 }
 
 /* Object structure
@@ -77,7 +126,7 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
 
   * Transform *
   vector3 position
-  int8    scale
+  float32    scale
   vector3 rotation 
 
   * Collision *
@@ -91,7 +140,7 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
 
   // TO DO : STORE EAHC ONE HERE??
   * BRDF Parameters *
-  int8    BRDF param index  
+  int8 BRDF param index  
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -104,7 +153,14 @@ export class gameObject
   BRDF_index;
   dirty_bit;
   matrix_index;
- 
+
+  // TO DO AUTOMATE INTIALIZATION FUNCT, FUNCTIONS TO CREATE NEW INT8 OBEJCT, VECTOIRE 3 ETC
+  // These fubcs write how fat into to that index
+  // then in constructor assighn that array by itslef or / 4 with antoher funciton
+  // THIS ALSO EFFECTS ALIGHNMENT BYTES OF OBJECT
+  // JUST HAVE CONSTANTS GOIGN FROM 0 to whatever acessing that index array mangaed for me
+
+
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
   constructor(object_id, vertex_index, texture_index, position, scale, rotation, half, world_matrix, param_array_index)
@@ -118,50 +174,42 @@ export class gameObject
   
     // TO DO: GENERALIZE!
     this.byte_index = index;
-    this.transform_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO) / 4;
-    this.collision_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM) / 4;
-    this.matrix_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER) / 4;
-    this.BRDF_index = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX + ALIGNMENT_BYTES_OF_DIRTY_BIT);
-    this.dirty_bit = (index + ALIGNMENT_BYTES_OF_RENDER_INFO + ALIGNMENT_BYTES_OF_TRANSFORM + ALIGNMENT_BYTES_OF_COLLIDER + ALIGNMENT_BYTES_OF_MATRIX);
+    this.transform_index = get_float32_index(index, INDEX_OFFSET_INTO_POSITION);
+    this.collision_index = get_float32_index(index, INDEX_OFFSET_INTO_HALF);
+    this.dirty_bit = get_int8_index(index, INDEX_OFFSET_INTO_DIRTY_BIT);
+    this.BRDF_index = get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS);
     this.ID = object_id;
 
-    const renderInfoView = new Uint8Array(object_array, index);
-    
     // Set vertexIndex
-    renderInfoView[0] = vertex_index;
-
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_VERTEX_INDEX), vertex_index);
+    
     console.log("set")
-    console.log(renderInfoView[0])
+    console.log(this.get_model_index());
 
     // Set textureIndex
-    renderInfoView[1] = texture_index;
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_TEXTURE_INDEX), texture_index);
 
-    // Offset into Transform
-    index += ALIGNMENT_BYTES_OF_RENDER_INFO;
-    const base_index = index / BYTES_OF_FLOAT_32;
-    
     // Set position
-    index += this.set_vector3(base_index + OFFSET_TRANSFROM_POSITION, position);
+    this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_POSITION), position);
     
     // Set scale
-    transform_array[base_index + OFFSET_TRANSFROM_SCALE] = scale;
-    index += BYTES_OF_FLOAT_32;
+    this.set_float32(get_float32_index(index, INDEX_OFFSET_INTO_SCALE), scale);
 
     // Set rotation
-    index += this.set_vector3(base_index + OFFSET_TRANSFROM_ROTATION, rotation);
+    this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_ROTATION), rotation);
 
     // Set half
-    index += this.set_vector3(base_index + OFFSET_INTO_TRANSFROM_HALF, half);
+    this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_HALF), half);
 
     // Set Matrix
-    index += this.set_matrix(base_index + OFFSET_INTO_TRANSFROM_MATRIX, world_matrix);
+    this.set_matrix(get_float32_index(index, INDEX_OFFSET_INTO_MATRIX), world_matrix);
 
     // TO DO: order and pack ints correclty
 
     // Set Dirty Bit
-    index += this.set_int8(index, 1);
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_DIRTY_BIT), 1);
 
-    index += this.set_int8(index, param_array_index);
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS), param_array_index);
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -341,8 +389,8 @@ export class gameObject
 
         this.get_matrix_into(World_Matrix);
 
-       // TO DO: Reuse memroy in that func
-       let new_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+        // TO DO: Reuse memroy in that func
+        let new_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
 
         this.set_matrix(this.matrix_index, new_matrix);
         this.get_matrix_into(World_Matrix);
@@ -623,7 +671,7 @@ export class gameObject
 
       index_array[offset] = data;
 
-      return ALIGNMENT_BYTES_OF_DIRTY_BIT;
+      return BYTES_OF_FLOAT_32;
     }
 
     set_BRDF_params( offset, data)

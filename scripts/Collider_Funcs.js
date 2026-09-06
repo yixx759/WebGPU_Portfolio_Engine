@@ -144,7 +144,7 @@ export function ray_AABB_intersection(ray, min, max)
 
         if ((ray.get_ray_origin(i) < min[i] && dest[i] < min[i]) || (ray.get_ray_origin(i) > max[i] && dest[i] > max[i]) )
         {
-            console.log("First out");
+            // console.log("First out");
             //  console.log(`=== Element ${i} ===`);
             // console.log(`ray.get_ray_origin(${i}):`, ray.get_ray_origin(i));
             // console.log(`dest[${i}]:`, dest[i]);
