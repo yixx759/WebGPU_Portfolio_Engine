@@ -67,7 +67,6 @@ function load_float32(view, offset)
 
 function load_vector3_into(array, view, offset)
 {
-
     for (let i = 0; i < 3; i++)
     {
         array[i] = view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false);
@@ -147,10 +146,10 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_vector3(tmp_go.get_position(), view, offset);
 
         // OBJECT_START_SCALE
-        offset += add_float32(tmp_go.getScale(), view, offset);
+        offset += add_float32(tmp_go.get_scale(), view, offset);
 
         // OBJECT_START_ROTATION
-        offset += add_vector3(tmp_go.getRotation(), view, offset);
+        offset += add_vector3(tmp_go.get_rotation(), view, offset);
 
         // OBJECT_HALF
         offset += add_vector3(tmp_go.get_half(), view, offset);
@@ -185,10 +184,10 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_vector3(tmp_go.get_position(), view, offset);
 
         // OBJECT_START_SCALE
-        offset += add_float32(tmp_go.getScale(), view, offset);
+        offset += add_float32(tmp_go.get_scale(), view, offset);
 
         // OBJECT_START_ROTATION
-        offset += add_vector3(tmp_go.getRotation(), view, offset);
+        offset += add_vector3(tmp_go.get_rotation(), view, offset);
 
         // OBJECT_HALF
         offset += add_vector3(tmp_go.get_half(), view, offset);
@@ -318,6 +317,7 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
         let texture_index = load_int8(view, offset);
         offset += objectInfo.BYTES_OF_INT_8;
         console.log("texture_index: " + texture_index);
+        
         // OBJECT_START_POSITION
         load_vector3_into(tmp_pos, view, offset);
         offset += objectInfo.BYTES_OF_VECTOR3;

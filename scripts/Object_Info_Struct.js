@@ -171,11 +171,13 @@ export class gameObject
     // TO DO: Is adding to byte array done in parraleel for diff parts check
   
     let index = object_id * ALIGNMENT_BYTES_OF_OBJECT
-  
+    console.log("INDEX: " + index);
+
     // TO DO: GENERALIZE!
     this.byte_index = index;
     this.transform_index = get_float32_index(index, INDEX_OFFSET_INTO_POSITION);
     this.collision_index = get_float32_index(index, INDEX_OFFSET_INTO_HALF);
+    this.matrix_index = get_float32_index(index, INDEX_OFFSET_INTO_MATRIX);
     this.dirty_bit = get_int8_index(index, INDEX_OFFSET_INTO_DIRTY_BIT);
     this.BRDF_index = get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS);
     this.ID = object_id;
@@ -376,18 +378,20 @@ export class gameObject
     {
       if (index_array[this.dirty_bit] != 1)
       {
+        // console.log("saved amtrix")
         this.get_matrix_into(World_Matrix);
         return World_Matrix;
       }
       else
       {   
+        // console.log("calc amtrix")
         this.get_position_into(tmp_pos);
         let tmp_scale = this.get_scale();
         this.get_rotation_into(tmp_rot);
 
         this.set_dirty_bit(0);
 
-        this.get_matrix_into(World_Matrix);
+       // this.get_matrix_into(World_Matrix);
 
         // TO DO: Reuse memroy in that func
         let new_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);

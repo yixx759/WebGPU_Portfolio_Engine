@@ -347,8 +347,8 @@ export function transform_vertexs(vertex_info, game_object, )
 
     // Make world matrix for verts
     let tmp_pos = game_object.get_position();
-    let tmp_scale = game_object.getScale();
-    let tmp_rot = game_object.getRotation();
+    let tmp_scale = game_object.get_scale();
+    let tmp_rot = game_object.get_rotation();
     let world_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
 
     // THIS WAS CHANGED RECENTLY

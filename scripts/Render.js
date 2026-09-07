@@ -188,7 +188,6 @@ async function init() {
   let view1 = tex.createView(); 
   errorCheck(view1);
 
-
   const MODEL_CUBE_INDEX = await model_parser.add_model_to_array('resources/models/cube.obj', model_array);
   const MODEL_BUNNY_INDEX = await model_parser.add_model_to_array('resources/models/Bunny.obj', model_array);
   const MODEL_WALL_INDEX = await model_parser.add_model_to_array('resources/models/wall.obj', model_array);
@@ -511,9 +510,7 @@ const BRDF_PARAMS = device.createBuffer({
 for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
 {
   let BRDF_index = game_object_array[i].get_BRDF_index();
-
   const params = BRDF_configs.BRDF_config[BRDF_index];
-  console.log("Index: " + BRDF_index)
   const size = params.length;
   device.queue.writeBuffer(BRDF_PARAMS, i * object_info.SIZE_OF_BRDF_PARAMS_BYTES, params, 0, params.length);
 }
@@ -539,7 +536,7 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
 
   if (DEBUG_LOGS)
   {
-  bindDebugGroup = device.createBindGroup({
+    bindDebugGroup = device.createBindGroup({
       layout: renderDebugPipeline.getBindGroupLayout(0),
       entries: [
           {binding: 0, resource: {
@@ -668,8 +665,6 @@ const lightBindGroup = device.createBindGroup({
   ],
   });
 
-  let tmp_cam_pos = new Float32Array(4);
-
   document.addEventListener('click', function(evt) {
   debugLog("clicked")
 
@@ -692,12 +687,12 @@ const lightBindGroup = device.createBindGroup({
     const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
     console.log("AMOUNT OF OBJS: " + AMOUNT_OF_OBJECTS);
 
-    console.log("game_object_array[11]: " + game_object_array[10].get_position());
+    // console.log("game_object_array[10]: " + game_object_array[10].get_position());
 
     for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
-      game_object_array[i].get_min_Into_Struct(min_max);
-      game_object_array[i].get_max_Into_Struct(min_max);
+      game_object_array[i].get_min_into_struct(min_max);
+      game_object_array[i].get_max_into_struct(min_max);
 
       if (i == (AMOUNT_OF_OBJECTS - 1))
       {
@@ -752,6 +747,8 @@ let tmp_pos = tmp_mem.get_temp_memory_vector();
 let tmp_rot = tmp_mem.get_temp_memory_vector();
 let tmp_half = tmp_mem.get_temp_memory_vector();
 
+let tmp_World_Matrix = new Float32Array(4 * 4);
+
 function render() {
 
   if (debug_utils.trigger_recalculate_collider)
@@ -790,8 +787,8 @@ function render() {
   var perMatrix = helper.get_perspective_matrix(70, 1, 1000);
 
   {
-// TO DO: Put somewhere
-  let tmp_World_Matrix = new Float32Array(4 * 4);
+    // TO DO: Put somewhere
+    let tmp_World_Matrix = new Float32Array(4 * 4);
     assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_object_array, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
   }
 
@@ -817,7 +814,7 @@ function render() {
   passEncoder.setPipeline(renderPipeline);
   
   passEncoder.setBindGroup(2, lightBindGroup);
-  
+
   // This should be based on object indexs
   for (let i = 0; i < OBJECTS_TO_RENDER; i++)
   {
@@ -866,13 +863,13 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_ob
     if (SINGLE_TEST)
     {
       game_object_array[i].set_position(controls.cam_pos);
-      game_object_array[i].set_rotation( new Float32Array([0,controls.keyY,0]));
+      game_object_array[i].set_rotation(new Float32Array([0,controls.keyY,0]));
     }
 
     if (MOVE_TARGET_TEST && TARGET_INDEX == i)
     {
-      game_object_array[i].set_position( new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
-      game_object_array[i].set_rotation( new Float32Array([90,0,0]));
+      game_object_array[i].set_position(new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
+      game_object_array[i].set_rotation(new Float32Array([90,0,0]));
     }
 
      if (MOVE_TARGET_TEST && TARGET_INDEX == i)
@@ -899,34 +896,35 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_ob
 
 export function click_object(game_object_array, look_vector)
 {
-   const MAG = 10;
-    let dir = helper.vector_mult_scalar(look_vector, MAG);
-    let ray_from_player_forward = new ray(controls.cam_pos[0], controls.cam_pos[1], controls.cam_pos[2], -dir[0], -dir[1], -dir[2]);
+  const MAG = 10;
+  let dir = helper.vector_mult_scalar(look_vector, MAG);
+  let ray_from_player_forward = new ray(controls.cam_pos[0], controls.cam_pos[1], controls.cam_pos[2], -dir[0], -dir[1], -dir[2]);
 
-    let did_hit = false;
+  let did_hit = false;
 
-    const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
+  const min_max = {min: new Float32Array(3), max: new Float32Array(3)};
 
-    for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
+  {
+    game_object_array[i].get_min_into_struct(min_max);
+    game_object_array[i].get_max_into_struct(min_max);
+
+    // console.log("Max: " + min_max.max);
+    // console.log("Min: " + min_max.min);
+
+    if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
     {
-      game_object_array[i].get_min_into_struct(min_max);
-      game_object_array[i].get_max_into_struct(min_max);
-
-      // console.log("Max: " + min_max.max);
-      // console.log("Min: " + min_max.min);
-
-      if (ray_AABB_intersection(ray_from_player_forward, min_max.min, min_max.max))
-      {
-        return i;
-      }
+      return i;
     }
-    return -1;
+  }
+
+  return -1;
 }
 
-export function update_collider_vertex(device, game_object_array, collider_vertexDebugBuffer, target)
+export function update_collider_vertex(device, game_object_array, collider_vertex_debug_buffer, target)
 {
     let collider_box_vertex = make_vertexs(game_object_array, target);
-    device.queue.writeBuffer(collider_vertexDebugBuffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
+    device.queue.writeBuffer(collider_vertex_debug_buffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
 }
 
 export function get_object_half(game_object)

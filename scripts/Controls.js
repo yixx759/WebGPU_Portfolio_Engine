@@ -214,8 +214,8 @@ export function move_and_look(game_object_array, tmp_pos, tmp_half, player_colli
   {
     for (let i = 0; i < OBJECTS_TO_RENDER; i++)
     {
-      game_object_array[i].get_position_Into(tmp_pos);
-      game_object_array[i].get_half_Into(tmp_half);
+      game_object_array[i].get_position_into(tmp_pos);
+      game_object_array[i].get_half_into(tmp_half);
   
       if (AABB(tmp_pos, tmp_half, cam_pos, player_collider) && !SINGLE_TEST)
       {

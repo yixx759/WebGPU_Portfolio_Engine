@@ -82,7 +82,7 @@ export function recalculate_collider(game_object_array, device, collider_vertexD
     render.update_collider_vertex(device, game_object_array, collider_vertexDebugBuffer, object_selected);
     reset_collider_recalc_trigger();
 
-    game_object_array[object_selected].getRotation_Into(tmp_col_rot);
+    game_object_array[object_selected].get_rotation_into(tmp_col_rot);
 }
 
 function reset_object_values(selected_game_obj)
@@ -104,10 +104,11 @@ function leave_selection_mode()
 
 function save_selection_values(selected_game_obj)
 {
-    selected_game_obj.get_position_Into(tmp_pos);
-    selected_game_obj.getRotation_Into(tmp_rot);
-    tmp_scale = selected_game_obj.getScale();
-    selected_game_obj.getRotation_Into(tmp_col_rot);
+    console.log(selected_game_obj)
+    selected_game_obj.get_position_into(tmp_pos);
+    selected_game_obj.get_rotation_into(tmp_rot);
+    tmp_scale = selected_game_obj.get_scale();
+    selected_game_obj.get_rotation_into(tmp_col_rot);
     fill_in_html_debug(tmp_pos, tmp_rot, tmp_scale)
 }
 
@@ -190,26 +191,26 @@ window.submit_gui_values = function()
     selected_game_obj.setScale(parseFloat(scale_inp.value.trim()))
 }
 
-export function debug_select_object(game_object_array, look_vector, device, collider_vertexDebugBuffer)
+export function debug_select_object(game_object_array, look_vector, device, collider_vertex_debug_buffer)
 {
     if (!render.DEBUG_MODE) {console.log("Debug select ERROR: not in debug")}
 
     if (!is_object_selected){
         let object_index = render.click_object(game_object_array, look_vector);
-        
+    
         if (object_index != -1)
         {
             is_object_selected = true;
             object_selected = object_index;
 
             // TO DO: Should save pos / rot / scale
-            const selected_game_obj = game_object_array[object_index];
-            save_selection_values(selected_game_obj);
-            render.update_collider_vertex(device, game_object_array, collider_vertexDebugBuffer, object_selected);
-            console.log("Object selected: " + object_selected);
+            // const selected_game_obj = game_object_array[object_index];
+            // save_selection_values(selected_game_obj);
+            // render.update_collider_vertex(device, game_object_array, collider_vertex_debug_buffer, object_selected);
+            // console.log("Object selected: " + object_selected);
 
             // TO DO: Need to hide before selction and after selciton left
-            document.Debug_Values.style.display = "block"; 
+            //document.Debug_Values.style.display = "block"; 
         }
     }
 }
@@ -224,16 +225,16 @@ export function move_selected_object(game_object_array)
     {
         const selected_game_object = game_object_array[object_selected];
         
-        selected_game_object.get_position_Into(selected_tmp_pos);
-        selected_game_object.getRotation_Into(selected_tmp_rot);
-        selected_tmp_scale = selected_game_object.getScale();
+        selected_game_object.get_position_into(selected_tmp_pos);
+        selected_game_object.get_rotation_into(selected_tmp_rot);
+        selected_tmp_scale = selected_game_object.get_scale();
 
         selected_tmp_pos = helper.vector_add(selected_tmp_pos, new Float32Array([pos_x_down, pos_y_down, pos_z_down]), true);
         selected_tmp_rot = helper.vector_add(selected_tmp_rot, new Float32Array([rot_x_down * 2, rot_y_down * 2, rot_z_down * 2]), true);
 
         selected_game_object.set_position(selected_tmp_pos);
         selected_game_object.set_rotation(selected_tmp_rot);
-    }
+   }
 }
 
 document.addEventListener('keydown', function(evt) {

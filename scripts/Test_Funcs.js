@@ -4,35 +4,35 @@ export function objectTestPrints(playerObject, otherObject)
     console.log("Player vert:    " + playerObject.get_model_index());
     console.log("Player tex:     " + playerObject.get_texture_index());
     console.log("Player pos:     " + playerObject.get_position());
-    console.log("Player scale:   " + playerObject.getScale());
-    console.log("Player rot:     " + playerObject.getRotation());
+    console.log("Player scale:   " + playerObject.get_scale());
+    console.log("Player rot:     " + playerObject.get_rotation());
     console.log("Player half:    " + playerObject.get_half());
 
     console.log("Other vert:     " + otherObject.get_model_index());
     console.log("Other tex:      " + otherObject.get_texture_index());
     console.log("Other pos:      " + otherObject.get_position());
-    console.log("Other scale:    " + otherObject.getScale());
-    console.log("Other rot:      " + otherObject.getRotation());
+    console.log("Other scale:    " + otherObject.get_scale());
+    console.log("Other rot:      " + otherObject.get_rotation());
     console.log("Other half:     " + otherObject.get_half());
 
     console.log("=== After setters on player ===");
-    playerObject.setModelIndex(1);
-    playerObject.setTextureIndex(9);
+    playerObject.set_model_index(1);
+    playerObject.set_texture_index(9);
     playerObject.set_position(new Float32Array([7, 8, 9]));
-    playerObject.setScale(3.5);
+    playerObject.set_scale(3.5);
     playerObject.set_rotation(new Float32Array([1, 2, 3]));
     playerObject.set_half(new Float32Array([4, 4, 4]));
 
     console.log("Player vert:    " + playerObject.get_model_index());
     console.log("Player tex:     " + playerObject.get_texture_index());
     console.log("Player pos:     " + playerObject.get_position());
-    console.log("Player scale:   " + playerObject.getScale());
-    console.log("Player rot:     " + playerObject.getRotation());
+    console.log("Player scale:   " + playerObject.get_scale());
+    console.log("Player rot:     " + playerObject.get_rotation());
     console.log("Player half:    " + playerObject.get_half());
 
     console.log("=== Other should be unchanged ===");
     console.log("Other pos:      " + otherObject.get_position());
-    console.log("Other rot:      " + otherObject.getRotation());
+    console.log("Other rot:      " + otherObject.get_rotation());
     console.log("Other half:     " + otherObject.get_half());
 }
 
