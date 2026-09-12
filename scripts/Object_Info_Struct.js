@@ -29,6 +29,8 @@ let object_array;
 let transform_array;
 let index_array;
 
+export const NEW_ELEMENT_JUST_ADDED = false
+
 const AMOUNT_OF_ELEMENTS = 9;
 let OFFSET_INTO_ELEMENT = new Int16Array(AMOUNT_OF_ELEMENTS);
 
@@ -100,6 +102,9 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
   prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS];
 
   ALIGNMENT_BYTES_OF_OBJECT = helper.align(prev, ALIGHNMENT_NUMBER);
+
+  // TO DO: Make true if new element
+  NEW_ELEMENT_JUST_ADDED = false
 
   object_array = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
   transform_array = new Float32Array(object_array);
@@ -564,23 +569,6 @@ export class gameObject
       const f32_rotated_max = new Float32Array(rotated_max);
       // Set half for this object
       this.set_half(f32_rotated_max);
-
-      // Temp hot key to trigger collider_box_vertex = make_vertexs(game_object_array); - done
-      // This could be done during object creation if not loaded - done
-      // DO DEBUG SELECTION RETURN AFTER - done
-      // Soloution, on roation when Applying changes maube esc key. store orginal positions rot, scale
-      // Undo original roation then apply new opne/. - done
-      // Also trigger this with command in debug mode on selected object - done
-      // Is Collider post scale? - yes need to fix
-      // CHECK THIS ISNT OVERWRITTEN ON START UP AND IS SKIPPED ON LOAD.- done
-      // Should save halfs anyway on laod - done
-      // Button to enable collider view - done
-      // Fix player collision and test - done
-      // Wire frame remove depth new shader - done
-      // DO LATER
-      // If can be fucked just give it a matrix do pos/scale/rot
-      // Also min and max can be flipped min: 12 max -2 if roated weird above might fix
-      // or do full aabb recalc
     }
 
     get_matrix()

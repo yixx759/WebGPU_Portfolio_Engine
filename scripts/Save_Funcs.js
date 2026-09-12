@@ -1,31 +1,31 @@
-import * as objectInfo from './Object_Info_Struct.js'
+import * as object_info from './Object_Info_Struct.js'
 
-const SIZE_OF_OBJECT_NUMBER = objectInfo.BYTES_OF_INT_8;
-const SIZE_OF_END_PATTERN = objectInfo.BYTES_OF_INT_8;
-const SIZE_OF_COEFFS = 16 * 3 * objectInfo.BYTES_OF_FLOAT_32;
+const SIZE_OF_OBJECT_NUMBER = object_info.BYTES_OF_INT_8;
+const SIZE_OF_END_PATTERN = object_info.BYTES_OF_INT_8;
+const SIZE_OF_COEFFS = 16 * 3 * object_info.BYTES_OF_FLOAT_32;
 
 function add_int8(value, view, offset)
 {
     view.setInt8(offset, value);
 
-    return objectInfo.BYTES_OF_INT_8;
+    return object_info.BYTES_OF_INT_8;
 }
 
 function add_float32(value, view, offset)
 {
     view.setFloat32(offset, value);
 
-    return objectInfo.BYTES_OF_FLOAT_32;
+    return object_info.BYTES_OF_FLOAT_32;
 }
 
 function add_vector3(values, view, offset)
 {
     for (let i = 0; i < 3; i++)
     {
-        view.setFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, values[i]);
+        view.setFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, values[i]);
     }
 
-    return objectInfo.BYTES_OF_VECTOR3;
+    return object_info.BYTES_OF_VECTOR3;
 }
 
 function add_matrix(values, view, offset)
@@ -33,10 +33,10 @@ function add_matrix(values, view, offset)
 
     for (let i = 0; i < 16; i++)
     {
-        view.setFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, values[i]);
+        view.setFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, values[i]);
     }
 
-    return objectInfo.BYTES_OF_MATRIX;
+    return object_info.BYTES_OF_MATRIX;
 }
 
 function add_sh_matrix(values, view, offset)
@@ -44,10 +44,10 @@ function add_sh_matrix(values, view, offset)
 
     for (let i = 0; i < 16 * 3; i++)
     {
-        view.setFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, values[i]);
+        view.setFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, values[i]);
     }
 
-    return objectInfo.BYTES_OF_MATRIX * 3;
+    return object_info.BYTES_OF_MATRIX * 3;
 }
 
 function load_int8(view, offset)
@@ -69,7 +69,7 @@ function load_vector3_into(array, view, offset)
 {
     for (let i = 0; i < 3; i++)
     {
-        array[i] = view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false);
+        array[i] = view.getFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, false);
     }
 
     return array;
@@ -80,7 +80,7 @@ function load_matrix_into(matrix, view, offset)
 
     for (let i = 0; i < 16; i++)
     {
-        matrix[i] = view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false);
+        matrix[i] = view.getFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, false);
     }
 
     return matrix;
@@ -92,7 +92,7 @@ function load_sh_matrix_into(matrix, view, offset)
 
     for (let i = 0; i < 16 * 3; i++)
     {
-        matrix[i] = view.getFloat32(offset + i * objectInfo.BYTES_OF_FLOAT_32, false);
+        matrix[i] = view.getFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, false);
     }
 
     return matrix;
@@ -105,8 +105,8 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
     let bit_buffer = new ArrayBuffer(
         SIZE_OF_OBJECT_NUMBER +
         SIZE_OF_COEFFS +
-        objectInfo.BYTES_OF_VECTOR3 +
-        objectInfo.ALIGNMENT_BYTES_OF_OBJECT * (amount_of_objects + add_object_true)
+        object_info.BYTES_OF_VECTOR3 +
+        object_info.ALIGNMENT_BYTES_OF_OBJECT * (amount_of_objects + add_object_true)
     );
 
     let view = new DataView(bit_buffer);
@@ -255,10 +255,10 @@ export async function load_file(game_object_array, cam_pos, coeffs)
     // Load how many objects
     const amount_of_objects = load_int8(view, offset);
     
-    objectInfo.init_object_arrays(amount_of_objects +  1);
+    object_info.init_object_arrays(amount_of_objects +  1);
 
     console.log("Amount: " + amount_of_objects);
-    offset += objectInfo.BYTES_OF_INT_8;
+    offset += object_info.BYTES_OF_INT_8;
 
     console.log("before load object: ");
     console.log(offset);
@@ -282,7 +282,7 @@ export async function load_file(game_object_array, cam_pos, coeffs)
 function load_sh(coeffs, offset, view)
 {
     load_sh_matrix_into(coeffs, view, offset);
-    offset += objectInfo.BYTES_OF_MATRIX * 3;
+    offset += object_info.BYTES_OF_MATRIX * 3;
 
     return offset;
 }
@@ -290,7 +290,7 @@ function load_sh(coeffs, offset, view)
 function load_player(cam_pos, offset, view)
 {
     load_vector3_into(cam_pos, view, offset);
-    offset += objectInfo.BYTES_OF_VECTOR3;
+    offset += object_info.BYTES_OF_VECTOR3;
 
     return  offset;
 }
@@ -310,45 +310,54 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
 
         // OBJECT_MODEL_INDEX
         let model_index = load_int8(view, offset);
-        offset += objectInfo.BYTES_OF_INT_8;
+        offset += object_info.BYTES_OF_INT_8;
         console.log("Model: " + model_index);
 
         // OBJECT_TEXTURE_INDEX
         let texture_index = load_int8(view, offset);
-        offset += objectInfo.BYTES_OF_INT_8;
+        offset += object_info.BYTES_OF_INT_8;
         console.log("texture_index: " + texture_index);
         
         // OBJECT_START_POSITION
         load_vector3_into(tmp_pos, view, offset);
-        offset += objectInfo.BYTES_OF_VECTOR3;
+        offset += object_info.BYTES_OF_VECTOR3;
         console.log("tmp_pos: " + tmp_pos);
 
         // OBJECT_START_SCALE
         let scale = load_float32(view, offset);
-        offset += objectInfo.BYTES_OF_FLOAT_32;
+        offset += object_info.BYTES_OF_FLOAT_32;
         console.log("scale: " + scale);
 
         // OBJECT_START_ROTATION
         load_vector3_into(tmp_rot, view, offset);
-        offset += objectInfo.BYTES_OF_VECTOR3;
+        offset += object_info.BYTES_OF_VECTOR3;
         console.log("tmp_rot: " + tmp_rot);
 
         // OBJECT_HALF
         load_vector3_into(tmp_half, view, offset);
-        offset += objectInfo.BYTES_OF_VECTOR3;
+        offset += object_info.BYTES_OF_VECTOR3;
         console.log("tmp_half: " + tmp_half);
 
         // OBJECT_WORLD_MATRIX
         load_matrix_into(tmp_mat, view, offset);
-        offset += objectInfo.BYTES_OF_MATRIX;
+        offset += object_info.BYTES_OF_MATRIX;
         console.log("tmp_mat: " + tmp_mat);
 
-        // OBJECT_BRDF_INDEX
-        let brdf = load_int8(view, offset);
-        offset += objectInfo.BYTES_OF_INT_8;
-        console.log("brdf: " + brdf);
+        let tmp_obj;
 
-        let tmp_obj = new objectInfo.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf);
+        if (!object_info.NEW_ELEMENT_JUST_ADDED)
+        {
+            // OBJECT_BRDF_INDEX
+            let brdf = load_int8(view, offset);
+            offset += object_info.BYTES_OF_INT_8;
+            console.log("brdf: " + brdf);
+
+            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf);
+        }
+        else    
+        { 
+            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, 0);
+        }
 
         game_object_array.push(tmp_obj);
     }

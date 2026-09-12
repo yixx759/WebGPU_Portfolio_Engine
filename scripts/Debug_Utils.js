@@ -34,7 +34,6 @@ export let scale_x_down = 0;
 export let scale_y_down = 0;
 export let scale_z_down = 0;
 
-
 // If DEBUG_MODE on allow for object selection and fill in obj selec
 // Rember when DEBUG turned off object selected and is obj needs tuirned off
 // Make func to disable and enable this.
@@ -204,13 +203,13 @@ export function debug_select_object(game_object_array, look_vector, device, coll
             object_selected = object_index;
 
             // TO DO: Should save pos / rot / scale
-            // const selected_game_obj = game_object_array[object_index];
-            // save_selection_values(selected_game_obj);
-            // render.update_collider_vertex(device, game_object_array, collider_vertex_debug_buffer, object_selected);
-            // console.log("Object selected: " + object_selected);
+            const selected_game_obj = game_object_array[object_index];
+            save_selection_values(selected_game_obj);
+            render.update_collider_vertex(device, game_object_array, collider_vertex_debug_buffer, object_selected);
+            console.log("Object selected: " + object_selected);
 
             // TO DO: Need to hide before selction and after selciton left
-            //document.Debug_Values.style.display = "block"; 
+            document.Debug_Values.style.display = "block"; 
         }
     }
 }
