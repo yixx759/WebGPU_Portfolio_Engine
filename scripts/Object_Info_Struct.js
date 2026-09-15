@@ -31,7 +31,7 @@ let index_array;
 
 export const NEW_ELEMENT_JUST_ADDED = false
 
-const AMOUNT_OF_ELEMENTS = 9;
+const AMOUNT_OF_ELEMENTS = 10;
 let OFFSET_INTO_ELEMENT = new Int16Array(AMOUNT_OF_ELEMENTS);
 
 function add_int8_element(index)
@@ -71,6 +71,7 @@ let INDEX_OFFSET_INTO_HALF = 5;
 let INDEX_OFFSET_INTO_MATRIX = 6;
 let INDEX_OFFSET_INTO_DIRTY_BIT = 7;
 let INDEX_OFFSET_INTO_BRDF_PARAMS = 8;
+let INDEX_OFFSET_INTO_BIT_FIELD = 9;
 
 export function init_object_arrays(AMOUNT_OF_OBJECTS)
 {
@@ -101,10 +102,13 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
   OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS] = add_int8_element(prev);
   prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS];
 
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BIT_FIELD] = add_int8_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BIT_FIELD];
+
   ALIGNMENT_BYTES_OF_OBJECT = helper.align(prev, ALIGHNMENT_NUMBER);
 
   // TO DO: Make true if new element
-  NEW_ELEMENT_JUST_ADDED = false
+  // NEW_ELEMENT_JUST_ADDED = true
 
   object_array = new ArrayBuffer(ALIGNMENT_BYTES_OF_OBJECT * AMOUNT_OF_OBJECTS);
   transform_array = new Float32Array(object_array);
@@ -140,12 +144,15 @@ function get_int8_index(base_index, element_index)
   * WORLD MATRIX *
   float32[16] world matrix 
 
-  * Dirty Bit*
+  * Dirty Bit *
   int8 dirty_bit
 
   // TO DO : STORE EAHC ONE HERE??
   * BRDF Parameters *
   int8 BRDF param index  
+
+  * Bit Field *
+  int8 Bit Field Type
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -158,6 +165,7 @@ export class gameObject
   BRDF_index;
   dirty_bit;
   matrix_index;
+  bit_field_index;
 
   // TO DO AUTOMATE INTIALIZATION FUNCT, FUNCTIONS TO CREATE NEW INT8 OBEJCT, VECTOIRE 3 ETC
   // These fubcs write how fat into to that index
@@ -168,7 +176,7 @@ export class gameObject
 
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(object_id, vertex_index, texture_index, position, scale, rotation, half, world_matrix, param_array_index)
+  constructor(object_id, vertex_index, texture_index, position, scale, rotation, half, world_matrix, param_array_index, bit_field_index=0)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
@@ -185,6 +193,7 @@ export class gameObject
     this.matrix_index = get_float32_index(index, INDEX_OFFSET_INTO_MATRIX);
     this.dirty_bit = get_int8_index(index, INDEX_OFFSET_INTO_DIRTY_BIT);
     this.BRDF_index = get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS);
+    this.bit_field_index = get_int8_index(index, INDEX_OFFSET_INTO_BIT_FIELD);
     this.ID = object_id;
 
     // Set vertexIndex
@@ -216,7 +225,11 @@ export class gameObject
     // Set Dirty Bit
     this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_DIRTY_BIT), 1);
 
+    // Set BRDF Params
     this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS), param_array_index);
+
+    // Set Bit Field Type
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_BIT_FIELD), bit_field_index);
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -519,7 +532,7 @@ export class gameObject
       const halfs = this.get_half(transform_array);
       const pos = this.get_position(transform_array);
 
-       return min_max.max.set([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
+      return min_max.max.set([pos[0] + halfs[0], pos[1] + halfs[1], pos[2] + halfs[2]]);
     }
 
     get_max()
@@ -730,5 +743,24 @@ export class gameObject
 
       return index_array[this.BRDF_index];
     }
-    
+
+    set_bit_field(data)
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Set scale wasnt given int8array");
+        return -1;
+      }
+
+      index_array[this.bit_field_index] = data;
+    }
+
+    get_bit_field()
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Get BRDF index wasnt given int8array");
+        return -1;
+      }
+
+      return index_array[this.bit_field_index];
+    }
 }

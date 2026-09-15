@@ -1,4 +1,5 @@
 import * as object_info from './Object_Info_Struct.js'
+import { get_object_half } from './Render.js';
 
 const SIZE_OF_OBJECT_NUMBER = object_info.BYTES_OF_INT_8;
 const SIZE_OF_END_PATTERN = object_info.BYTES_OF_INT_8;
@@ -155,10 +156,14 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_vector3(tmp_go.get_half(), view, offset);
 
         // OBJECT_WORLD_MATRIX
-        offset += add_matrix(tmp_go.getMatrix(), view, offset);
+        offset += add_matrix(tmp_go.get_matrix(), view, offset);
 
         // OBJECT_BRDF_INDEX
         offset += add_int8(tmp_go.get_BRDF_index(), view, offset);
+
+        // OBJECT_BIT_FIELD
+        offset += add_int8(tmp_go.get_bit_field(), view, offset);
+
         console.log("offset during: ");
         console.log(offset);
     }
@@ -193,11 +198,14 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_vector3(tmp_go.get_half(), view, offset);
 
         // OBJECT_WORLD_MATRIX
-        offset += add_matrix(tmp_go.getMatrix(), view, offset);
+        offset += add_matrix(tmp_go.get_matrix(), view, offset);
 
-        console.log("BRDF: " + tmp_go.get_BRDF_index());
         // OBJECT_BRDF_INDEX
         offset += add_int8(tmp_go.get_BRDF_index(), view, offset);
+
+        // OBJECT_BIT_FIELD
+        offset += add_int8(tmp_go.get_bit_field(), view, offset);
+
         console.log("offset during: ");
         console.log(offset);
     }
@@ -343,20 +351,24 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
         offset += object_info.BYTES_OF_MATRIX;
         console.log("tmp_mat: " + tmp_mat);
 
+        // OBJECT_BRDF_INDEX
+        let brdf = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("brdf: " + brdf);
+
         let tmp_obj;
 
         if (!object_info.NEW_ELEMENT_JUST_ADDED)
         {
-            // OBJECT_BRDF_INDEX
-            let brdf = load_int8(view, offset);
+            let bit_field = load_int8(view, offset);
             offset += object_info.BYTES_OF_INT_8;
-            console.log("brdf: " + brdf);
+            console.log("Bit Field: " + bit_field)
 
-            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf);
+            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field);
         }
         else    
         { 
-            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, 0);
+            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, 4);
         }
 
         game_object_array.push(tmp_obj);

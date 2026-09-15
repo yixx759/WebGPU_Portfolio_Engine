@@ -88,7 +88,7 @@ function reset_object_values(selected_game_obj)
 {
     selected_game_obj.set_position(tmp_pos);
     selected_game_obj.set_rotation(tmp_rot);
-    selected_game_obj.setScale(tmp_scale);
+    selected_game_obj.set_scale(tmp_scale);
 }
 
 function leave_selection_mode()
@@ -187,7 +187,7 @@ window.submit_gui_values = function()
 
     selected_game_obj.set_position(new Float32Array([parseFloat(pos_inp[0].value.trim()), parseFloat(pos_inp[1].value.trim()), parseFloat(pos_inp[2].value.trim())]));
     selected_game_obj.set_rotation(new Float32Array([parseFloat(rot_inp[0].value.trim()), parseFloat(rot_inp[1].value.trim()), parseFloat(rot_inp[2].value.trim())]));
-    selected_game_obj.setScale(parseFloat(scale_inp.value.trim()))
+    selected_game_obj.set_scale(parseFloat(scale_inp.value.trim()))
 }
 
 export function debug_select_object(game_object_array, look_vector, device, collider_vertex_debug_buffer)
