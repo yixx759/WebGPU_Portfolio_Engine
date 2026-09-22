@@ -13,6 +13,7 @@ import * as controls from './Controls.js';
 import * as tmp_mem from './Temp_Mem.js';
 import * as save_funcs from './Save_Funcs.js';
 import * as debug_utils from './Debug_Utils.js';
+import * as ray_cast_funcs from './Ray_Cast_Funcs.js';
 
 const clear_color = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
@@ -689,6 +690,8 @@ const lightBindGroup = device.createBindGroup({
 
     // console.log("game_object_array[10]: " + game_object_array[10].get_position());
 
+    let game_object_hit = -1;
+
     for (let i = 0; i < AMOUNT_OF_OBJECTS; i++)
     {
       game_object_array[i].get_min_into_struct(min_max);
@@ -705,7 +708,14 @@ const lightBindGroup = device.createBindGroup({
       {
         console.log("Hit");
         did_hit = true;
+        game_object_hit = i;
       }
+    }
+
+    if (!DEBUG_MODE && did_hit)
+    {
+      console.log("IN HIT FUNC");
+      ray_cast_funcs.process_raycast_hit(game_object_array[game_object_hit]);
     }
 
     new_ray_pos(controls.cam_pos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertex_debug_buffer);
@@ -942,6 +952,8 @@ export function get_object_half(game_object)
   game_object.set_half(makeColliderFromVerts(model_array[vertex_index]));
   game_object.update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS); 
 }
+
+
 
 
 init();

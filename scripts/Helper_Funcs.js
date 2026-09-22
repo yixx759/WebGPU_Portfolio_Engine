@@ -15,6 +15,8 @@ export const ZEROS_MATRIX = new Float32Array([0, 0, 0, 0
 
 export const ONE_OVER_PI = 0.31830988618;
 
+export const BIT_FIELD_CHEST_ITEM = (1 << 2); 
+
 const TEST_FUNCS = false;
 
 if (TEST_FUNCS)

@@ -17,6 +17,7 @@ export let SHOW_COLLIDER = false;
 let tmp_pos = new Float32Array(3);
 let tmp_rot = new Float32Array(3);
 let tmp_scale = -1;
+let tmp_bit_field = -1;
 
 // If roation is 90 degrees, but colldier already rotated 90
 // This creats a problem doing 180 degrees. needs to undo then do the 90
@@ -51,7 +52,7 @@ window.create_new_object = function()
     tmp_rot = new Float32Array([parseFloat(rot_inp[0].value), parseFloat(rot_inp[1].value), parseFloat(rot_inp[2].value)])
 
     // USE AMOUNT_OF_OBJECTS FOR ID
-    let tmp_object = new objectInfo.gameObject(render.AMOUNT_OF_OBJECTS, parseInt(document.Create_Object_Values.vertex_index.value.trim()), parseInt(document.Create_Object_Values.texture_index.value.trim()), tmp_pos, parseFloat(document.Create_Object_Values.scale.value.trim()), tmp_rot, helper.ZEROS, helper.ZEROS_MATRIX, parseInt(document.Create_Object_Values.BRDF_index.value.trim()));
+    let tmp_object = new objectInfo.gameObject(render.AMOUNT_OF_OBJECTS, parseInt(document.Create_Object_Values.vertex_index.value.trim()), parseInt(document.Create_Object_Values.texture_index.value.trim()), tmp_pos, parseFloat(document.Create_Object_Values.scale.value.trim()), tmp_rot, helper.ZEROS, helper.ZEROS_MATRIX, parseInt(document.Create_Object_Values.BRDF_index.value.trim()), parseInt(document.Create_Object_Values.bit_field_index.value.trim()));
 
     console.log(tmp_object.get_BRDF_index())
     // USE VALUES FROM FOURM AND HALF NEEDS CALUCLATED
@@ -108,14 +109,16 @@ function save_selection_values(selected_game_obj)
     selected_game_obj.get_rotation_into(tmp_rot);
     tmp_scale = selected_game_obj.get_scale();
     selected_game_obj.get_rotation_into(tmp_col_rot);
-    fill_in_html_debug(tmp_pos, tmp_rot, tmp_scale)
+    tmp_bit_field = selected_game_obj.get_bit_field();
+    fill_in_html_debug(tmp_pos, tmp_rot, tmp_scale, tmp_bit_field);
 }
 
-function fill_in_html_debug(pos, rot, scale)
+function fill_in_html_debug(pos, rot, scale, bit_field)
 {
     const pos_inp = document.Debug_Values.elements["pos[]"];
     const rot_inp = document.Debug_Values.elements["rot[]"];
     const scale_inp = document.Debug_Values.scale;
+    const bit_field_inp = document.Debug_Values.bit_field_index;
     
     pos_inp[0].value = pos[0];
     pos_inp[1].value = pos[1];
@@ -126,6 +129,8 @@ function fill_in_html_debug(pos, rot, scale)
     rot_inp[2].value = rot[2];
 
     scale_inp.value = scale;
+
+    bit_field_inp.value = bit_field;
 }
 
 function validate_num(num)
@@ -143,7 +148,7 @@ function validate_num(num)
     return true;
 }
 
-function validate_gui_values(pos_inp, rot_inp, scale_inp)
+function validate_gui_values(pos_inp, rot_inp, scale_inp, bit_field_inp)
 {
     for (let i = 0; i < 3; i++)
     {
@@ -169,6 +174,12 @@ function validate_gui_values(pos_inp, rot_inp, scale_inp)
         return false;
     }
 
+    if (!validate_num(bit_field_inp))
+    {
+        console.print("Bit field Breaks");
+        return false;
+    }
+
     return true;
 }
 
@@ -177,8 +188,9 @@ window.submit_gui_values = function()
     const pos_inp = document.Debug_Values.elements["pos[]"];
     const rot_inp = document.Debug_Values.elements["rot[]"];
     const scale_inp = document.Debug_Values.scale;
+    const bit_field_inp = document.Debug_Values.bit_field_index;
     
-    if (!validate_gui_values(pos_inp, rot_inp, scale_inp))
+    if (!validate_gui_values(pos_inp, rot_inp, scale_inp, bit_field_inp))
     {
         return
     }
@@ -188,6 +200,7 @@ window.submit_gui_values = function()
     selected_game_obj.set_position(new Float32Array([parseFloat(pos_inp[0].value.trim()), parseFloat(pos_inp[1].value.trim()), parseFloat(pos_inp[2].value.trim())]));
     selected_game_obj.set_rotation(new Float32Array([parseFloat(rot_inp[0].value.trim()), parseFloat(rot_inp[1].value.trim()), parseFloat(rot_inp[2].value.trim())]));
     selected_game_obj.set_scale(parseFloat(scale_inp.value.trim()))
+    selected_game_obj.set_bit_field(parseInt(bit_field_inp.value.trim()));
 }
 
 export function debug_select_object(game_object_array, look_vector, device, collider_vertex_debug_buffer)
