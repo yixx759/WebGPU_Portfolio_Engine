@@ -624,10 +624,14 @@ light_manager.add_new_light(0,0,-12.2, 1, 2);
 // Light 2 
 light_manager.add_new_light(12, -2, -5, 0, 2);
 
+light_manager.add_new_light(0, 0, 3, 1, 20);
+
 const Point_Lights = device.createBuffer({
   size:  light_manager.ALIGNED_SIZE_OF_POINT_LIGHT_BYTES * light_manager.TOTAL_AMOUNT_OF_POINT_LIGHTS, 
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
+
+console.log("poitn num: " + light_manager.POINT_LIGHT_ARRAY.length);
 
 device.queue.writeBuffer(Point_Lights, 0, light_manager.POINT_LIGHT_ARRAY, 0, light_manager.POINT_LIGHT_ARRAY.length);
 

@@ -6,7 +6,7 @@ const DEBUG = true;
 const ALLIGHNMENT_NUMBER = 32
 
 // This must match wgsl version
-export const TOTAL_AMOUNT_OF_POINT_LIGHTS = 2;
+export const TOTAL_AMOUNT_OF_POINT_LIGHTS = 3;
 
 export const SIZE_OF_POINT_LIGHT_BYTES = objectInfo.BYTES_OF_VECTOR3 + objectInfo.BYTES_OF_FLOAT_32 +  objectInfo.BYTES_OF_FLOAT_32;
 const SIZE_OF_POINT_LIGHT_F32 = SIZE_OF_POINT_LIGHT_BYTES / objectInfo.BYTES_OF_FLOAT_32;

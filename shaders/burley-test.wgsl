@@ -198,7 +198,7 @@ struct POINT_LIGHT {
 
 const INCLUDE_POINT_LIGHTS = true;
 
-const TOTAL_POINT_LIGHT_NUMBER = 2;
+const TOTAL_POINT_LIGHT_NUMBER = 3;
 const INVERSE_DENOM_CONST = 0.001;
 
 // TO DO: Maybe Switch to linear fall off after r_max * 0.8
