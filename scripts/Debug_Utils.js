@@ -52,7 +52,7 @@ window.create_new_object = function()
     tmp_rot = new Float32Array([parseFloat(rot_inp[0].value), parseFloat(rot_inp[1].value), parseFloat(rot_inp[2].value)])
 
     // USE AMOUNT_OF_OBJECTS FOR ID
-    let tmp_object = new objectInfo.gameObject(render.AMOUNT_OF_OBJECTS, parseInt(document.Create_Object_Values.vertex_index.value.trim()), parseInt(document.Create_Object_Values.texture_index.value.trim()), tmp_pos, parseFloat(document.Create_Object_Values.scale.value.trim()), tmp_rot, helper.ZEROS, helper.ZEROS_MATRIX, parseInt(document.Create_Object_Values.BRDF_index.value.trim()), parseInt(document.Create_Object_Values.bit_field_index.value.trim()));
+    let tmp_object = new objectInfo.game_object(render.AMOUNT_OF_OBJECTS, parseInt(document.Create_Object_Values.vertex_index.value.trim()), parseInt(document.Create_Object_Values.texture_index.value.trim()), tmp_pos, parseFloat(document.Create_Object_Values.scale.value.trim()), tmp_rot, helper.ZEROS, helper.ZEROS_MATRIX, parseInt(document.Create_Object_Values.BRDF_index.value.trim()), parseInt(document.Create_Object_Values.bit_field_index.value.trim()));
 
     console.log(tmp_object.get_BRDF_index())
     // USE VALUES FROM FOURM AND HALF NEEDS CALUCLATED

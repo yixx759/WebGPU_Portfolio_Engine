@@ -16,6 +16,7 @@ export const ZEROS_MATRIX = new Float32Array([0, 0, 0, 0
 export const ONE_OVER_PI = 0.31830988618;
 
 export const BIT_FIELD_CHEST_ITEM = (1 << 2); 
+export const BIT_FIELD_ENEMY= (1 << 0); 
 
 const TEST_FUNCS = false;
 
@@ -253,12 +254,29 @@ export function vector_add(A, B, is_point = false)
   }
 }
 
+
+export function vector_3_add_into(A, B)
+{
+  A[0] += B[0];
+  A[1] += B[1];
+  A[2] += B[2];
+
+  return A;
+}
+
 export function vector_mult(A, mag_vector){
   return new Float32Array([A[0]*mag_vector[0], A[1]*mag_vector[1],A[2]*mag_vector[2], 0]);
 }
 
 export function vector_mult_scalar(A, mag_scalar){
   return new Float32Array([A[0]*mag_scalar, A[1]*mag_scalar, A[2]*mag_scalar, 0]);
+}
+
+export function vector_mult_scalar_into(A, mag_scalar){
+  A[0] *= mag_scalar;
+  A[1] *= mag_scalar;
+  A[2] *= mag_scalar;
+  return A;
 }
 
 export function vector_div_scalar(A, mag_scalar){
@@ -292,6 +310,14 @@ export function vector_subtract(A, B){
   return new Float32Array([A[0]-B[0], A[1]-B[1],A[2]-B[2]]);
 }
 
+export function vector_subtract_into_first_param(A, B){
+  A[0] -= B[0];
+  A[1] -= B[1];
+  A[2] -= B[2];
+
+  return A;
+}
+
 export function abs_vector_subtract(A, B){
   return new Float32Array([Math.abs(A[0]-B[0]), Math.abs(A[1]-B[1]), Math.abs(A[2]-B[2])]);
 }
@@ -323,6 +349,15 @@ export function vector_mag(A){
 export function vector_norm(A){
   const mag = vector_mag(A);
   return [A[0]/mag, A[1]/mag, A[2]/mag];
+}
+
+export function vector_norm_into(A){
+  const mag = vector_mag(A);
+  A[0] /= mag;
+  A[1] /= mag;
+  A[2] /= mag;
+
+  return A;
 }
 
 export function vector_reflect(V, N)

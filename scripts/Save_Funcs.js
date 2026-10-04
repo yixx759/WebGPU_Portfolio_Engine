@@ -364,11 +364,11 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
             offset += object_info.BYTES_OF_INT_8;
             console.log("Bit Field: " + bit_field)
 
-            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field);
+            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field);
         }
         else    
         { 
-            tmp_obj = new object_info.gameObject(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, 4);
+            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, 4);
         }
 
         game_object_array.push(tmp_obj);

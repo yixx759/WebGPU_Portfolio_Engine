@@ -14,6 +14,7 @@ import * as tmp_mem from './Temp_Mem.js';
 import * as save_funcs from './Save_Funcs.js';
 import * as debug_utils from './Debug_Utils.js';
 import * as ray_cast_funcs from './Ray_Cast_Funcs.js';
+import * as enemy_funcs from './Enemy_Funcs.js';
 
 const clear_color = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
@@ -81,6 +82,8 @@ else
 }
 
 console.log(game_object_array);
+
+enemy_funcs.create_enemy_list(game_object_array);
 
 const PLAYER_INDEX = 0;
 const OTHER_OB_INDEX = 1;
@@ -773,6 +776,11 @@ function render() {
   if (DEBUG_MODE && debug_utils.is_object_selected)
   {
     debug_utils.move_selected_object(game_object_array);
+  }
+
+  if (!DEBUG_MODE)
+  {
+      enemy_funcs.move_enemys_towards_target();
   }
 
   Time = Date.now() / CONST_TIME_DIV;

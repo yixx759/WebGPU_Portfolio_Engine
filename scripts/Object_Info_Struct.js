@@ -156,7 +156,7 @@ function get_int8_index(base_index, element_index)
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
-export class gameObject
+export class game_object
 {
   ID;
   byte_index;
