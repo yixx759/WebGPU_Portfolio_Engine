@@ -355,19 +355,24 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
         let brdf = load_int8(view, offset);
         offset += object_info.BYTES_OF_INT_8;
         console.log("brdf: " + brdf);
+        
+        let bit_field = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("Bit Field: " + bit_field)
 
         let tmp_obj;
 
         if (!object_info.NEW_ELEMENT_JUST_ADDED)
         {
-            let bit_field = load_int8(view, offset);
-            offset += object_info.BYTES_OF_INT_8;
-            console.log("Bit Field: " + bit_field)
+            // let velocity = load_vector3_into(view, offset);
+            // offset += object_info.BYTES_OF_VECTOR3;
+            // console.log("Velocity: " + velocity)
 
             tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field);
         }
         else    
-        { 
+        {
+            console.log(model_index); 
             tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, 4);
         }
 

@@ -18,6 +18,8 @@ export const ONE_OVER_PI = 0.31830988618;
 export const BIT_FIELD_CHEST_ITEM = (1 << 2); 
 export const BIT_FIELD_ENEMY= (1 << 0); 
 
+export let DT = 0.001;
+
 const TEST_FUNCS = false;
 
 if (TEST_FUNCS)
@@ -254,7 +256,6 @@ export function vector_add(A, B, is_point = false)
   }
 }
 
-
 export function vector_3_add_into(A, B)
 {
   A[0] += B[0];
@@ -281,6 +282,14 @@ export function vector_mult_scalar_into(A, mag_scalar){
 
 export function vector_div_scalar(A, mag_scalar){
   return new Float32Array([A[0]/mag_scalar, A[1]/mag_scalar, A[2]/mag_scalar, 0]);
+}
+
+export function vector_div_scalar_into(A, mag_scalar){
+  A[0]/mag_scalar;
+  A[1]/mag_scalar;
+  A[2]/mag_scalar;
+
+  return A;
 }
 
 export function vector_add_cam(A, X, Z){
@@ -367,6 +376,44 @@ export function vector_reflect(V, N)
 
   // \(\vec{R} = \vec{V} - 2(\vec{V} \cdot \vec{N})\vec{N}\)
   return vector_subtract(V, R);
+}
+
+export function move_towards(current_vel, target_vel, max_accel)
+{
+  let current_to_target = vector_subtract(target_vel, current_vel);
+  const mag = vector_mag(current_to_target);
+
+  if (mag <= max_accel || mag == 0)
+  {
+    return target_vel;
+  }
+
+  return vector_3_add_into(current_vel, vector_mult_scalar_into(vector_div_scalar_into(current_to_target, mag), max_accel));
+}
+
+export function rotate_normalized_lerp(current_dir, target_dir, max_rot_accel)
+{
+  if (target_dir == ZEROS)
+  {
+    return current_dir;
+  }
+
+  let lerped_dir = vector_3_lerp(current_dir, target_dir, Math.min(max_rot_accel, 1));
+  return vector_norm_into(lerped_dir);
+}
+
+function lerp(a, b, t)
+{
+  return (a * (1 - t) + b * (t));
+}
+
+export function vector_3_lerp(a, b, t)
+{
+  a[0] = lerp(a[0], b[0], t);
+  a[1] = lerp(a[1], b[1], t);
+  a[2] = lerp(a[2], b[2], t);
+
+  return a;
 }
 
 export function apply_world_to_collider(vec, matrix)

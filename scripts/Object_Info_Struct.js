@@ -29,9 +29,9 @@ let object_array;
 let transform_array;
 let index_array;
 
-export const NEW_ELEMENT_JUST_ADDED = false
+export const NEW_ELEMENT_JUST_ADDED = false; 
 
-const AMOUNT_OF_ELEMENTS = 10;
+const AMOUNT_OF_ELEMENTS = 11;
 let OFFSET_INTO_ELEMENT = new Int16Array(AMOUNT_OF_ELEMENTS);
 
 function add_int8_element(index)
@@ -72,9 +72,12 @@ let INDEX_OFFSET_INTO_MATRIX = 6;
 let INDEX_OFFSET_INTO_DIRTY_BIT = 7;
 let INDEX_OFFSET_INTO_BRDF_PARAMS = 8;
 let INDEX_OFFSET_INTO_BIT_FIELD = 9;
+let INDEX_OFFSET_INTO_VELOCITY = 10;
 
 export function init_object_arrays(AMOUNT_OF_OBJECTS)
 {
+  (AMOUNT_OF_ELEMENTS < OFFSET_INTO_ELEMENT.length) ? console.log("OFFSET ELEMENT ARRAY NOT BIG ENOUGH") : console.log("srart of init object array");
+
   let prev = 0;
   OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VERTEX_INDEX] = prev;
 
@@ -104,6 +107,9 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
 
   OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BIT_FIELD] = add_int8_element(prev);
   prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BIT_FIELD];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VELOCITY] = add_vector3_element(prev)
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VELOCITY];
 
   ALIGNMENT_BYTES_OF_OBJECT = helper.align(prev, ALIGHNMENT_NUMBER);
 
@@ -153,6 +159,10 @@ function get_int8_index(base_index, element_index)
 
   * Bit Field *
   int8 Bit Field Type
+
+  // TO DO: Move me to transfrom
+  * Physics *
+  vector3 velocity
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -166,13 +176,7 @@ export class game_object
   dirty_bit;
   matrix_index;
   bit_field_index;
-
-  // TO DO AUTOMATE INTIALIZATION FUNCT, FUNCTIONS TO CREATE NEW INT8 OBEJCT, VECTOIRE 3 ETC
-  // These fubcs write how fat into to that index
-  // then in constructor assighn that array by itslef or / 4 with antoher funciton
-  // THIS ALSO EFFECTS ALIGHNMENT BYTES OF OBJECT
-  // JUST HAVE CONSTANTS GOIGN FROM 0 to whatever acessing that index array mangaed for me
-
+  velocity_field_index;
 
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
@@ -182,7 +186,7 @@ export class game_object
     // NOTE: Keep alighnment in mind
 
     // TO DO: Is adding to byte array done in parraleel for diff parts check
-  
+ 
     let index = object_id * ALIGNMENT_BYTES_OF_OBJECT
     console.log("INDEX: " + index);
 
@@ -194,6 +198,7 @@ export class game_object
     this.dirty_bit = get_int8_index(index, INDEX_OFFSET_INTO_DIRTY_BIT);
     this.BRDF_index = get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS);
     this.bit_field_index = get_int8_index(index, INDEX_OFFSET_INTO_BIT_FIELD);
+    this.velocity_field_index = get_float32_index(index, INDEX_OFFSET_INTO_VELOCITY);
     this.ID = object_id;
 
     // Set vertexIndex
@@ -230,6 +235,8 @@ export class game_object
 
     // Set Bit Field Type
     this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_BIT_FIELD), bit_field_index);
+
+    this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_VELOCITY), helper.ZEROS);
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -762,5 +769,51 @@ export class game_object
       }
 
       return index_array[this.bit_field_index];
+    }
+
+     // NOTE: Have a view for float32 to pass in.
+    get_velocity_into(pos)
+    {
+
+      if (!(transform_array instanceof Float32Array)) {
+        console.log("ERROR: Get position wasnt given float32array");
+        return -1;
+      }
+
+      const x = transform_array[this.velocity_field_index]
+      const y = transform_array[this.velocity_field_index + 1]
+      const z = transform_array[this.velocity_field_index + 2]
+
+      pos.set([x, y, z]);
+
+      return 1;
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    get_velocity()
+    {
+      if (!(transform_array instanceof Float32Array)) {
+        console.log("ERROR: Get position wasnt given float32array");
+        throw new Error("Something went wrong");
+        return -1;
+      }
+
+      const x = transform_array[this.velocity_field_index]
+      const y = transform_array[this.velocity_field_index + 1]
+      const z = transform_array[this.velocity_field_index + 2]
+
+      return new Float32Array([x, y, z]);
+    }
+
+    // NOTE: Have a view for float32 to pass in.
+    set_velocity(data)
+    {
+      if (!(transform_array instanceof Float32Array)) {
+        console.log("ERROR: Set position wasnt given float32array");
+        throw new Error("Something went wrong");
+        return -1;
+      }
+
+      return this.set_vector3(this.velocity_field_index, data)
     }
 }
