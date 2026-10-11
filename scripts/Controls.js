@@ -55,6 +55,8 @@ document.addEventListener('keydown', async function(evt) {
   }
 })
 
+const MOVE_SPEED = 5;
+
 document.addEventListener('keydown', function(evt) {
 
   // if (render.SAVE_CURRENT_STATE)
@@ -71,26 +73,26 @@ document.addEventListener('keydown', function(evt) {
 
     if (evt.key.toLowerCase() === 'w') {
       render.debugLog("Up");
-      keyZDown = -0.1;
+      keyZDown = -0.1 * MOVE_SPEED;
     } else if (evt.key.toLowerCase() === 's') {
       render.debugLog("Down");
-      keyZDown = 0.1;
+      keyZDown = 0.1 * MOVE_SPEED;
     }
 
     if (evt.key.toLowerCase() === 'd') {
       render.debugLog("Right");
-      keyXDown = -0.1;
+      keyXDown = -0.1 * MOVE_SPEED;
     } else if (evt.key.toLowerCase() === 'a') {
       render.debugLog("Left");
-      keyXDown = 0.1;
+      keyXDown = 0.1 * MOVE_SPEED;
     }
 
     if (evt.key.toLowerCase() === 'e') {
       render.debugLog("forward");
-      keyYDown = 0.1;
+      keyYDown = 0.1 * MOVE_SPEED;
     } else if (evt.key.toLowerCase() === 'q') {
       render.debugLog("down");
-      keyYDown = -0.1;
+      keyYDown = -0.1 * MOVE_SPEED;
     }
 
     // DEBUG Control
@@ -166,7 +168,7 @@ document.addEventListener('keyup', function(evt) {
 
 document.addEventListener('mousemove', function(evt) {
     mouse_X = mouse_X + evt.movementX * MOUSE_SPEED_X;
-    mouse_Y = Math.max(Math.min(mouse_Y - evt.movementY * MOUSE_SPEED_Y, Y_ANGLE_CAM_CLAMP), -Y_ANGLE_CAM_CLAMP);
+    mouse_Y = Math.max(Math.min(mouse_Y + evt.movementY * MOUSE_SPEED_Y, Y_ANGLE_CAM_CLAMP), -Y_ANGLE_CAM_CLAMP);
 })
 
 canvas.addEventListener("click", async () => {

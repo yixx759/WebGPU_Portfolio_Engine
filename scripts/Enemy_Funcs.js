@@ -4,8 +4,9 @@ import * as objectInfo from './Object_Info_Struct.js';
 let enemy_list = new Array(10).fill(null);
 export let enemy_list_index = 0;
 
-const TEST_LOCAITON = new Float32Array([100,0,10]);
-const TEST_ACCEL = 200 / 100;
+const TEST_LOCAITON = new Float32Array([-1000,0,0]);
+// const TEST_LOCAITON = new Float32Array([0,0,-100000]);
+const TEST_ACCEL = 1 / 100;
 const TEST_SPEED = 10000;
 
 export function create_enemy_list(objects)
@@ -49,14 +50,18 @@ function move_towards_target(object, target)
     // add constant to add that to movement.
     // then Just do dead basic accel and velocicty
     let current_position = object.get_position();
+
     let current_rotation = object.get_rotation();
+
     // TO DO: ASSERT NANs
     let current_velocity = object.get_velocity();
 
     let dir_to_target = helper.vector_norm_into(helper.vector_subtract(target, current_position));
+
+    // TO DO: USE QUATERNIONS
+    // TO DO: NORMALIZE LERP ON QUATERNION
     let new_rotation = helper.rotate_normalized_lerp(current_rotation, dir_to_target, TEST_ACCEL);
 
-    console.log("new_rotation: " + new_rotation);
     dir_to_target = helper.vector_mult_scalar_into(dir_to_target, TEST_SPEED);
     // Accel is a constant set
     // Velocity is MoveTowards(V, TargetVel(input), accel);
@@ -70,10 +75,8 @@ function move_towards_target(object, target)
     let new_position = helper.vector_3_add_into(current_position, helper.vector_mult_scalar_into(new_velocity, helper.DT));
   
     object.set_position(new_position);
+
     object.set_rotation(new_rotation);
-
-
-
 
     // dt just use time since last render do somethign better at end
 

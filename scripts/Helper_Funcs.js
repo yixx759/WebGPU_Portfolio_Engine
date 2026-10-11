@@ -27,6 +27,16 @@ if (TEST_FUNCS)
   test_funcs.vectorTestPrints();
 }
 
+function get_matrix_coloumn_major_index(column_index, row_index)
+{
+    return ((column_index) * 4) + (row_index);
+}
+
+function get_matrix_row_major_index(column_index, row_index)
+{
+    return column_index + (row_index * 4);
+}
+
 export function multiply_float32_matrices(A, B) {
   
   const num_rows = 4;
@@ -148,28 +158,28 @@ export function get_world_matrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ,
   angleRotY = angleRotY * Math.PI / 180;
   angleRotZ = angleRotZ * Math.PI / 180;
 
-  var rotX = new Float32Array([
-    1.0, 0.0, 0.0, 0.0,
-    0.0, Math.cos(angleRotX), -Math.sin(angleRotX), 0.0,
-    0.0, Math.sin(angleRotX), Math.cos(angleRotX), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
+  const rotX = new Float32Array([
+    1.0, 0.0,           0.0,          0.0,
+    0.0, Math.cos(angleRotX),  Math.sin(angleRotX), 0.0,
+    0.0, -Math.sin(angleRotX), Math.cos(angleRotX), 0.0,
+    0.0, 0.0,           0.0,          1.0,
+  ]);
 
-    var rotY = new Float32Array([
-    Math.cos(angleRotY), 0.0, Math.sin(angleRotY), 0.0,
-    0.0, 1, 0, 0.0,
-    -Math.sin(angleRotY), 0, Math.cos(angleRotY), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
+  const rotY = new Float32Array([
+    Math.cos(angleRotY), 0.0, -Math.sin(angleRotY), 0.0,
+    0.0,          1.0, 0.0,           0.0,
+    Math.sin(angleRotY), 0.0, Math.cos(angleRotY),  0.0,
+    0.0,          0.0, 0.0,           1.0,
+  ]);
 
-    var rotZ = new Float32Array([
-    Math.cos(angleRotZ), -Math.sin(angleRotZ), 0.0, 0.0,
-    Math.sin(angleRotZ), Math.cos(angleRotZ), 0.0,  0.0,
-    0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
+  const rotZ = new Float32Array([
+    Math.cos(angleRotZ),  Math.sin(angleRotZ), 0.0, 0.0,
+    -Math.sin(angleRotZ), Math.cos(angleRotZ), 0.0, 0.0,
+    0.0,           0.0,          1.0, 0.0,
+    0.0,           0.0,          0.0, 1.0,
+  ]);
 
-    let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotZ,rotY),rotX);
+    let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotX,rotY),rotZ);
 
     return multiply_float32_matrices(multiply_float32_matrices(scaleMatrix, rotationMatrix), transformMatrix);
 
@@ -280,6 +290,23 @@ export function vector_mult_scalar_into(A, mag_scalar){
   return A;
 }
 
+export function qut_mult_scalar_into(A, mag_scalar){
+  vector_mult_scalar_into(A, mag_scalar);
+  A[3] *= mag_scalar;
+  return A;
+}
+
+function inverse_qut(quaternion)
+{
+  quaternion[0] = -quaternion[0];
+  quaternion[1] = -quaternion[1];
+  quaternion[2] = -quaternion[2];
+  quaternion[3] = -quaternion[3];
+
+  return quaternion;
+}
+
+
 export function vector_div_scalar(A, mag_scalar){
   return new Float32Array([A[0]/mag_scalar, A[1]/mag_scalar, A[2]/mag_scalar, 0]);
 }
@@ -347,12 +374,20 @@ export function vector_dot(A, B){
   return A[0]*B[0]+ A[1]*B[1] + A[2]*B[2];
 }
 
+export function qut_dot(A, B){
+  return A[0]*B[0]+ A[1]*B[1] + A[2]*B[2] + A[3]*B[3];
+}
+
 export function vector_cross(A, B){
   return [A[1]*B[2] - A[2]*B[1], A[2]*B[0] - A[0]*B[2] ,A[0]*B[1] - A[1]*B[0]];
 }
 
 export function vector_mag(A){
   return Math.sqrt(A[0]*A[0] + A[1]*A[1] + A[2]*A[2]);
+}
+
+export function quat_mag(A){
+  return Math.sqrt(A[0]*A[0] + A[1]*A[1] + A[2]*A[2] + A[3]*A[3]);
 }
 
 export function vector_norm(A){
@@ -378,6 +413,155 @@ export function vector_reflect(V, N)
   return vector_subtract(V, R);
 }
 
+function qut_conjugate(quaternion)
+{
+  return new Float32Array([-quaternion[0], -quaternion[1], -quaternion[2],quaternion[3]]);
+}
+
+const DEG_TO_RAD = Math.PI / 180;
+
+export function euler_to_quaternion(euler)
+{
+  const x = euler[0] * DEG_TO_RAD;
+  const y = euler[1] * DEG_TO_RAD;
+  const z = euler[2] * DEG_TO_RAD;
+
+  const cos_x_h = Math.cos(x * 0.5)
+  const sin_x_h = Math.sin(x * 0.5)  
+  const cos_y_h = Math.cos(y * 0.5)
+  const sin_y_h = Math.sin(y * 0.5) 
+  const cos_z_h = Math.cos(z * 0.5)
+  const sin_z_h = Math.sin(z * 0.5)
+
+  let quaternion = new Float32Array(4);
+  quaternion[0] = (sin_x_h*cos_y_h*cos_z_h) - (cos_x_h*sin_y_h*sin_z_h)
+  quaternion[1] = (cos_x_h*sin_y_h*cos_z_h) + (sin_x_h*cos_y_h*sin_z_h)
+  quaternion[2] = (cos_x_h*cos_y_h*sin_z_h) - (sin_x_h*sin_y_h*cos_z_h)
+  quaternion[3] = (cos_x_h*cos_y_h*cos_z_h) + (sin_x_h*sin_y_h*sin_z_h)
+  
+  return normalize_quaternion(quaternion);
+}
+
+export function matrix_to_quaternion(matrix)
+{
+  const m00 = matrix[get_matrix_row_major_index(0,0)];
+  const m01 = matrix[get_matrix_row_major_index(0,1)];
+  const m02 = matrix[get_matrix_row_major_index(0,2)];
+  const m10 = matrix[get_matrix_row_major_index(1,0)];
+  const m11 = matrix[get_matrix_row_major_index(1,1)];
+  const m12 = matrix[get_matrix_row_major_index(1,2)];
+  const m20 = matrix[get_matrix_row_major_index(2,0)];
+  const m21 = matrix[get_matrix_row_major_index(2,1)];
+  const m22 = matrix[get_matrix_row_major_index(2,2)];
+  const m30 = matrix[get_matrix_row_major_index(3,0)];
+  const m31 = matrix[get_matrix_row_major_index(3,1)];
+  const m32 = matrix[get_matrix_row_major_index(3,2)];
+  const m33 = matrix[get_matrix_row_major_index(3,3)];
+
+  const t = m00 + m11 + m22;
+
+  if (t > 0)
+  {
+    const s = (0.5 / Math.sqrt(t + 1));
+    const w = 0.25 / s;
+    const x = (m21 - m12) * s;
+    const y = (m02 - m20) * s;
+    const z = (m10 - m01) * s;
+
+    return new Float32Array([x,y,z,w]);
+  }
+  if (m00 > m11 && m00 > m22)
+  {
+    const s = (Math.sqrt(m00 - m11 - m22 + m33)) * 2;
+    const w = (m21 - m12) / s;
+    const x = s * 0.25;
+    const y = (m01 + m10) / s;
+    const z = (m02 + m20) / s;
+
+    return new Float32Array([x,y,z,w]);
+  }
+  if (m11 > m22)
+  {
+    const s = (Math.sqrt(-m00 + m11 - m22 + m33)) * 2;
+    const w = (m02 - m20) / s;
+    const x = (m01 + m10) / s;
+    const y = s  * 0.25;
+    const z = (m12 + m21) / s;
+
+    return new Float32Array([x,y,z,w]);
+  }
+  else
+  {
+    const s = (Math.sqrt(-m00 - m11 + m22 + m33)) * 2;
+    const w = (m10 - m01) / s;
+    const x = (m02 + m20) / s;
+    const y = (m12 + m21) / s;
+    const z = s * 0.25;
+
+    return new Float32Array([x,y,z,w]);
+  }
+   // Trace = m00 + m11 + m22 if > 0 use w
+   // If m00 > m11 & m22 thewn caluclate 4qx^2 make into qx then find other componets from that.
+   // same for ither siezes
+}
+
+export function normalize_quaternion(quaternion)
+{
+  const mag = quat_mag(quaternion);
+  quaternion[0] /= mag;
+  quaternion[1] /= mag;
+  quaternion[2] /= mag;
+  quaternion[3] /= mag;
+
+  return quaternion;
+}
+
+export function dir_vector_to_matrix(x, y, z)
+{
+  const rot_matrix = new Float32Array([
+    x[0], x[1], x[2], 0,
+    y[0], y[1], y[2], 0,
+    z[0], z[1], z[2], 0,
+    0, 0, 0, 1
+  ]);
+
+  return rot_matrix;
+}
+
+export function dir_vector_to_quaternion(z, y)
+{
+  z = vector_norm_into(z)
+  let x = vector_norm_into(vector_cross(y, z));
+  y = vector_cross(z, x);
+
+  let rot_matrix = dir_vector_to_matrix(x, y, z);
+  let quaternion_from_matrix = matrix_to_quaternion(rot_matrix);
+  
+  // Normalize
+  return normalize_quaternion(quaternion_from_matrix);
+}
+
+export function quaternion_rotate_point(){} // Have to do transpose quaternon * point * inverse trenaspose quat
+
+export function quaternion_multiply(q1, q2)
+{
+  const cross_q1_q2 = vector_cross(q1, q2);
+  const dot_q1_q2 = vector_dot(q1, q2);
+  
+  const vector_part = vector_3_add_into(cross_q1_q2, vector_add(vector_mult_scalar(q1, q2[3]), vector_mult_scalar(q2, q1[3])));
+  const w_part = q1[3] * q2[3] - dot_q1_q2;
+
+  return new Float32Array([vector_part[0],vector_part[1],vector_part[2], w_part]);
+} // Can just do multiplication
+
+export function n_lerp(a, b, t)
+{
+  a = vector_3_lerp(a, b, t);
+  a[3] = lerp(a[3], b[3], t);
+
+  return normalize_quaternion(a);
+}
+
 export function move_towards(current_vel, target_vel, max_accel)
 {
   let current_to_target = vector_subtract(target_vel, current_vel);
@@ -391,15 +575,88 @@ export function move_towards(current_vel, target_vel, max_accel)
   return vector_3_add_into(current_vel, vector_mult_scalar_into(vector_div_scalar_into(current_to_target, mag), max_accel));
 }
 
-export function rotate_normalized_lerp(current_dir, target_dir, max_rot_accel)
+export function euler_to_vector(euler_angles)
 {
-  if (target_dir == ZEROS)
+  const pitch = euler_angles[1];
+  const cos_pitch = Math.cos(pitch)
+
+  const x = -Math.sin(euler_angles[1]) 
+  const y = Math.sin(euler_angles[0]) * cos_pitch
+  const z = Math.cos(euler_angles[0]) * cos_pitch
+
+  return new Float32Array([x, y, z]);
+}
+
+export function vector_to_euler(vector_angles)
+{
+  const [x,y,z] = vector_angles;
+
+  const pitch = Math.atan2(y,z);
+  const yaw = Math.atan2(-x, Math.hypot(y,z))
+
+  return new Float32Array([pitch, yaw, 0]);
+}
+
+export function unit_quaternion_to_matrix(quaternion)
+{
+  const qx = quaternion[0];
+  const qx_sqaured = qx*qx;
+  const qy = quaternion[1];
+  const qy_sqaured = qy*qy;
+  const qz = quaternion[2];
+  const qz_sqaured = qz*qz;
+  const qw = quaternion[3];
+
+  return new Float32Array([
+    1-2*(qy_sqaured+qz_sqaured),     2*(qx*qy + qw*qz), 2*(qx*qz - qw*qy), 0,
+    2*(qx*qy - qw*qz), 1-2*(qx_sqaured+qz_sqaured),     2*(qy*qz + qw*qx), 0,
+    2*(qx*qz + qw*qy), 2*(qy*qz - qw*qx), 1-2*(qx_sqaured+qy_sqaured),     0,
+    0, 0, 0, 1
+  ]);
+}
+
+const RAD_TO_DEG = 180 / Math.PI;
+
+export function matrix_to_euler(matrix)
+{
+  const m22 = matrix[get_matrix_row_major_index(2,2)];
+  const m21 = matrix[get_matrix_row_major_index(2,1)];
+  const m20 = matrix[get_matrix_row_major_index(2,0)];
+  const m10 = matrix[get_matrix_row_major_index(1,0)];
+  const m00 = matrix[get_matrix_row_major_index(0,0)];
+  const m12 = matrix[get_matrix_row_major_index(1,2)];
+  const m11 = matrix[get_matrix_row_major_index(1,1)];
+
+  if (Math.abs(m20) < 1 - 1e-6) {
+      return new Float32Array([Math.atan2(m21, m22) * RAD_TO_DEG, -Math.asin(m20) * RAD_TO_DEG, Math.atan2(m10, m00) * RAD_TO_DEG]);
+    }
+    // Gimbal lock: fix yaw = 0
+    return new Float32Array([Math.atan2(-m12, m11) * RAD_TO_DEG, -Math.sign(m20) * 90, 0]);
+}
+
+export function rotate_normalized_lerp(current_rot, target_dir, max_rot_accel)
+{
+  if (target_dir === ZEROS)
   {
-    return current_dir;
+    return current_rot;
   }
 
-  let lerped_dir = vector_3_lerp(current_dir, target_dir, Math.min(max_rot_accel, 1));
-  return vector_norm_into(lerped_dir);
+  let current_qut_rot = euler_to_quaternion(current_rot);
+  let target_qut_rot = dir_vector_to_quaternion(target_dir, WORLD_UP_VECTOR);
+  
+  const dot_of_qut = qut_dot(current_qut_rot, target_qut_rot);
+ 
+  if (dot_of_qut < 0)
+  {
+    target_qut_rot = inverse_qut(target_qut_rot);
+  }
+
+  const new_qut_rot = n_lerp(current_qut_rot, target_qut_rot, max_rot_accel);;
+ 
+  const new_rot_matrix = unit_quaternion_to_matrix(new_qut_rot);
+  let new_rot = matrix_to_euler(new_rot_matrix);
+
+  return new_rot;
 }
 
 function lerp(a, b, t)
@@ -418,12 +675,12 @@ export function vector_3_lerp(a, b, t)
 
 export function apply_world_to_collider(vec, matrix)
 {
-  return [vec[0]+matrix[12],vec[0]+matrix[13],vec[0]+matrix[14], 0]; 
+  return [vec[0]+matrix[12],vec[1]+matrix[13],vec[2]+matrix[14], 0]; 
 }
 
 export function get_view_matrix(forward, up, cam_pos){
     const right = vector_cross(up,forward);
-    const nuUp = vector_cross(right, forward);
+    const nuUp = vector_cross(forward, right);
 
     // debugLog("Forward vec:" + forward)
 
