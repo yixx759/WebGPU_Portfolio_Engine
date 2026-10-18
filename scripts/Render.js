@@ -15,6 +15,7 @@ import * as save_funcs from './Save_Funcs.js';
 import * as debug_utils from './Debug_Utils.js';
 import * as ray_cast_funcs from './Ray_Cast_Funcs.js';
 import * as enemy_funcs from './Enemy_Funcs.js';
+import * as debug_rays from './Debug_Rays.js';
 
 const clear_color = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
@@ -50,17 +51,7 @@ export function debugLog(...args) {
   if (DEBUG_LOGS) console.log(...args);
 }
 
-function new_ray_pos(pos1, pos2, colour_red_enabled, device, vertex_debug_buffer)
-{
-  const debug_line_vertex = new Float32Array([
-    pos1[0], pos1[1], pos1[2],
-    (colour_red_enabled ? 1 : 0), 0, 0,
-    pos2[0], pos2[1], pos2[2],
-    (colour_red_enabled ? 1 : 0), 0, 0
-  ]);
 
-  device.queue.writeBuffer(vertex_debug_buffer, 0, debug_line_vertex, 0, debug_line_vertex.length);
-}
 
 export let AMOUNT_OF_OBJECTS = 2 + 6;
 
@@ -98,10 +89,8 @@ const player_collider = new Float32Array([1, 2, 1, 0]);
 // Vertex and fragment shaders
 const shader_code = await helper.load_shader("./shaders/burley-test.wgsl");
 
-let shader_debug_code;
 let collider_shader_debug_code;
 
-if (DEBUG_LOGS)  shader_debug_code = await helper.load_shader("./shaders/debug_render.wgsl");
 if (DEBUG_MODE)  collider_shader_debug_code = await helper.load_shader("./shaders/collider_debug_render.wgsl");
 
 function errorCheck(whatever)
@@ -153,15 +142,7 @@ async function init() {
 
   errorCheck(shaderModule);
 
-  let shader_debug_module;
   let collider_shader_debug_module;
-
-   if (DEBUG_LOGS){
-    shader_debug_module = device.createShaderModule({
-    code: shader_debug_code
-  });
-
-  errorCheck(shader_debug_code);
  
   if (DEBUG_MODE){
     collider_shader_debug_module = device.createShaderModule({
@@ -225,7 +206,7 @@ async function init() {
       }
   }
 }
- 
+
   const vertex_buffers = [{
     attributes: [
     {
@@ -248,56 +229,20 @@ async function init() {
     stepMode: 'vertex'
   }];
 
-  const vertex_debug_buffer = device.createBuffer({
-    size: 32*3*2*2, // size of 2 positions which are 3 float32 3s and 2 colors
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
   
-    const collider_vertex_debug_buffer = device.createBuffer({
-    size: 32*3*8, // size of 2 positions which are 3 float32 3s and 2 colors
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
-
-  let debug_line_vertex;
-  
-  if (DEBUG_LOGS){
-     debug_line_vertex = new Float32Array([
-      0, 0, 0, 
-      0, 0, 0, // Color
-      5, 0, 0,
-      1, 0, 0,// Color
-    ]);
-
-  device.queue.writeBuffer(vertex_debug_buffer, 0, debug_line_vertex, 0, debug_line_vertex.length);
-  }
 
   let collider_box_vertex;
+
+  // Make func for me
+  const collider_vertex_debug_buffer = device.createBuffer({
+  size: 32*3*8, // size of 2 positions which are 3 float32 3s and 2 colors
+  usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+  });
 
   if (DEBUG_MODE)
   {
     collider_box_vertex = make_vertexs(game_object_array);
     device.queue.writeBuffer(collider_vertex_debug_buffer, 0, collider_box_vertex, 0, collider_box_vertex.length);
-  }
-
-  let vertex_debug_buffers;
-
-  if (DEBUG_LOGS){
-    vertex_debug_buffers = [{
-      attributes: [
-      {
-        shaderLocation: 0, // position
-        offset: 0,
-        format: 'float32x3'
-      },
-      {
-      shaderLocation: 1, // color
-      offset: 12,
-      format: 'float32x3'
-    }
-    ],
-      arrayStride: 24,
-      stepMode: 'vertex'
-    }];
   }
 
   let collider_vertex_debug_buffers;
@@ -373,38 +318,7 @@ async function init() {
     })
   };
 
-let pipelineDebugDescriptor;
 let collider_pipelineDebugDescriptor;
-
-if (DEBUG_LOGS){
- pipelineDebugDescriptor = {
-    vertex: {
-      module: shader_debug_module,
-      entryPoint: 'vertex_main',
-      buffers: vertex_debug_buffers
-    },
-    fragment: {
-      module: shader_debug_module,
-      entryPoint: 'fragment_main',
-      targets: [{
-        format: navigator.gpu.getPreferredCanvasFormat(),
-        }]
-    },
-    primitive: {
-      topology: 'line-list'
-    },
-    depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less",
-        format: "depth24plus",
-    },
-    layout: device.createPipelineLayout({
-    bindGroupLayouts: [
-      group0Layout, // for mats
-    ]
-    })
-  };
-}
 
 if (DEBUG_MODE) {
  collider_pipelineDebugDescriptor = {
@@ -454,13 +368,9 @@ var Time = Date.now();
 
 const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
 
-let renderDebugPipeline;
+
 let collider_renderDebugPipeline;
 
-if (DEBUG_LOGS)
-{
-  renderDebugPipeline = device.createRenderPipeline(pipelineDebugDescriptor);
-}
 if (DEBUG_MODE)
 {
   collider_renderDebugPipeline = device.createRenderPipeline(collider_pipelineDebugDescriptor);
@@ -541,7 +451,7 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
   if (DEBUG_LOGS)
   {
     bindDebugGroup = device.createBindGroup({
-      layout: renderDebugPipeline.getBindGroupLayout(0),
+      layout: collider_renderDebugPipeline.getBindGroupLayout(0),
       entries: [
           {binding: 0, resource: {
             buffer: Mats,
@@ -555,6 +465,8 @@ for (let i = 0; i < AMOUNT_OF_OBJECTS; i++ ) {
       });
   }
 }
+
+debug_rays.create_debug_lines_buffers(device);
 
 const url = 'resources/images/Bunny Texture.png';
 const urlF = 'resources/images/f-texture.png';
@@ -634,7 +546,7 @@ const Point_Lights = device.createBuffer({
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-console.log("poitn num: " + light_manager.POINT_LIGHT_ARRAY.length);
+console.log("point num: " + light_manager.POINT_LIGHT_ARRAY.length);
 
 device.queue.writeBuffer(Point_Lights, 0, light_manager.POINT_LIGHT_ARRAY, 0, light_manager.POINT_LIGHT_ARRAY.length);
 
@@ -725,7 +637,7 @@ const lightBindGroup = device.createBindGroup({
       ray_cast_funcs.process_raycast_hit(game_object_array[game_object_hit]);
     }
 
-    new_ray_pos(controls.cam_pos, ray_from_player_forward.get_ray_dest(), did_hit, device, vertex_debug_buffer);
+    debug_rays.new_ray_pos(controls.cam_pos, ray_from_player_forward.get_ray_dest(), did_hit, device);
   }
   }, false);
 
@@ -749,10 +661,10 @@ if (false & PATH_TEST)
 
   res =  path_tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, game_object_array,   model_array, textures_data, dir_light_dir_and_intensity);
   if (res){
-    new_ray_pos(PATH_ORIGIN, helper.vector_add(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device, vertex_debug_buffer)
+    debug_rays.new_ray_pos(PATH_ORIGIN, helper.vector_add(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device)
   }
 
-  new_ray_pos(TEST_ORIGIN,  helper.vector_add(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device, vertex_debug_buffer)
+  debug_rays.new_ray_pos(TEST_ORIGIN,  helper.vector_add(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device)
 }
 
 const CONST_TIME_DIV = 100;
@@ -780,7 +692,7 @@ function render() {
 
   if (!DEBUG_MODE)
   {
-      enemy_funcs.move_enemys_towards_target();
+    enemy_funcs.move_enemys_towards_target();
   }
 
   Time = Date.now() / CONST_TIME_DIV;
@@ -831,11 +743,11 @@ function render() {
         },
   };
 
-  const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+  const pass_encoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-  passEncoder.setPipeline(renderPipeline);
+  pass_encoder.setPipeline(renderPipeline);
   
-  passEncoder.setBindGroup(2, lightBindGroup);
+  pass_encoder.setBindGroup(2, lightBindGroup);
 
   // This should be based on object indexs
   for (let i = 0; i < OBJECTS_TO_RENDER; i++)
@@ -844,36 +756,32 @@ function render() {
     const tex_index = game_object_array[i].get_texture_index();
     const id = game_object_array[i].ID;
 
-    passEncoder.setBindGroup(0, bindGroupArray[id]);
-    passEncoder.setBindGroup(1, bindGroupTexArray[tex_index]);
-    passEncoder.setVertexBuffer(0, vertexBuffer, VERTEX_OFFSET * id, model_array[vert_index].byteLength);
-    passEncoder.draw(model_array[vert_index].length / 8);
-  }
-
-  if (DEBUG_LOGS)
-  {
-    passEncoder.setPipeline(renderDebugPipeline);
-    passEncoder.setBindGroup(0, bindDebugGroup);
-    passEncoder.setVertexBuffer(0, vertex_debug_buffer, 0, debug_line_vertex.byteLength);
-    passEncoder.draw(2);
+    pass_encoder.setBindGroup(0, bindGroupArray[id]);
+    pass_encoder.setBindGroup(1, bindGroupTexArray[tex_index]);
+    pass_encoder.setVertexBuffer(0, vertexBuffer, VERTEX_OFFSET * id, model_array[vert_index].byteLength);
+    pass_encoder.draw(model_array[vert_index].length / 8);
   }
  
   // TO DO: Generalize this
   if (debug_utils.SHOW_COLLIDER)
   {
-    passEncoder.setPipeline(collider_renderDebugPipeline);
-    passEncoder.setBindGroup(0, bindDebugGroup);
-    passEncoder.setVertexBuffer(0, collider_vertex_debug_buffer, 0, collider_box_vertex.byteLength);
-    passEncoder.draw(36);
+    pass_encoder.setPipeline(collider_renderDebugPipeline);
+    pass_encoder.setBindGroup(0, bindDebugGroup);
+    pass_encoder.setVertexBuffer(0, collider_vertex_debug_buffer, 0, collider_box_vertex.byteLength);
+    pass_encoder.draw(36);
+  }
+
+  if (DEBUG_LOGS)
+  {
+    debug_rays.render_lines(pass_encoder);
   }
   
-  passEncoder.end();
+  pass_encoder.end();
   
   device.queue.submit([commandEncoder.finish()]);
   requestAnimationFrame(render);
 }
   requestAnimationFrame(render);
-}
 }
 
 function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_object_array, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet)

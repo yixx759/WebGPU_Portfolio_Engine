@@ -6,8 +6,8 @@ export let enemy_list_index = 0;
 
 const TEST_LOCAITON = new Float32Array([-1000,0,0]);
 // const TEST_LOCAITON = new Float32Array([0,0,-100000]);
-const TEST_ACCEL = 1 / 100;
-const TEST_SPEED = 10000;
+const TEST_ACCEL = 1 / 1000;
+const TEST_SPEED = 10;
 
 export function create_enemy_list(objects)
 {
@@ -71,6 +71,8 @@ function move_towards_target(object, target)
     // V += A * dt
     let new_velocity = helper.move_towards(current_velocity, dir_to_target, TEST_ACCEL);
  
+    object.set_velocity(new_velocity);
+
     // P += V * dt
     let new_position = helper.vector_3_add_into(current_position, helper.vector_mult_scalar_into(new_velocity, helper.DT));
   
