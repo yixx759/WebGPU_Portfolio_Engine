@@ -965,3 +965,13 @@ export function is_undefined(x)
     console.log("Is Underfined BROKE");
   }
 }
+
+export function error_check(whatever)
+{
+  if (!whatever) {
+    throw Error('Couldn\'t find .') ;
+  }
+  else{
+    console.log(whatever);
+  }
+}

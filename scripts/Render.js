@@ -16,6 +16,7 @@ import * as debug_utils from './Debug_Utils.js';
 import * as ray_cast_funcs from './Ray_Cast_Funcs.js';
 import * as enemy_funcs from './Enemy_Funcs.js';
 import * as debug_rays from './Debug_Rays.js';
+import assert from './Assert.js';
 
 const clear_color = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
 
@@ -50,8 +51,6 @@ export function print(string)
 export function debugLog(...args) {
   if (DEBUG_LOGS) console.log(...args);
 }
-
-
 
 export let AMOUNT_OF_OBJECTS = 2 + 6;
 
@@ -93,16 +92,6 @@ let collider_shader_debug_code;
 
 if (DEBUG_MODE)  collider_shader_debug_code = await helper.load_shader("./shaders/collider_debug_render.wgsl");
 
-function errorCheck(whatever)
-{
-  if (!whatever) {
-    throw Error('Couldn\'t find .') ;
-  }
-  else{
-    console.log(whatever);
-  }
-}
-
 export function switch_debug_mode()
 {
   if (DEBUG_MODE == false)
@@ -134,13 +123,13 @@ async function init() {
   }
 
   let device = await adapter.requestDevice();
-  errorCheck(device);
+  helper.error_check(device);
 
   const shaderModule = device.createShaderModule({
     code: shader_code
   });
 
-  errorCheck(shaderModule);
+  helper.error_check(shaderModule);
 
   let collider_shader_debug_module;
  
@@ -149,15 +138,15 @@ async function init() {
     code: collider_shader_debug_code
   });
 
-  errorCheck(collider_shader_debug_code);
+  helper.error_check(collider_shader_debug_code);
   }
 
   // TO DO: Have 2 canvases
   const canvas = document.querySelector('#gpuCanvas');
   const context = canvas.getContext('webgpu');
 
-  errorCheck(canvas);
-  errorCheck(context);
+  helper.error_check(canvas);
+  helper.error_check(context);
 
   context.configure({
     device: device,
@@ -165,13 +154,13 @@ async function init() {
     alphaMode: 'premultiplied'
   });
 
-   errorCheck(context);
-   await new Promise(requestAnimationFrame);
+  helper.error_check(context);
+  await new Promise(requestAnimationFrame);
 
   let tex = context.getCurrentTexture(); 
-  errorCheck(tex);
+  helper.error_check(tex);
   let view1 = tex.createView(); 
-  errorCheck(view1);
+  helper.error_check(view1);
 
   const MODEL_CUBE_INDEX = await model_parser.add_model_to_array('resources/models/cube.obj', model_array);
   const MODEL_BUNNY_INDEX = await model_parser.add_model_to_array('resources/models/Bunny.obj', model_array);

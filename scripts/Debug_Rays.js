@@ -12,18 +12,7 @@ let render_debug_pipeline;
 
 let shader_debug_code = await helper.load_shader("./shaders/debug_render.wgsl");
 
-// TO DO: Put in unfied funciton
-function errorCheck(whatever)
-{
-  if (!whatever) {
-    throw Error('Couldn\'t find .') ;
-  }
-  else{
-    console.log(whatever);
-  }
-}
-
-errorCheck(shader_debug_code);
+helper.error_check(shader_debug_code);
 
 export async function create_debug_lines_buffers(device){
 
