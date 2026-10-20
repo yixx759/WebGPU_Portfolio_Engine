@@ -1,5 +1,6 @@
 import { debugLog } from './Render.js'
 import * as test_funcs from './Test_Funcs.js'
+import assert from './Assert.js'
 
 export const BIG_NUMBER = 10 ** 1000;
 
@@ -384,6 +385,12 @@ export function vector_cross(A, B){
 
 export function vector_mag(A){
   return Math.sqrt(A[0]*A[0] + A[1]*A[1] + A[2]*A[2]);
+}
+
+export function vector_mag_sqr(A){
+  assert(arguments.length == 1, "SHould be only one argument");
+  assert(A instanceof Float32Array, "SHould be float32 not sent in");
+  return A[0]*A[0] + A[1]*A[1] + A[2]*A[2];
 }
 
 export function quat_mag(A){

@@ -1,13 +1,18 @@
 import * as helper from './Helper_Funcs.js';
 import * as objectInfo from './Object_Info_Struct.js';
+import assert from './Assert.js'
 
 let enemy_list = new Array(10).fill(null);
+let enemy_patrol_list = new Array(10).fill(null);
 export let enemy_list_index = 0;
 
 const TEST_LOCAITON = new Float32Array([-1000,0,0]);
 // const TEST_LOCAITON = new Float32Array([0,0,-100000]);
-const TEST_ACCEL = 1 / 1000;
-const TEST_SPEED = 10;
+const TEST_ACCEL = 1 / 100;
+const TEST_SPEED = 10000;
+
+const TEST_PATROL_POINTS = [new Float32Array([0,0,0]), new Float32Array([10,0,0])];
+const DISTANCE_TO_SWITCH_POINT_SQR = 2;
 
 export function create_enemy_list(objects)
 {
@@ -18,6 +23,11 @@ export function create_enemy_list(objects)
 
         if (bit_field == helper.BIT_FIELD_ENEMY) 
         {
+            enemy_patrol_list[enemy_list_index] = 0
+            assert(typeof TEST_PATROL_POINTS == "object", "Patrol isnt list");
+            assert(TEST_PATROL_POINTS[0] instanceof Float32Array, "POINT wasnt flaot 32")
+            assert(TEST_PATROL_POINTS.length == 2, "Test patrol not right num")
+
             enemy_list[enemy_list_index++] = object;
         }
     }
@@ -38,7 +48,36 @@ export function move_enemys_towards_target()
 {
     for (let i = 0; i < enemy_list_index; i++)
     {
-        move_towards_target(enemy_list[i], TEST_LOCAITON);
+        const target = TEST_PATROL_POINTS[enemy_patrol_list[i]];
+        const enemy = enemy_list[i];
+        assert(target instanceof Float32Array, "target not array float32");
+        assert(target.every(Number.isFinite), "Nan in target");
+        assert(enemy instanceof objectInfo.game_object, "enemy not game object");
+
+        move_towards_target(enemy_list[i], target);
+        switch_patrol_points_check(enemy_list[i], target, i);
+    }
+}
+
+function switch_patrol_points_check(object, target, index)
+{
+    assert(arguments.length == 3, "Not Enough Params");
+    assert(target instanceof Float32Array, "POINT wasnt flaot 32");
+    assert(object instanceof objectInfo.game_object, "Game object not isnerted");
+    assert(typeof index == "number", "INdex not number")
+
+    let current_position = object.get_position();
+    assert(current_position.every(Number.isFinite), "current position not fetched");
+    assert(current_position instanceof Float32Array, "cur pos wasnt flaot 32");
+
+    let length_to_target_sqr = helper.vector_mag_sqr(helper.vector_subtract(target, current_position));
+    assert(length_to_target_sqr === length_to_target_sqr, "Length is NAN")
+    assert(Number.isFinite(length_to_target_sqr), "Length is finite");
+
+    if (length_to_target_sqr < DISTANCE_TO_SWITCH_POINT_SQR)
+    {
+        console.trace("POstions at switch" + current_position)
+        enemy_patrol_list[index]++;
     }
 }
 
