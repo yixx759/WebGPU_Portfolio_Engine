@@ -5,3 +5,9 @@
 /* esm.sh - tiny-invariant@1.3.3 */
 var a=!1,n="Invariant failed";function c(t,r){if(!t){if(a)throw new Error(n);var o=typeof r=="function"?r():r,i=o?"".concat(n,": ").concat(o):n;throw new Error(i)}}export{c as default};
 //# sourceMappingURL=tiny-invariant.mjs.map
+
+export function assert_no_NaN_array(value, message)
+{   
+    c(value instanceof Float32Array, "Value not Float32Array")
+    c(value.every(Number.isFinite), message)
+}
