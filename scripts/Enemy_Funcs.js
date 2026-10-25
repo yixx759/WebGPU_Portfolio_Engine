@@ -1,5 +1,6 @@
 import * as helper from './Helper_Funcs.js';
 import * as objectInfo from './Object_Info_Struct.js';
+import * as controls from './Controls.js';
 import assert from './Assert.js'
 
 let enemy_list = new Array(10).fill(null);
@@ -8,11 +9,14 @@ export let enemy_list_index = 0;
 
 const TEST_LOCAITON = new Float32Array([-1000,0,0]);
 // const TEST_LOCAITON = new Float32Array([0,0,-100000]);
-const TEST_ACCEL = 1 / 100;
-const TEST_SPEED = 10000;
+const TEST_ACCEL = 1 / 10;
+const TEST_SPEED = 100;
 
 const TEST_PATROL_POINTS = [new Float32Array([0,0,0]), new Float32Array([10,0,0])];
 const DISTANCE_TO_SWITCH_POINT_SQR = 2;
+const DISTANCE_TO_CHASE_PLAYER_SQR = 275;
+
+let chase_player = false;
 
 export function create_enemy_list(objects)
 {
@@ -43,20 +47,57 @@ export function create_enemy_list(objects)
 // TO DO: Attacking and health
 // TO DO: Time step re read that time step article find implementaitons
 
+export function is_chase_player(enemy, player_pos)
+{
+    assert(arguments.length == 2, "Not Enough Params");
+    assert(enemy instanceof objectInfo.game_object, "enemy not game object");
+
+    // TO DO: should input calculated a few times
+    const enemy_pos = enemy.get_position();
+    assert(enemy_pos instanceof Float32Array, "enemy not array float32");
+    assert(enemy_pos.every(Number.isFinite), "Nan in target");
+
+    assert(player_pos instanceof Float32Array, "player not array float32");
+    assert(player_pos.every(Number.isFinite), "Nan in target");
+
+    const length_to_player_sqr = helper.vector_mag_sqr(helper.vector_subtract(player_pos, enemy_pos));
+    assert(length_to_player_sqr === length_to_player_sqr, "Length is NAN")
+    assert(Number.isFinite(length_to_player_sqr), "Length is finite");
+
+    if (length_to_player_sqr < DISTANCE_TO_CHASE_PLAYER_SQR)
+    {
+        return true
+    }
+
+    return false
+}
 
 export function move_enemys_towards_target()
 {
-    for (let i = 0; i < enemy_list_index; i++)
-    {
-        const target = TEST_PATROL_POINTS[enemy_patrol_list[i]];
-        const enemy = enemy_list[i];
-        assert(target instanceof Float32Array, "target not array float32");
-        assert(target.every(Number.isFinite), "Nan in target");
-        assert(enemy instanceof objectInfo.game_object, "enemy not game object");
+    assert(controls.cam_pos instanceof Float32Array, "player_pos not array float32");
+    assert(controls.cam_pos.every(Number.isFinite), "Nan in target");
 
-        move_towards_target(enemy_list[i], target);
-        switch_patrol_points_check(enemy_list[i], target, i);
-    }
+    for (let i = 0; i < enemy_list_index; i++)
+    {   
+        const enemy = enemy_list[i];
+        chase_player = is_chase_player(enemy, controls.cam_pos);
+
+        if (chase_player)
+        {
+            move_towards_target(enemy_list[i], controls.cam_pos);
+        }
+        else
+        {
+            const target = TEST_PATROL_POINTS[enemy_patrol_list[i]];
+            
+            assert(target instanceof Float32Array, "target not array float32");
+            assert(target.every(Number.isFinite), "Nan in target");
+            assert(enemy instanceof objectInfo.game_object, "enemy not game object");
+
+            move_towards_target(enemy_list[i], target);
+            switch_patrol_points_check(enemy_list[i], target, i);
+        }
+  }
 }
 
 function switch_patrol_points_check(object, target, index)

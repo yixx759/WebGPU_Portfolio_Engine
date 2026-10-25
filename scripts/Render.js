@@ -174,7 +174,6 @@ async function init() {
       });
 
   let VERTEX_OFFSET = max_verts;
-
   {
     
   let tmp_min = new Float32Array(3);
@@ -357,7 +356,6 @@ var Time = Date.now();
 
 const renderPipeline = device.createRenderPipeline(pipelineDescriptor);
 
-
 let collider_renderDebugPipeline;
 
 if (DEBUG_MODE)
@@ -366,7 +364,6 @@ if (DEBUG_MODE)
 }
 
 // Matrixs
-
 const IDENTITY = new Float32Array([
   1.0, 0.0, 0.0, 0.0,
   0.0, 1 , 0, 0.0,
