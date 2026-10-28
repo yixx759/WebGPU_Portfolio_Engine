@@ -19,6 +19,9 @@ export const ONE_OVER_PI = 0.31830988618;
 export const BIT_FIELD_CHEST_ITEM = (1 << 2); 
 export const BIT_FIELD_ENEMY= (1 << 0); 
 
+export const DEG_TO_RAD = Math.PI / 180;
+export const RAD_TO_DEG = 180 / Math.PI;
+
 export let DT = 0.001;
 
 const TEST_FUNCS = false;
@@ -313,29 +316,29 @@ export function vector_div_scalar(A, mag_scalar){
 }
 
 export function vector_div_scalar_into(A, mag_scalar){
-  A[0]/mag_scalar;
-  A[1]/mag_scalar;
-  A[2]/mag_scalar;
+  A[0] /= mag_scalar;
+  A[1] /= mag_scalar;
+  A[2] /= mag_scalar;
 
   return A;
 }
 
 export function vector_add_cam(A, X, Z){
-  A[0]+=X;
-  A[2]+=Z;
+  A[0] += X;
+  A[2] += Z;
 }
 
 export function vector_debug_add_cam(A, X, Y, Z){
-  A[0]+=X;
-  A[1]+=Y;
-  A[2]+=Z;
+  A[0] += X;
+  A[1] += Y;
+  A[2] += Z;
 }
 
 export function vector_assign_cam(A,B){
-  A[0]=B[0];
-  A[1]=B[1];
-  A[2]=B[2];
-  A[3]=B[3];
+  A[0] = B[0];
+  A[1] = B[1];
+  A[2] = B[2];
+  A[3] = B[3];
 }
 
 
@@ -424,8 +427,6 @@ function qut_conjugate(quaternion)
 {
   return new Float32Array([-quaternion[0], -quaternion[1], -quaternion[2],quaternion[3]]);
 }
-
-const DEG_TO_RAD = Math.PI / 180;
 
 export function euler_to_quaternion(euler)
 {
@@ -621,8 +622,6 @@ export function unit_quaternion_to_matrix(quaternion)
     0, 0, 0, 1
   ]);
 }
-
-const RAD_TO_DEG = 180 / Math.PI;
 
 export function matrix_to_euler(matrix)
 {
@@ -831,6 +830,15 @@ export function inverse_matrix(m)
   for (var i = 0; i < 16; i++) r[i] /= det;
   
   return r;
+}
+
+export function get_forward_vector_from_matrix(v, m)
+{
+  v[0] = -m[get_matrix_coloumn_major_index(0, 2)];
+  v[1] = -m[get_matrix_coloumn_major_index(1, 2)];
+  v[2] = m[get_matrix_coloumn_major_index(2, 2)];
+
+  return v;
 }
 
 // TO DO: Creates too many new matrixs // This is a path tracing prob fix when used agian

@@ -9,12 +9,13 @@ export let enemy_list_index = 0;
 
 const TEST_LOCAITON = new Float32Array([-1000,0,0]);
 // const TEST_LOCAITON = new Float32Array([0,0,-100000]);
-const TEST_ACCEL = 1 / 10;
-const TEST_SPEED = 100;
+const TEST_ACCEL = 1;
+const TEST_SPEED = 1;
 
 const TEST_PATROL_POINTS = [new Float32Array([0,0,0]), new Float32Array([10,0,0])];
 const DISTANCE_TO_SWITCH_POINT_SQR = 2;
-const DISTANCE_TO_CHASE_PLAYER_SQR = 275;
+const DISTANCE_TO_CHASE_PLAYER = 27;
+const FOV_OF_ENEMY = Math.cos((180 / 2) * helper.DEG_TO_RAD); // 180 Degrees
 
 let chase_player = false;
 
@@ -57,14 +58,23 @@ export function is_chase_player(enemy, player_pos)
     assert(enemy_pos instanceof Float32Array, "enemy not array float32");
     assert(enemy_pos.every(Number.isFinite), "Nan in target");
 
-    assert(player_pos instanceof Float32Array, "player not array float32");
-    assert(player_pos.every(Number.isFinite), "Nan in target");
+    const enemy_to_player = helper.vector_subtract(player_pos, enemy_pos);
+    assert(enemy_to_player instanceof Float32Array, "enemy to player not array float32");
+    assert(enemy_to_player.every(Number.isFinite), "Nan in target");
 
-    const length_to_player_sqr = helper.vector_mag_sqr(helper.vector_subtract(player_pos, enemy_pos));
-    assert(length_to_player_sqr === length_to_player_sqr, "Length is NAN")
-    assert(Number.isFinite(length_to_player_sqr), "Length is finite");
+    const length_to_player = helper.vector_mag(enemy_to_player);
+    assert(length_to_player === length_to_player, "Length is NAN")
+    assert(Number.isFinite(length_to_player), "Length is finite");
 
-    if (length_to_player_sqr < DISTANCE_TO_CHASE_PLAYER_SQR)
+    const norm_enemy_to_player = helper.vector_div_scalar_into(enemy_to_player, length_to_player);
+   
+    const norm_enemy_forward = new Float32Array(3);
+    const matrix_tmp = new Float32Array(4 * 4);
+    helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
+    assert(norm_enemy_forward instanceof Float32Array, "norm enemy forward not array float32");
+    assert(norm_enemy_forward.every(Number.isFinite), "Nan in norm enemy forward");
+
+    if (length_to_player < DISTANCE_TO_CHASE_PLAYER && helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > FOV_OF_ENEMY)
     {
         return true
     }
@@ -97,7 +107,7 @@ export function move_enemys_towards_target()
             move_towards_target(enemy_list[i], target);
             switch_patrol_points_check(enemy_list[i], target, i);
         }
-  }
+    }
 }
 
 function switch_patrol_points_check(object, target, index)
@@ -141,7 +151,7 @@ function move_towards_target(object, target)
 
     // TO DO: USE QUATERNIONS
     // TO DO: NORMALIZE LERP ON QUATERNION
-    let new_rotation = helper.rotate_normalized_lerp(current_rotation, dir_to_target, TEST_ACCEL);
+    let new_rotation = helper.rotate_normalized_lerp(current_rotation, dir_to_target, TEST_ACCEL/50);
 
     dir_to_target = helper.vector_mult_scalar_into(dir_to_target, TEST_SPEED);
     // Accel is a constant set
@@ -155,7 +165,7 @@ function move_towards_target(object, target)
     object.set_velocity(new_velocity);
 
     // P += V * dt
-    let new_position = helper.vector_3_add_into(current_position, helper.vector_mult_scalar_into(new_velocity, helper.DT));
+    let new_position = helper.vector_3_add_into(current_position, helper.vector_mult_scalar_into(new_velocity, helper.DT * 10));
   
     object.set_position(new_position);
 
