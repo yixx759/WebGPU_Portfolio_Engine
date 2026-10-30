@@ -31,7 +31,7 @@ let index_array;
 
 export const NEW_ELEMENT_JUST_ADDED = false; 
 
-const AMOUNT_OF_ELEMENTS = 11;
+const AMOUNT_OF_ELEMENTS = 12;
 let OFFSET_INTO_ELEMENT = new Int16Array(AMOUNT_OF_ELEMENTS);
 
 function add_int8_element(index)
@@ -73,6 +73,7 @@ let INDEX_OFFSET_INTO_DIRTY_BIT = 7;
 let INDEX_OFFSET_INTO_BRDF_PARAMS = 8;
 let INDEX_OFFSET_INTO_BIT_FIELD = 9;
 let INDEX_OFFSET_INTO_VELOCITY = 10;
+let INDEX_OFFSET_INTO_PATROL_INDEX = 11;
 
 export function init_object_arrays(AMOUNT_OF_OBJECTS)
 {
@@ -110,6 +111,9 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
 
   OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VELOCITY] = add_vector3_element(prev)
   prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VELOCITY];
+
+  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_PATROL_INDEX] = add_int8_element(prev);
+  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_PATROL_INDEX];
 
   ALIGNMENT_BYTES_OF_OBJECT = helper.align(prev, ALIGHNMENT_NUMBER);
 
@@ -163,6 +167,10 @@ function get_int8_index(base_index, element_index)
   // TO DO: Move me to transfrom
   * Physics *
   vector3 velocity
+
+  * Patrol Path Index *
+  int8 patrol path index
+
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -177,10 +185,11 @@ export class game_object
   matrix_index;
   bit_field_index;
   velocity_field_index;
+  patrol_path_index;
 
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
-  constructor(object_id, vertex_index, texture_index, position, scale, rotation, half, world_matrix, param_array_index, bit_field_index=0)
+  constructor(object_id, vertex_index, texture_index, position, scale, rotation, half, world_matrix, param_array_index, bit_field_index, patrol_index=0)
   {
     // NOTE: Pos rot should be float32array
     // NOTE: Keep alighnment in mind
@@ -199,6 +208,7 @@ export class game_object
     this.BRDF_index = get_int8_index(index, INDEX_OFFSET_INTO_BRDF_PARAMS);
     this.bit_field_index = get_int8_index(index, INDEX_OFFSET_INTO_BIT_FIELD);
     this.velocity_field_index = get_float32_index(index, INDEX_OFFSET_INTO_VELOCITY);
+    this.patrol_path_index = get_int8_index(index, INDEX_OFFSET_INTO_PATROL_INDEX);
     this.ID = object_id;
 
     // Set vertexIndex
@@ -237,6 +247,8 @@ export class game_object
     this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_BIT_FIELD), bit_field_index);
 
     this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_VELOCITY), helper.ZEROS);
+
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_PATROL_INDEX), patrol_index);
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -815,5 +827,25 @@ export class game_object
       }
 
       return this.set_vector3(this.velocity_field_index, data)
+    }
+
+    set_patrol_index(data)
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Set scale wasnt given int8array");
+        return -1;
+      }
+
+      index_array[this.patrol_path_index] = data;
+    }
+
+    get_patrol_index()
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Get BRDF index wasnt given int8array");
+        return -1;
+      }
+
+      return index_array[this.patrol_path_index];
     }
 }

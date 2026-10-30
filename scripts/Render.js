@@ -174,14 +174,15 @@ async function init() {
       });
 
   let VERTEX_OFFSET = max_verts;
-  {
-    
+
+  {  
   let tmp_min = new Float32Array(3);
   let tmp_max = new Float32Array(3);
   let tmp_pos = new Float32Array(4);
   let tmp_rot = new Float32Array(4);
   
-  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) {   
+  for (let i = 0; i < AMOUNT_OF_OBJECTS; i++) 
+    {   
     const vertex_index = game_object_array[i].get_model_index();
     console.log("Vertex indes: " + vertex_index)
     device.queue.writeBuffer(vertexBuffer, VERTEX_OFFSET * i, model_array[vertex_index], 0, model_array[vertex_index].length);
@@ -192,8 +193,8 @@ async function init() {
         game_object_array[i].set_half(makeColliderFromVerts(model_array[vertex_index]));
         game_object_array[i].update_collider_with_rot(tmp_min, tmp_max, tmp_pos, tmp_rot, helper.ZEROS);
       }
+    }
   }
-}
 
   const vertex_buffers = [{
     attributes: [
@@ -215,9 +216,7 @@ async function init() {
   ],
     arrayStride: 32,
     stepMode: 'vertex'
-  }];
-
-  
+  }]; 
 
   let collider_box_vertex;
 
@@ -623,7 +622,7 @@ const lightBindGroup = device.createBindGroup({
       ray_cast_funcs.process_raycast_hit(game_object_array[game_object_hit]);
     }
 
-    debug_rays.new_ray_pos(controls.cam_pos, ray_from_player_forward.get_ray_dest(), did_hit, device);
+    debug_rays.new_ray_pos(controls.cam_pos, ray_from_player_forward.get_ray_dest(), did_hit);
   }
   }, false);
 
@@ -647,10 +646,10 @@ if (false & PATH_TEST)
 
   res =  path_tracing.PATH_TRACE(PATH_ORIGIN, PATH_DIR, game_object_array,   model_array, textures_data, dir_light_dir_and_intensity);
   if (res){
-    debug_rays.new_ray_pos(PATH_ORIGIN, helper.vector_add(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0], device)
+    debug_rays.new_ray_pos(PATH_ORIGIN, helper.vector_add(PATH_ORIGIN, helper.vector_mult_scalar(PATH_DIR, MAG)), res[0][0])
   }
 
-  debug_rays.new_ray_pos(TEST_ORIGIN,  helper.vector_add(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1, device)
+  debug_rays.new_ray_pos(TEST_ORIGIN,  helper.vector_add(TEST_ORIGIN, helper.vector_mult_scalar(TEST_DIR, MAG)), 1)
 }
 
 const CONST_TIME_DIV = 100;
