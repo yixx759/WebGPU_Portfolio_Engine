@@ -16,6 +16,7 @@ import * as debug_utils from './Debug_Utils.js';
 import * as ray_cast_funcs from './Ray_Cast_Funcs.js';
 import * as enemy_funcs from './Enemy_Funcs.js';
 import * as debug_rays from './Debug_Rays.js';
+import * as time_step from './Time_Step.js'
 import assert from './Assert.js';
 
 const clear_color = { r: 0.0, g: 0.5, b: 1.0, a: 1.0 };
@@ -677,7 +678,7 @@ function render() {
 
   if (!DEBUG_MODE)
   {
-    enemy_funcs.move_enemys_towards_target();
+    time_step.update_physics_funcs();
   }
 
   Time = Date.now() / CONST_TIME_DIV;

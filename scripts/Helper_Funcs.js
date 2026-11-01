@@ -22,8 +22,6 @@ export const BIT_FIELD_ENEMY= (1 << 0);
 export const DEG_TO_RAD = Math.PI / 180;
 export const RAD_TO_DEG = 180 / Math.PI;
 
-export let DT = 0.001;
-
 const TEST_FUNCS = false;
 
 if (TEST_FUNCS)

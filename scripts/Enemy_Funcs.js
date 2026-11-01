@@ -2,6 +2,7 @@ import * as helper from './Helper_Funcs.js';
 import * as objectInfo from './Object_Info_Struct.js';
 import * as controls from './Controls.js';
 import * as debug_ray from './Debug_Rays.js';
+import * as time_step from './Time_Step.js'
 import assert, { assert_no_NaN_array } from './Assert.js'
 
 const enemy_list_length = 10;
@@ -13,8 +14,8 @@ export let enemy_list_index = 0;
 
 const TEST_LOCAITON = new Float32Array([-1000,0,0]);
 // const TEST_LOCAITON = new Float32Array([0,0,-100000]);
-const TEST_ACCEL = 1 / 10;
-const TEST_SPEED = 40;
+const TEST_ACCEL = 1 / 100;
+const TEST_SPEED = 1;
 
 const TEST_PATROL_POINTS = [[new Float32Array([0,0,0]), new Float32Array([10,0,0])], [new Float32Array([40,0,-10]), new Float32Array([70,0,10])]];
 const DISTANCE_TO_SWITCH_POINT_SQR = 2;
@@ -179,7 +180,7 @@ function move_towards_target(object, target)
     object.set_velocity(new_velocity);
 
     // P += V * dt
-    let new_position = helper.vector_3_add_into(current_position, helper.vector_mult_scalar_into(new_velocity, helper.DT));
+    let new_position = helper.vector_3_add_into(current_position, helper.vector_mult_scalar_into(new_velocity, time_step.DT));
     assert_no_NaN_array(new_position);
 
     object.set_position(new_position);
