@@ -1,7 +1,5 @@
-
 import * as object_info from './Object_Info_Struct.js'
 import * as helper from './Helper_Funcs.js';
-
 
 export function process_raycast_hit(game_object_hit)
 {
@@ -16,5 +14,4 @@ export function process_raycast_hit(game_object_hit)
       console.log("HIT CHEST");
       break
   }
-
 }

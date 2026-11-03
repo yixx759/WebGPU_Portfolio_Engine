@@ -164,6 +164,9 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         // OBJECT_BIT_FIELD
         offset += add_int8(tmp_go.get_bit_field(), view, offset);
 
+        // OBJECT_BIT_FIELD
+        offset += add_int8(tmp_go.get_patrol_index(), view, offset);
+
         console.log("offset during: ");
         console.log(offset);
     }
@@ -205,6 +208,9 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
 
         // OBJECT_BIT_FIELD
         offset += add_int8(tmp_go.get_bit_field(), view, offset);
+        
+        // OBJECT_BIT_FIELD
+        offset += add_int8(tmp_go.get_patrol_index(), view, offset);
 
         console.log("offset during: ");
         console.log(offset);
@@ -238,7 +244,6 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
    const writable = await handle.createWritable();
    await writable.write(bit_buffer);
    await writable.close();
-
 
     // const blob = new Blob([bit_buffer], {
     // type: "application/octet-stream"
@@ -364,16 +369,16 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
 
         if (!object_info.NEW_ELEMENT_JUST_ADDED)
         {
-            // let velocity = load_vector3_into(view, offset);
-            // offset += object_info.BYTES_OF_VECTOR3;
-            // console.log("Velocity: " + velocity)
+            let patrol_index = load_int8(view, offset);
+            offset += object_info.BYTES_OF_INT_8;
+            console.log("patrol index: " + patrol_index)
 
-            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field);
+            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field, patrol_index);
         }
         else    
         {
             console.log(model_index); 
-            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, 4);
+            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field, 0);
         }
 
         game_object_array.push(tmp_obj);
