@@ -1,6 +1,23 @@
 import * as objectInfo from './Object_Info_Struct.js'
 import * as helper from './Helper_Funcs.js'
 import * as BRDF_configs from './BRDF_Configs.js';
+import assert, { assert_no_NaN_array } from './Assert.js';
+
+// TO DO: ORG ME
+let health = 100;
+
+export function hurt_player(damage)
+{
+    assert(damage > 0, "Damage zero or less");
+    // TO DO: Do need seperate type check?
+    assert(isFinite(damage), "damage is NAN or not num");
+    health -= damage;
+
+    if (health <= 0)
+    {
+        // TO DO: DIE
+    }
+}
 
 /* Player structure
 

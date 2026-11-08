@@ -31,7 +31,7 @@ let index_array;
 
 export const NEW_ELEMENT_JUST_ADDED = false; 
 
-const AMOUNT_OF_ELEMENTS = 12;
+const AMOUNT_OF_ELEMENTS = 13;
 let OFFSET_INTO_ELEMENT = new Int16Array(AMOUNT_OF_ELEMENTS);
 
 function add_int8_element(index)
@@ -74,6 +74,13 @@ let INDEX_OFFSET_INTO_BRDF_PARAMS = 8;
 let INDEX_OFFSET_INTO_BIT_FIELD = 9;
 let INDEX_OFFSET_INTO_VELOCITY = 10;
 let INDEX_OFFSET_INTO_PATROL_INDEX = 11;
+let INDEX_OFFSET_INTO_HEALTH = 12;
+
+function add_element_to_struct(nu_index, offset)
+{ 
+  OFFSET_INTO_ELEMENT[offset] = nu_index;
+  return OFFSET_INTO_ELEMENT[offset];
+}
 
 export function init_object_arrays(AMOUNT_OF_OBJECTS)
 {
@@ -82,38 +89,29 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
   let prev = 0;
   OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VERTEX_INDEX] = prev;
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_TEXTURE_INDEX] = add_int8_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_TEXTURE_INDEX];
+  prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_TEXTURE_INDEX);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_POSITION] = add_int8_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_POSITION];
+  prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_POSITION);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_SCALE] = add_vector3_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_SCALE];
+  prev = add_element_to_struct(add_vector3_element(prev), INDEX_OFFSET_INTO_SCALE);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_ROTATION] = add_float32_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_ROTATION];
+  prev = add_element_to_struct(add_float32_element(prev), INDEX_OFFSET_INTO_ROTATION);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_HALF] = add_vector3_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_HALF];
+  prev = add_element_to_struct(add_vector3_element(prev), INDEX_OFFSET_INTO_HALF);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_MATRIX] = add_vector3_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_MATRIX];
+  prev = add_element_to_struct(add_vector3_element(prev), INDEX_OFFSET_INTO_MATRIX);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_DIRTY_BIT] = add_matrix_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_DIRTY_BIT];
+  prev = add_element_to_struct(add_matrix_element(prev), INDEX_OFFSET_INTO_DIRTY_BIT);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS] = add_int8_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BRDF_PARAMS];
+  prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_BRDF_PARAMS);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BIT_FIELD] = add_int8_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_BIT_FIELD];
+  prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_BIT_FIELD);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VELOCITY] = add_vector3_element(prev)
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VELOCITY];
+  prev = add_element_to_struct(add_vector3_element(prev), INDEX_OFFSET_INTO_VELOCITY);
 
-  OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_PATROL_INDEX] = add_int8_element(prev);
-  prev = OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_PATROL_INDEX];
+  prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_PATROL_INDEX);
+
+  prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_HEALTH);
 
   ALIGNMENT_BYTES_OF_OBJECT = helper.align(prev, ALIGHNMENT_NUMBER);
 
@@ -171,6 +169,9 @@ function get_int8_index(base_index, element_index)
   * Patrol Path Index *
   int8 patrol path index
 
+  * Health *
+  int8 Health
+
 */
 
 // TO DO: Optimize me can make this more contigous like in c++
@@ -186,6 +187,7 @@ export class game_object
   bit_field_index;
   velocity_field_index;
   patrol_path_index;
+  health_index;
 
   // Takes input of what number object this is and initialses a new object 
   // With input informaiton.
@@ -249,6 +251,8 @@ export class game_object
     this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_VELOCITY), helper.ZEROS);
 
     this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_PATROL_INDEX), patrol_index);
+
+    this.set_int8(get_int8_index(index, INDEX_OFFSET_INTO_HEALTH), 100);
   }
 
     // NOTE: Have a view for int8 to pass in.
@@ -842,10 +846,50 @@ export class game_object
     get_patrol_index()
     {
       if (!(index_array instanceof Int8Array)) {
-        console.log("ERROR: Get BRDF index wasnt given int8array");
+        console.log("ERROR: Get Patrol index wasnt given int8array");
         return -1;
       }
 
       return index_array[this.patrol_path_index];
+    }
+
+    set_health(data)
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Set Health wasnt given int8array");
+        return -1;
+      }
+
+      index_array[this.health_index] = data;
+    }
+
+    get_health()
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Get Health wasnt given int8array");
+        return -1;
+      }
+
+      return index_array[this.health_index];
+    }
+
+    hurt_enemy(damage)
+    {
+      if (!(index_array instanceof Int8Array)) {
+        console.log("ERROR: Get Health wasnt given int8array");
+        return -1;
+      }
+
+      assert(damage > 0, "Enemy damage zero or less");
+      // TO DO: Do need seperate type check?
+      assert(isFinite(damage), "Enemy damage is NAN or not num");
+
+      index_array[this.health_index] -= damage;
+
+      if (index_array[this.health_index] <= 0)
+      {
+        // TO DO: DIE
+      }
+
     }
 }
