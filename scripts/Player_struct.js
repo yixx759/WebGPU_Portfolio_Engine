@@ -13,8 +13,10 @@ export function hurt_player(damage)
     assert(isFinite(damage), "damage is NAN or not num");
     health -= damage;
 
+    console.log("HEALTH: " + health);
     if (health <= 0)
     {
+        console.log("YOU ARE DEAD");
         // TO DO: DIE
     }
 }

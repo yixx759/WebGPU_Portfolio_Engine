@@ -314,10 +314,14 @@ export function vector_div_scalar(A, mag_scalar){
 }
 
 export function vector_div_scalar_into(A, mag_scalar){
+  console.log("mag: " + mag_scalar);
+  console.log("results: "+ A[0] / mag_scalar);
+
   A[0] /= mag_scalar;
   A[1] /= mag_scalar;
   A[2] /= mag_scalar;
 
+  console.log("results: " + A);
   return A;
 }
 
@@ -400,6 +404,9 @@ export function quat_mag(A){
 
 export function vector_norm(A){
   const mag = vector_mag(A);
+  console.log("Mag: " + mag);
+  console.log("Return: " + A[0]/mag)
+  console.log("Return: " + [A[0]/mag, A[1]/mag, A[2]/mag])
   return [A[0]/mag, A[1]/mag, A[2]/mag];
 }
 

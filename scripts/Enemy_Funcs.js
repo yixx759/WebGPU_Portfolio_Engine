@@ -4,12 +4,15 @@ import * as controls from './Controls.js';
 import * as debug_ray from './Debug_Rays.js';
 import * as time_step from './Time_Step.js'
 import assert, { assert_no_NaN_array } from './Assert.js'
+import { hurt_player } from './Player_struct.js';
 
 const enemy_list_length = 10;
 
 let enemy_list = new Array(enemy_list_length).fill(null);
 let enemy_patrol_point_index_list = new Array(enemy_list_length).fill(null);
 let enemy_patrol_list = new Array(enemy_list_length).fill(null);
+let enemy_chasing = new Array(enemy_list_length).fill(false);
+let enemy_attack_times = new Float32Array(enemy_list_length).fill(0);
 export let enemy_list_index = 0;
 
 const TEST_LOCAITON = new Float32Array([-1000,0,0]);
@@ -25,6 +28,8 @@ const FOV_OF_ENEMY_NOT_CHASING = Math.cos((180 / 2) * helper.DEG_TO_RAD); // 180
 
 const DISTANCE_TO_CHASE_PLAYER_CHASING = 40;
 const FOV_OF_ENEMY_CHASING = Math.cos((270 / 2) * helper.DEG_TO_RAD); // 270 Degrees
+
+const ENEMY_ATTACK_TIME = 5;
 
 let chase_player = false;
 
@@ -68,20 +73,33 @@ export function is_chase_player(enemy, player_pos)
     assert(length_to_player === length_to_player, "Length is NAN")
     assert(Number.isFinite(length_to_player), "Length is finite");
 
+    const test_enemy_to_player = helper.vector_norm(enemy_to_player);
     const norm_enemy_to_player = helper.vector_div_scalar_into(enemy_to_player, length_to_player);
+    // assert((test_enemy_to_player[0] === norm_enemy_to_player[0]) && (test_enemy_to_player[1] === norm_enemy_to_player[1]) && (test_enemy_to_player[2] === norm_enemy_to_player[2]), "didnt norm prop");
+    assert(helper.vector_mag(norm_enemy_to_player) < (1 + 1e-6), "normlize enemy to player wrong: " + helper.vector_mag(norm_enemy_to_player))
    
     const norm_enemy_forward = new Float32Array(3);
     const matrix_tmp = new Float32Array(4 * 4);
     helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
     assert(norm_enemy_forward instanceof Float32Array, "norm enemy forward not array float32");
     assert(norm_enemy_forward.every(Number.isFinite), "Nan in norm enemy forward");
+    assert(helper.vector_mag(norm_enemy_forward) < (1 + 1e-6), "normlize enemy forward wrong")
 
     const distance_to_chase_player = chase_player ? DISTANCE_TO_CHASE_PLAYER_CHASING : DISTANCE_TO_CHASE_PLAYER_NOT_CHASING;
     assert(Number.isFinite(distance_to_chase_player), "distance_to_chase_player is finite");
     const enemy_field_of_vision = chase_player ? FOV_OF_ENEMY_CHASING : FOV_OF_ENEMY_NOT_CHASING;
     assert(Number.isFinite(enemy_field_of_vision), "enemy_field_of_vision is finite");
 
-    assert(!(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > 1) && !(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) < -1))
+    if ((helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > (1 + 1e-6)) || (helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) < (-1 - 1e-6)))
+    {
+        console.log("Enemy that broke: " + enemy);
+        console.log("norm neemy forward: " + norm_enemy_forward);
+        console.log("norm enemy to player: " + norm_enemy_to_player);
+
+        console.log("Broke Dot: " + helper.vector_dot(norm_enemy_forward, norm_enemy_to_player));
+    }
+
+    assert(!(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > (1 + 1e-6)) && !(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) < (-1 - 1e-6)))
 
     // This attaches a ray to shoot forward from enemy.
     // debug_ray.new_ray_pos(enemy_pos, helper.vector_add(enemy_pos, helper.vector_mult_scalar(norm_enemy_forward, 10)), false);
@@ -92,6 +110,25 @@ export function is_chase_player(enemy, player_pos)
     }
 
     return false
+}
+
+function is_attack(enemy_index)
+{
+    assert(Number.isFinite(enemy_index))
+    enemy_attack_times[enemy_index] += time_step.DT;
+    console.log(enemy_attack_times[enemy_index]);
+    if (enemy_attack_times[enemy_index] > ENEMY_ATTACK_TIME)
+    {
+        console.log("enemy ind: " + enemy_index);
+        hurt_player(5);
+        enemy_attack_times[enemy_index] = 0;
+    }
+}
+
+function not_attack(enemy_index)
+{
+    assert(Number.isFinite(enemy_index))
+    enemy_attack_times[enemy_index] = 0;
 }
 
 export function move_enemys_towards_target()
@@ -107,6 +144,7 @@ export function move_enemys_towards_target()
         if (chase_player)
         {
             move_towards_target(enemy_list[i], controls.cam_pos);
+            is_attack(i);
         }
         else
         {
@@ -116,6 +154,8 @@ export function move_enemys_towards_target()
             assert(target instanceof Float32Array, "target not array float32");
             assert(target.every(Number.isFinite), "Nan in target");
             assert(enemy instanceof objectInfo.game_object, "enemy not game object");
+
+            not_attack(i);
 
             move_towards_target(enemy_list[i], target);
             switch_patrol_points_check(enemy_list[i], target, i, patrol_index);
