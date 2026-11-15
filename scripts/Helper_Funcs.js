@@ -29,6 +29,11 @@ if (TEST_FUNCS)
   test_funcs.vectorTestPrints();
 }
 
+export function get_fov_radians_from_degrees(fov_deg)
+{
+  return Math.cos((fov_deg / 2) * DEG_TO_RAD);
+}
+
 function get_matrix_coloumn_major_index(column_index, row_index)
 {
     return ((column_index) * 4) + (row_index);
