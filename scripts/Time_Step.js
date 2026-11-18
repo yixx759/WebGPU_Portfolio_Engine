@@ -5,6 +5,11 @@ export const DT = 0.01;
 let previous_time = 0;
 let accumulator = 0;
 
+export function update_prev_physics_time()
+{
+    previous_time = performance.now() / 1000;
+}
+
 export function update_physics_funcs()
 {
     const current_time = performance.now() / 1000;

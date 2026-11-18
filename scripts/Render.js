@@ -102,6 +102,7 @@ export function switch_debug_mode()
   }
   else
   {
+    time_step.update_prev_physics_time();
     controls.cam_pos.set([tmp_debug_pos[0], tmp_debug_pos[1], tmp_debug_pos[2]]);
     DEBUG_MODE = false;
   }

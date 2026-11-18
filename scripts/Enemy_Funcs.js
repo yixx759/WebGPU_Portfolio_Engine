@@ -29,8 +29,9 @@ const FOV_OF_ENEMY_NOT_CHASING = helper.get_fov_radians_from_degrees(180);
 const DISTANCE_TO_CHASE_PLAYER_CHASING = 40;
 const FOV_OF_ENEMY_CHASING = helper.get_fov_radians_from_degrees(270); // 270 Degrees
 
-const ENEMY_ATTACK_TIME = 5;
-const DISTANCE_TO_ATTACK = 5;
+const ENEMY_ATTACK_TIME = 2;
+const ENEMY_ATTACK_VALUE = 50;
+const DISTANCE_TO_ATTACK = 20;
 const FOV_OF_ENEMY_ATTACK = helper.get_fov_radians_from_degrees(90);
 
 const NORM_VECTOR_MAG_COMPARE_VALUE = 1 + 1e-6;
@@ -114,43 +115,44 @@ function is_attack(enemy_index, enemy, player_pos)
     assert(enemy instanceof objectInfo.game_object, "enemy not Game object");
     assert(Number.isFinite(enemy_index));
 
-    enemy_attack_times[enemy_index] += time_step.DT;
-    console.log(enemy_attack_times[enemy_index]);
+    // TO DO: should input calculated a few times
+    // TO DO: Can prob do a quick check before claiclating all below
+    const enemy_pos = enemy.get_position();
+    assert(enemy_pos instanceof Float32Array, "enemy not array float32");
+    assert(enemy_pos.every(Number.isFinite), "Nan in target");
 
-    if (enemy_attack_times[enemy_index] > ENEMY_ATTACK_TIME)
+    const enemy_to_player = helper.vector_subtract(player_pos, enemy_pos);
+    assert(enemy_to_player instanceof Float32Array, "enemy to player not array float32");
+    assert(enemy_to_player.every(Number.isFinite), "Nan in target");
+
+    const length_to_player = helper.vector_mag(enemy_to_player);
+    assert(length_to_player === length_to_player, "Length is NAN")
+    assert(Number.isFinite(length_to_player), "Length is finite");
+
+    const norm_enemy_to_player = helper.vector_div_scalar_into(enemy_to_player, length_to_player);
+    assert(helper.vector_mag(norm_enemy_to_player) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy to player wrong: " + helper.vector_mag(norm_enemy_to_player))
+
+    const norm_enemy_forward = new Float32Array(3);
+    const matrix_tmp = new Float32Array(4 * 4);
+    helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
+    assert(norm_enemy_forward instanceof Float32Array, "norm enemy forward not array float32");
+    assert(norm_enemy_forward.every(Number.isFinite), "Nan in norm enemy forward");
+    assert(helper.vector_mag(norm_enemy_forward) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy forward wrong")
+
+    assert(!(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > (NORM_VECTOR_MAG_COMPARE_VALUE)) && !(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) < (-NORM_VECTOR_MAG_COMPARE_VALUE)))
+
+    // This attaches a ray to shoot forward from enemy.
+    // debug_ray.new_ray_pos(enemy_pos, helper.vector_add(enemy_pos, helper.vector_mult_scalar(norm_enemy_forward, 10)), false);
+
+    if (length_to_player < DISTANCE_TO_ATTACK && helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > FOV_OF_ENEMY_ATTACK)
     {
-        // TO DO: should input calculated a few times
-        const enemy_pos = enemy.get_position();
-        assert(enemy_pos instanceof Float32Array, "enemy not array float32");
-        assert(enemy_pos.every(Number.isFinite), "Nan in target");
+        enemy_attack_times[enemy_index] += time_step.DT;
+        console.log("Being attacked: " + enemy_attack_times[enemy_index]);
 
-        const enemy_to_player = helper.vector_subtract(player_pos, enemy_pos);
-        assert(enemy_to_player instanceof Float32Array, "enemy to player not array float32");
-        assert(enemy_to_player.every(Number.isFinite), "Nan in target");
-
-        const length_to_player = helper.vector_mag(enemy_to_player);
-        assert(length_to_player === length_to_player, "Length is NAN")
-        assert(Number.isFinite(length_to_player), "Length is finite");
-
-        const norm_enemy_to_player = helper.vector_div_scalar_into(enemy_to_player, length_to_player);
-       assert(helper.vector_mag(norm_enemy_to_player) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy to player wrong: " + helper.vector_mag(norm_enemy_to_player))
-    
-        const norm_enemy_forward = new Float32Array(3);
-        const matrix_tmp = new Float32Array(4 * 4);
-        helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
-        assert(norm_enemy_forward instanceof Float32Array, "norm enemy forward not array float32");
-        assert(norm_enemy_forward.every(Number.isFinite), "Nan in norm enemy forward");
-        assert(helper.vector_mag(norm_enemy_forward) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy forward wrong")
-
-        assert(!(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > (NORM_VECTOR_MAG_COMPARE_VALUE)) && !(helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) < (-NORM_VECTOR_MAG_COMPARE_VALUE)))
-
-        // This attaches a ray to shoot forward from enemy.
-        // debug_ray.new_ray_pos(enemy_pos, helper.vector_add(enemy_pos, helper.vector_mult_scalar(norm_enemy_forward, 10)), false);
-
-        if (length_to_player < DISTANCE_TO_ATTACK && helper.vector_dot(norm_enemy_forward, norm_enemy_to_player) > FOV_OF_ENEMY_ATTACK)
-        {
+        if (enemy_attack_times[enemy_index] > ENEMY_ATTACK_TIME)
+        {      
             console.log("enemy ind: " + enemy_index);
-            hurt_player(5);
+            hurt_player(ENEMY_ATTACK_VALUE);
             enemy_attack_times[enemy_index] = 0;  
         }
     }
@@ -175,7 +177,7 @@ export function move_enemys_towards_target()
         {
             // TO DO: CALC LENGHT NOW
             move_towards_target(enemy_list[i], controls.cam_pos);
-            is_attack(i);
+            is_attack(i, enemy_list[i], controls.cam_pos);
         }
         else
         {
