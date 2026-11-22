@@ -1,9 +1,12 @@
 import * as object_info from './Object_Info_Struct.js'
-import { get_object_half } from './Render.js';
+import { get_object_half } from './Render.js'
+import * as helper from './Helper_Funcs.js'
 
 const SIZE_OF_OBJECT_NUMBER = object_info.BYTES_OF_INT_8;
 const SIZE_OF_END_PATTERN = object_info.BYTES_OF_INT_8;
 const SIZE_OF_COEFFS = 16 * 3 * object_info.BYTES_OF_FLOAT_32;
+const SIZE_OF_INIT_PATTERN_AND_VERISON = 2 * object_info.BYTES_OF_INT_8;
+const VERSION = 1;
 
 function add_int8(value, view, offset)
 {
@@ -27,6 +30,16 @@ function add_vector3(values, view, offset)
     }
 
     return object_info.BYTES_OF_VECTOR3;
+}
+
+function add_vector4(values, view, offset)
+{
+    for (let i = 0; i < 4; i++)
+    {
+        view.setFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, values[i]);
+    }
+
+    return object_info.BYTES_OF_VECTOR4;
 }
 
 function add_matrix(values, view, offset)
@@ -76,6 +89,16 @@ function load_vector3_into(array, view, offset)
     return array;
 }
 
+function load_vector4_into(array, view, offset)
+{
+    for (let i = 0; i < 4; i++)
+    {
+        array[i] = view.getFloat32(offset + i * object_info.BYTES_OF_FLOAT_32, false);
+    }
+
+    return array;
+}
+
 function load_matrix_into(matrix, view, offset)
 {
 
@@ -99,11 +122,16 @@ function load_sh_matrix_into(matrix, view, offset)
     return matrix;
 }
 
+
+// add an identifier of int8 thats 11111111 then a version number then normal save
+// on load if no identifier do old load, then have branching for each version, as updating.
+// So will load old save files but can save new verison
 export async function save_file(amount_of_objects, game_object_array, player_pos, sh_coeffs, add_object=false, object_to_add=null)
 {
     let add_object_true = add_object ? 1 : 0;
 
     let bit_buffer = new ArrayBuffer(
+        SIZE_OF_INIT_PATTERN_AND_VERISON+
         SIZE_OF_OBJECT_NUMBER +
         SIZE_OF_COEFFS +
         object_info.BYTES_OF_VECTOR3 +
@@ -119,7 +147,8 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
     }
 
     let offset = 0;
-
+    offset += add_int8(0x11111111, view, offset);
+    offset += add_int8(VERSION, view, offset);
     offset += add_int8(amount_of_objects + add_object_true, view, offset);
 
     console.log("before load object: ");
@@ -150,7 +179,7 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_float32(tmp_go.get_scale(), view, offset);
 
         // OBJECT_START_ROTATION
-        offset += add_vector3(tmp_go.get_rotation(), view, offset);
+        offset += add_vector4(tmp_go.get_rotation(), view, offset);
 
         // OBJECT_HALF
         offset += add_vector3(tmp_go.get_half(), view, offset);
@@ -195,7 +224,7 @@ export async function save_file(amount_of_objects, game_object_array, player_pos
         offset += add_float32(tmp_go.get_scale(), view, offset);
 
         // OBJECT_START_ROTATION
-        offset += add_vector3(tmp_go.get_rotation(), view, offset);
+        offset += add_vector4(tmp_go.get_rotation(), view, offset);
 
         // OBJECT_HALF
         offset += add_vector3(tmp_go.get_half(), view, offset);
@@ -265,6 +294,12 @@ export async function load_file(game_object_array, cam_pos, coeffs)
 
     let offset = 0;
 
+    const starting_patern = load_int8(view, offset);
+    offset += object_info.BYTES_OF_INT_8;
+
+    const version = load_int8(view, offset);
+    offset += object_info.BYTES_OF_INT_8;
+
     // Load how many objects
     const amount_of_objects = load_int8(view, offset);
     
@@ -275,9 +310,17 @@ export async function load_file(game_object_array, cam_pos, coeffs)
 
     console.log("before load object: ");
     console.log(offset);
-    // Load Objects
-    offset = load_objects(amount_of_objects, game_object_array, offset, view);
 
+    if (starting_patern)
+    {
+        offset = load_objects(amount_of_objects, game_object_array, offset, view)
+    }
+    else
+    {
+        // Load Objects
+        offset = load_objects_old(amount_of_objects, game_object_array, offset, view);
+    }
+    
     // Load Player Position
     offset = load_player(cam_pos, offset, view);
 
@@ -332,8 +375,8 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
         console.log("texture_index: " + texture_index);
         
         // OBJECT_START_POSITION
-        load_vector3_into(tmp_pos, view, offset);
-        offset += object_info.BYTES_OF_VECTOR3;
+        load_vector4_into(tmp_pos, view, offset);
+        offset += object_info.BYTES_OF_VECTOR4;
         console.log("tmp_pos: " + tmp_pos);
 
         // OBJECT_START_SCALE
@@ -365,6 +408,78 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
         offset += object_info.BYTES_OF_INT_8;
         console.log("Bit Field: " + bit_field)
 
+        let patrol_index = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("patrol index: " + patrol_index)
+
+        const tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field, patrol_index);
+    
+        game_object_array.push(tmp_obj);
+    }
+     
+    return offset;
+}
+
+
+function load_objects_old(amount_of_objects, game_object_array, offset, view)
+{
+     // return offset
+
+     let tmp_pos = new Float32Array(3);
+     let tmp_rot = new Float32Array(3);
+     let tmp_half = new Float32Array(3);
+     let tmp_mat = new Float32Array(16);
+
+     for (let i = 0; i < amount_of_objects; i++)
+     {  
+        // OBJECT_ID is implied by the order
+
+        // OBJECT_MODEL_INDEX
+        let model_index = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("Model: " + model_index);
+
+        // OBJECT_TEXTURE_INDEX
+        let texture_index = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("texture_index: " + texture_index);
+        
+        // OBJECT_START_POSITION
+        load_vector3_into(tmp_pos, view, offset);
+        offset += object_info.BYTES_OF_VECTOR3;
+        console.log("tmp_pos: " + tmp_pos);
+
+        // OBJECT_START_SCALE
+        let scale = load_float32(view, offset);
+        offset += object_info.BYTES_OF_FLOAT_32;
+        console.log("scale: " + scale);
+
+        // OBJECT_START_ROTATION
+        load_vector3_into(tmp_rot, view, offset);
+        offset += object_info.BYTES_OF_VECTOR3;
+        console.log("tmp_rot: " + tmp_rot);
+
+        const tmp_qut_rot = helper.euler_to_quaternion(tmp_rot);
+
+        // OBJECT_HALF
+        load_vector3_into(tmp_half, view, offset);
+        offset += object_info.BYTES_OF_VECTOR3;
+        console.log("tmp_half: " + tmp_half);
+
+        // OBJECT_WORLD_MATRIX
+        load_matrix_into(tmp_mat, view, offset);
+        offset += object_info.BYTES_OF_MATRIX;
+        console.log("tmp_mat: " + tmp_mat);
+
+        // OBJECT_BRDF_INDEX
+        let brdf = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("brdf: " + brdf);
+        
+        let bit_field = load_int8(view, offset);
+        offset += object_info.BYTES_OF_INT_8;
+        console.log("Bit Field: " + bit_field)
+
         let tmp_obj;
 
         if (!object_info.NEW_ELEMENT_JUST_ADDED)
@@ -373,12 +488,12 @@ function load_objects(amount_of_objects, game_object_array, offset, view)
             offset += object_info.BYTES_OF_INT_8;
             console.log("patrol index: " + patrol_index)
 
-            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field, patrol_index);
+            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_qut_rot, tmp_half, tmp_mat, brdf, bit_field, patrol_index);
         }
         else    
         {
             console.log(model_index); 
-            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_rot, tmp_half, tmp_mat, brdf, bit_field, 0);
+            tmp_obj = new object_info.game_object(i, model_index, texture_index, tmp_pos, scale, tmp_qut_rot, tmp_half, tmp_mat, brdf, bit_field, 0);
         }
 
         game_object_array.push(tmp_obj);

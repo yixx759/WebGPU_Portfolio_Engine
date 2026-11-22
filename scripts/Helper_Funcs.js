@@ -1,6 +1,6 @@
 import { debugLog } from './Render.js'
 import * as test_funcs from './Test_Funcs.js'
-import assert from './Assert.js'
+import assert, { assert_no_NaN_array } from './Assert.js'
 
 export const BIG_NUMBER = 10 ** 1000;
 
@@ -70,7 +70,27 @@ export function align(x, align)
   return Math.ceil(x / align) * align;
 }
 
-export function get_rotation_matrix(angleRotX, angleRotY, angleRotZ)
+export function get_rotation_matrix_from_quat(quat)
+{
+  const q_x = quat[0];
+  const q_x_2 = quat[0]*quat[0];
+  const q_y = quat[1];
+  const q_y_2 = quat[1]*quat[1];
+  const q_z = quat[2];
+  const q_z_2 = quat[2]*quat[2];
+  const q_w = quat[3];
+
+  var rot_matrix = new Float32Array([
+  1.0 - 2 * (q_y_2 + q_z_2), 2 * (q_x*q_y-q_z*q_w), 2 * (q_x*q_z+q_y*q_w), 0.0,
+  2 * (q_x*q_y + q_z*q_w), 1.0 - 2 * (q_x_2 + q_z_2), 2 * (q_y*q_z-q_x*q_w), 0.0,
+  2 * (q_x*q_z-q_y*q_w), 2 * (q_y*q_z+q_x*q_w), 1.0 - 2 * (q_x_2 + q_y_2), 0.0,
+  0.0, 0.0, 0.0, 1.0,
+  ]);
+
+  return rot_matrix;
+}
+
+export function get_rotation_matrix_from_euler(angleRotX, angleRotY, angleRotZ)
 {
  // from angle to radians
 
@@ -106,139 +126,89 @@ export function get_rotation_matrix(angleRotX, angleRotY, angleRotZ)
     return multiply_float32_matrices(multiply_float32_matrices(rotZ,rotY),rotX);
 };
 
-export function get_inv_rotation_matrix(angleRotX, angleRotY, angleRotZ)
+export function get_inv_rotation_matrix(quat)
 {
- // from angle to radians
+    assert(arguments.length == 1, "Params wrong");
+    assert(assert_no_NaN_array(quat), "nan in quat");
+    assert(quat.lenth == 4, "quaternion not big engouh");
 
-  angleRotX = -angleRotX * Math.PI / 180;
-  angleRotY = -angleRotY * Math.PI / 180;
-  angleRotZ = -angleRotZ * Math.PI / 180;
+    return get_rotation_matrix_from_quat(new Float32Array([-quat[0], -quat[1], -quat[2], quat[3]]));
+};
+
+// export function get_world_matrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, scale)
+// {
+//   var transformMatrix = new Float32Array([
+//       1,0,0,0,
+//       0,1,0,0,
+//       0,0,1,0,
+//       posX,posY,posZ,1
+//     ])
+
+//     var scaleMatrix = new Float32Array([
+//       scale,0,0,0,
+//       0,scale,0,0,
+//       0,0,scale,0,
+//       0,0,0,1
+//     ])
+
+//     // from angle to radians
+
+//     angleRotX = angleRotX * Math.PI / 180;
+//     angleRotY = angleRotY * Math.PI / 180;
+//     angleRotZ = angleRotZ * Math.PI / 180;
+
+//     const rotX = new Float32Array([
+//       1.0, 0.0,           0.0,          0.0,
+//       0.0, Math.cos(angleRotX),  Math.sin(angleRotX), 0.0,
+//       0.0, -Math.sin(angleRotX), Math.cos(angleRotX), 0.0,
+//       0.0, 0.0,           0.0,          1.0,
+//     ]);
+
+//     const rotY = new Float32Array([
+//       Math.cos(angleRotY), 0.0, -Math.sin(angleRotY), 0.0,
+//       0.0,          1.0, 0.0,           0.0,
+//       Math.sin(angleRotY), 0.0, Math.cos(angleRotY),  0.0,
+//       0.0,          0.0, 0.0,           1.0,
+//     ]);
+
+//     const rotZ = new Float32Array([
+//       Math.cos(angleRotZ),  Math.sin(angleRotZ), 0.0, 0.0,
+//       -Math.sin(angleRotZ), Math.cos(angleRotZ), 0.0, 0.0,
+//       0.0,           0.0,          1.0, 0.0,
+//       0.0,           0.0,          0.0, 1.0,
+//     ]);
+
+//     let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotX,rotY),rotZ);
+
+//     return multiply_float32_matrices(multiply_float32_matrices(scaleMatrix, rotationMatrix), transformMatrix);
+
+// };
+
+export function get_world_matrix_array(position, rot, scale)
+{
+  assert(arguments.length == 3);
+  assert(assert_no_NaN_array(position));
+  assert(assert_no_NaN_array(rot));
+  assert(assert_no_NaN_array(scale));
   
-  var rotX = new Float32Array([
-    1.0, 0.0, 0.0, 0.0,
-    0.0, Math.cos(angleRotX), -Math.sin(angleRotX), 0.0,
-    0.0, Math.sin(angleRotX), Math.cos(angleRotX), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
-
-    var rotY = new Float32Array([
-    Math.cos(angleRotY), 0.0, Math.sin(angleRotY), 0.0,
-    0.0, 1, 0, 0.0,
-    -Math.sin(angleRotY), 0, Math.cos(angleRotY), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
-
-    var rotZ = new Float32Array([
-    Math.cos(angleRotZ), -Math.sin(angleRotZ), 0.0, 0.0,
-    Math.sin(angleRotZ), Math.cos(angleRotZ), 0.0,  0.0,
-    0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
-
-    console.log(rotX);
-    console.log(rotY);
-    console.log(rotZ);
-
-    return multiply_float32_matrices(multiply_float32_matrices(rotX,rotY),rotZ);
-};
-
-export function get_world_matrix(posX,posY,posZ,angleRotX, angleRotY, angleRotZ, scale)
-{
- var transformMatrix = new Float32Array([
-    1,0,0,0,
-    0,1,0,0,
-    0,0,1,0,
-    posX,posY,posZ,1
-  ])
+  var transform_matrix = new Float32Array([
+      1,0,0,0,
+      0,1,0,0,
+      0,0,1,0,
+      position[0], position[1], position[2], 1
+    ])
 
 
-  var scaleMatrix = new Float32Array([
+  var scale_matrix = new Float32Array([
     scale,0,0,0,
     0,scale,0,0,
     0,0,scale,0,
     0,0,0,1
   ])
 
-  // from angle to radians
+  const rotation_matrix = get_rotation_matrix_from_quat(rot);
 
-  angleRotX = angleRotX * Math.PI / 180;
-  angleRotY = angleRotY * Math.PI / 180;
-  angleRotZ = angleRotZ * Math.PI / 180;
-
-  const rotX = new Float32Array([
-    1.0, 0.0,           0.0,          0.0,
-    0.0, Math.cos(angleRotX),  Math.sin(angleRotX), 0.0,
-    0.0, -Math.sin(angleRotX), Math.cos(angleRotX), 0.0,
-    0.0, 0.0,           0.0,          1.0,
-  ]);
-
-  const rotY = new Float32Array([
-    Math.cos(angleRotY), 0.0, -Math.sin(angleRotY), 0.0,
-    0.0,          1.0, 0.0,           0.0,
-    Math.sin(angleRotY), 0.0, Math.cos(angleRotY),  0.0,
-    0.0,          0.0, 0.0,           1.0,
-  ]);
-
-  const rotZ = new Float32Array([
-    Math.cos(angleRotZ),  Math.sin(angleRotZ), 0.0, 0.0,
-    -Math.sin(angleRotZ), Math.cos(angleRotZ), 0.0, 0.0,
-    0.0,           0.0,          1.0, 0.0,
-    0.0,           0.0,          0.0, 1.0,
-  ]);
-
-    let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotX,rotY),rotZ);
-
-    return multiply_float32_matrices(multiply_float32_matrices(scaleMatrix, rotationMatrix), transformMatrix);
-
-};
-
-export function get_world_matrix_array(position, angleRotation, scale)
-{
- var transformMatrix = new Float32Array([
-    1,0,0,0,
-    0,1,0,0,
-    0,0,1,0,
-    position[0], position[1], position[2], 1
-  ])
-
-
-  var scaleMatrix = new Float32Array([
-    scale,0,0,0,
-    0,scale,0,0,
-    0,0,scale,0,
-    0,0,0,1
-  ])
-
-  // from angle to radians
-
-  angleRotation[0] = angleRotation[0] * Math.PI / 180;
-  angleRotation[1] = angleRotation[1] * Math.PI / 180;
-  angleRotation[2] = angleRotation[2] * Math.PI / 180;
-
-  var rotX = new Float32Array([
-    1.0, 0.0, 0.0, 0.0,
-    0.0, Math.cos(angleRotation[0]), -Math.sin(angleRotation[0]), 0.0,
-    0.0, Math.sin(angleRotation[0]), Math.cos(angleRotation[0]), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
-
-    var rotY = new Float32Array([
-    Math.cos(angleRotation[1]), 0.0, Math.sin(angleRotation[1]), 0.0,
-    0.0, 1, 0, 0.0,
-    -Math.sin(angleRotation[1]), 0, Math.cos(angleRotation[1]), 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
-
-    var rotZ = new Float32Array([
-    Math.cos(angleRotation[2]), -Math.sin(angleRotation[2]), 0.0, 0.0,
-    Math.sin(angleRotation[2]), Math.cos(angleRotation[2]), 0.0,  0.0,
-    0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0,
-    ]);
-
-    let rotationMatrix = multiply_float32_matrices(multiply_float32_matrices(rotZ,rotY),rotX);
-
-    return multiply_float32_matrices(multiply_float32_matrices(rotationMatrix,transformMatrix),scaleMatrix);
+  return multiply_float32_matrices(multiply_float32_matrices(rotation_matrix,transform_matrix),scale_matrix);
 };
 
 export function vector_3_equality(A, B)
@@ -651,22 +621,18 @@ export function rotate_normalized_lerp(current_rot, target_dir, max_rot_accel)
     return current_rot;
   }
 
-  let current_qut_rot = euler_to_quaternion(current_rot);
   let target_qut_rot = dir_vector_to_quaternion(target_dir, WORLD_UP_VECTOR);
   
-  const dot_of_qut = qut_dot(current_qut_rot, target_qut_rot);
+  const dot_of_qut = qut_dot(current_rot, target_qut_rot);
  
   if (dot_of_qut < 0)
   {
     target_qut_rot = inverse_qut(target_qut_rot);
   }
 
-  const new_qut_rot = n_lerp(current_qut_rot, target_qut_rot, max_rot_accel);;
+  const new_qut_rot = n_lerp(current_rot, target_qut_rot, max_rot_accel);;
  
-  const new_rot_matrix = unit_quaternion_to_matrix(new_qut_rot);
-  let new_rot = matrix_to_euler(new_rot_matrix);
-
-  return new_rot;
+  return new_qut_rot;
 }
 
 function lerp(a, b, t)

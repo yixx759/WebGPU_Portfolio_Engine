@@ -349,7 +349,7 @@ export function transform_vertexs(vertex_info, game_object, )
     let tmp_pos = game_object.get_position();
     let tmp_scale = game_object.get_scale();
     let tmp_rot = game_object.get_rotation();
-    let world_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+    let world_matrix = helper.get_world_matrix_array(tmp_pos, tmp_rot, tmp_scale);
 
     // THIS WAS CHANGED RECENTLY
     const inverse_trans_world_matrix = helper.transpose_matrix(helper.inverse_matrix(world_matrix));

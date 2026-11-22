@@ -660,7 +660,7 @@ const CONST_TIME_DIV = 100;
 let look_vector = new Float32Array([controls.forward_vector_mat[0] * Math.cos(controls.mouse_Y), Math.sin(controls.mouse_Y), controls.forward_vector_mat[2] * Math.cos(controls.mouse_Y)])
 
 let tmp_pos = tmp_mem.get_temp_memory_vector();
-let tmp_rot = tmp_mem.get_temp_memory_vector();
+let tmp_rot = new Float32Array([0,0,0,1]) 
 let tmp_half = tmp_mem.get_temp_memory_vector();
 
 let tmp_World_Matrix = new Float32Array(4 * 4);
@@ -709,7 +709,6 @@ function render() {
 
   {
     // TO DO: Put somewhere
-    let tmp_World_Matrix = new Float32Array(4 * 4);
     assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_object_array, tmp_pos, tmp_rot, tmp_World_Matrix, Mats, matrixSize, sizet);
   }
 
@@ -777,32 +776,30 @@ function assign_matrixs(device, viewMatix, perMatrix, OBJECTS_TO_RENDER, game_ob
 
   for(let i = 0; i < OBJECTS_TO_RENDER; i++ )
   {
-    if (SINGLE_TEST)
-    {
-      game_object_array[i].set_position(controls.cam_pos);
-      game_object_array[i].set_rotation(new Float32Array([0,controls.keyY,0]));
-    }
+    // if (SINGLE_TEST)
+    // {
+    //   game_object_array[i].set_position(controls.cam_pos);
+    //   game_object_array[i].set_rotation(new Float32Array([0,controls.keyY,0]));
+    // }
 
-    if (MOVE_TARGET_TEST && TARGET_INDEX == i)
-    {
-      game_object_array[i].set_position(new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
-      game_object_array[i].set_rotation(new Float32Array([90,0,0]));
-    }
+    // if (MOVE_TARGET_TEST && TARGET_INDEX == i)
+    // {
+    //   game_object_array[i].set_position(new Float32Array([debug_target_keyX,debug_target_keyY,debug_target_keyZ]));
+    //   game_object_array[i].set_rotation(new Float32Array([90,0,0]));
+    // }
 
-     if (MOVE_TARGET_TEST && TARGET_INDEX == i)
-    {
-      if (false & PATH_TEST)
-      {
-        debugLog(tmp_pos);
-        path_tracing.transform_vertexs(verticies_obj_wall, game_object_array[i]);
-      }
-    }
-
-    // TO DO: Dirty bit
+    //  if (MOVE_TARGET_TEST && TARGET_INDEX == i)
+    // {
+    //   if (false & PATH_TEST)
+    //   {
+    //     debugLog(tmp_pos);
+    //     path_tracing.transform_vertexs(verticies_obj_wall, game_object_array[i]);
+    //   }
+    // 
     // TO DO: World_Matrix, tmp_pos, tmp_rot add params use temp meory for matrix maybe
     // or just creat one.
     // PRINT INSIDE DIRTY AND OUTSIDE DIRTY Branch
-    let worldMatrix = game_object_array[i].get_world_matrix(tmp_World_Matrix, tmp_pos, tmp_rot);
+    let worldMatrix = game_object_array[i].get_world_matrix_array(tmp_World_Matrix, tmp_pos, tmp_rot);
 
     device.queue.writeBuffer(Mats, i * sizet + 0, worldMatrix);
     device.queue.writeBuffer(Mats, i * sizet + matrixSize, viewMatix );

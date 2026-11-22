@@ -78,14 +78,12 @@ export function is_chase_player(enemy, player_pos)
     assert(length_to_player === length_to_player, "Length is NAN")
     assert(Number.isFinite(length_to_player), "Length is finite");
 
-    const test_enemy_to_player = helper.vector_norm(enemy_to_player);
     const norm_enemy_to_player = helper.vector_div_scalar_into(enemy_to_player, length_to_player);
-    // assert((test_enemy_to_player[0] === norm_enemy_to_player[0]) && (test_enemy_to_player[1] === norm_enemy_to_player[1]) && (test_enemy_to_player[2] === norm_enemy_to_player[2]), "didnt norm prop");
     assert(helper.vector_mag(norm_enemy_to_player) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy to player wrong: " + helper.vector_mag(norm_enemy_to_player))
    
     const norm_enemy_forward = new Float32Array(3);
     const matrix_tmp = new Float32Array(4 * 4);
-    helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
+    helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix_array(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
     assert(norm_enemy_forward instanceof Float32Array, "norm enemy forward not array float32");
     assert(norm_enemy_forward.every(Number.isFinite), "Nan in norm enemy forward");
     assert(helper.vector_mag(norm_enemy_forward) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy forward wrong")
@@ -134,7 +132,7 @@ function is_attack(enemy_index, enemy, player_pos)
 
     const norm_enemy_forward = new Float32Array(3);
     const matrix_tmp = new Float32Array(4 * 4);
-    helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
+    helper.vector_norm_into(helper.get_forward_vector_from_matrix(norm_enemy_forward, enemy.get_world_matrix_array(matrix_tmp, enemy.get_position(), enemy.get_rotation())));
     assert(norm_enemy_forward instanceof Float32Array, "norm enemy forward not array float32");
     assert(norm_enemy_forward.every(Number.isFinite), "Nan in norm enemy forward");
     assert(helper.vector_mag(norm_enemy_forward) < (NORM_VECTOR_MAG_COMPARE_VALUE), "normlize enemy forward wrong")

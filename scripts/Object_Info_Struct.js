@@ -1,4 +1,5 @@
 import * as helper from './Helper_Funcs.js';
+import assert, { assert_no_NaN_array } from './Assert.js';
 
 // Data type size
 // refrence: https://www.w3schools.com/js/js_datatypes.asp
@@ -12,6 +13,7 @@ export const BYTES_OF_INT_16 = 16 / 8;
 export const BYTES_OF_INT_32 = 32 / 8;
 
 export const BYTES_OF_VECTOR3 = BYTES_OF_FLOAT_32 * 3;
+export const BYTES_OF_VECTOR4 = BYTES_OF_FLOAT_32 * 4;
 export const BYTES_OF_MATRIX = BYTES_OF_FLOAT_32 * 4 * 4;
 
 const OFFSET_TRANSFROM_SCALE = 3;
@@ -55,6 +57,13 @@ function add_vector3_element(index)
   return index
 }
 
+function add_vector4_element(index)
+{
+  index = helper.align(index + BYTES_OF_VECTOR4, BYTES_OF_FLOAT_32)
+
+  return index
+}
+
 function add_matrix_element(index)
 {
   index = helper.align(index + BYTES_OF_MATRIX, BYTES_OF_FLOAT_32)
@@ -89,6 +98,9 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
   let prev = 0;
   OFFSET_INTO_ELEMENT[INDEX_OFFSET_INTO_VERTEX_INDEX] = prev;
 
+  // NOTE: You add the element that si the size of previous property eg add float 32 on rotaiton ebcause prev was scale
+  // TO DO: FIX ABOVE SEEMS DUMB
+
   prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_TEXTURE_INDEX);
 
   prev = add_element_to_struct(add_int8_element(prev), INDEX_OFFSET_INTO_POSITION);
@@ -97,7 +109,7 @@ export function init_object_arrays(AMOUNT_OF_OBJECTS)
 
   prev = add_element_to_struct(add_float32_element(prev), INDEX_OFFSET_INTO_ROTATION);
 
-  prev = add_element_to_struct(add_vector3_element(prev), INDEX_OFFSET_INTO_HALF);
+  prev = add_element_to_struct(add_vector4_element(prev), INDEX_OFFSET_INTO_HALF);
 
   prev = add_element_to_struct(add_vector3_element(prev), INDEX_OFFSET_INTO_MATRIX);
 
@@ -144,7 +156,7 @@ function get_int8_index(base_index, element_index)
   * Transform *
   vector3 position
   float32    scale
-  vector3 rotation 
+  vector4 rotation Note: Quaternion
 
   * Collision *
   vector3 half
@@ -229,7 +241,7 @@ export class game_object
     this.set_float32(get_float32_index(index, INDEX_OFFSET_INTO_SCALE), scale);
 
     // Set rotation
-    this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_ROTATION), rotation);
+    this.set_vector4(get_float32_index(index, INDEX_OFFSET_INTO_ROTATION), rotation);
 
     // Set half
     this.set_vector3(get_float32_index(index, INDEX_OFFSET_INTO_HALF), half);
@@ -375,44 +387,44 @@ export class game_object
     // NOTE: Have a view for float32 to pass in.
     get_rotation_into(rot)
     {
-      if (!(transform_array instanceof Float32Array)) {
-        console.log("ERROR: Get rotation wasnt given float32array");
-        return -1;
-      }
+      assert(arguments.length ==  1, "Wrong parmas get rot")
+      assert(transform_array instanceof Float32Array, "ERROR: Get rotation wasnt given float32array")
+      assert(assert_no_NaN_array(rot), "nan in rot get rot");
+      assert(rot.length === 4, "rot not long engouh get rot")
 
       const x = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION]
       const y = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 1]
       const z = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 2]
+      const w = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 3]
 
-      return rot.set([x, y, z]);
+      return rot.set([x, y, z, w]);
     }
 
     // NOTE: Have a view for float32 to pass in.
     get_rotation()
     {
-      if (!(transform_array instanceof Float32Array)) {
-        console.log("ERROR: Get rotation wasnt given float32array");
-        return -1;
-      }
+      assert(arguments.length == 0, "Too many parmas get rot")
+      assert(transform_array instanceof Float32Array, "ERROR: Get rotation wasnt given float32array")
 
       const x = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION]
       const y = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 1]
       const z = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 2]
+      const w = transform_array[this.transform_index + OFFSET_TRANSFROM_ROTATION + 3]
 
-      return new Float32Array([x, y, z]);
+      return new Float32Array([x, y, z, w]);
     }
 
     // NOTE: Have a view for float32 to pass in.
     set_rotation(data)
     {
-      if (!(transform_array instanceof Float32Array)) {
-        console.log("ERROR: Set rotation wasnt given float32array");
-        return -1;
-      }
+      assert(arguments.length ==  1, "Wrong parmas get rot")
+      assert(transform_array instanceof Float32Array, "ERROR: Get rotation wasnt given float32array")
+      assert(assert_no_NaN_array(data), "nan in rot get rot");
+      assert(data.length === 4, "rot not long engouh get rot")
 
       this.set_dirty_bit(1);
 
-      return this.set_vector3(this.transform_index + OFFSET_TRANSFROM_ROTATION, data)
+      return this.set_vector4(this.transform_index + OFFSET_TRANSFROM_ROTATION, data)
     }
 
     get_world_matrix(World_Matrix, tmp_pos, tmp_rot)
@@ -435,7 +447,7 @@ export class game_object
        // this.get_matrix_into(World_Matrix);
 
         // TO DO: Reuse memroy in that func
-        let new_matrix = helper.get_world_matrix(tmp_pos[0], tmp_pos[1], tmp_pos[2], tmp_rot[0], tmp_rot[1], tmp_rot[2], tmp_scale);
+        let new_matrix = helper.get_world_matrix_array(tmp_pos, tmp_rot, tmp_scale);
 
         this.set_matrix(this.matrix_index, new_matrix);
         this.get_matrix_into(World_Matrix);
@@ -589,7 +601,7 @@ export class game_object
 
       const vec4_max_at_origin = new Float32Array([max_at_origin[0], max_at_origin[1], max_at_origin[2], 1]);
       
-      const inv_rot_matrix = helper.get_inv_rotation_matrix(current_rot[0], current_rot[1], current_rot[2]);
+      const inv_rot_matrix = helper.get_inv_rotation_matrix(current_rot);
       const vec4_max_origin_no_rot = helper.multiply_matrix_and_point(inv_rot_matrix, vec4_max_at_origin);
 
       //  // Rotate 
@@ -598,7 +610,7 @@ export class game_object
       console.log("tmp rot:" + tmp_rot);
       console.log("cur rot:" + current_rot);
      
-      const rot_matrix = helper.get_rotation_matrix(tmp_rot[0], tmp_rot[1], tmp_rot[2]);
+      const rot_matrix = helper.get_rotation_matrix_from_quat(tmp_rot);
 
       const rotated_max = helper.multiply_matrix_and_point(rot_matrix, vec4_max_origin_no_rot);
 
@@ -636,17 +648,13 @@ export class game_object
 
     set_vector3(offset, data)
     {
-      if (!(transform_array instanceof Float32Array)) {
-        console.log("ERROR: Set vector3 wasnt given float32array");
-        throw new Error("Something went wrong");
-        return -1;
-      }
+      assert(arguments.length == 2)
+      assert((transform_array instanceof Float32Array), "ERROR: Set vector3 wasnt given float32array");
+      assert((data instanceof Float32Array), "ERROR: Set vector3 wasnt given data float32array"); 
+      assert(data.length == 3, "data length bad");
+      assert(offset >= 0, "offset not valid");
+      assert(assert_no_NaN_array(data), "data has nan");
 
-      if (!(data instanceof Float32Array)) {
-        console.log("ERROR: Set vector3 wasnt given data float32array");
-        throw new Error("Something went wrong");
-        return -1;
-      }
 
       transform_array[offset] = data[0];
       transform_array[offset + 1] = data[1];
@@ -654,6 +662,24 @@ export class game_object
 
       return BYTES_OF_VECTOR3;
     }
+
+    set_vector4(offset, data)
+    {
+      assert(arguments.length == 2)
+      assert((transform_array instanceof Float32Array), "ERROR: Set vector4 wasnt given float32array");
+      assert((data instanceof Float32Array), "ERROR: Set vector4 wasnt given data float32array"); 
+      assert(data.length == 4, "data length bad");
+      assert(offset >= 0, "offset not valid");
+      assert(assert_no_NaN_array(data), "data has nan");
+
+      transform_array[offset] = data[0];
+      transform_array[offset + 1] = data[1];
+      transform_array[offset + 2] = data[2];
+      transform_array[offset + 3] = data[3];
+
+      return BYTES_OF_VECTOR4;
+    }
+
 
     set_matrix(offset, data)
     {
